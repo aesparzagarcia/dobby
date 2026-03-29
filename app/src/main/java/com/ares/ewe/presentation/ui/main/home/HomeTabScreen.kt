@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,14 +95,6 @@ fun HomeTabScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
             uiState.errorMessage != null -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -115,9 +108,17 @@ fun HomeTabScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.loadHome() }) {
-                            Text("Retry")
+                            Text("Reintentar")
                         }
                     }
+                }
+            }
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
             }
             else -> {
@@ -126,6 +127,31 @@ fun HomeTabScreen(
                         .fillMaxSize()
                         .padding(bottom = 8.dp)
                 ) {
+                    uiState.warningMessage?.let { msg ->
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = msg,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { viewModel.clearWarningMessage() }) {
+                                    Text("Cerrar")
+                                }
+                            }
+                        }
+                    }
                     Box(modifier = Modifier.fillMaxWidth()) {
                         HomeHeader(
                             addressLabel = uiState.addressLabel,

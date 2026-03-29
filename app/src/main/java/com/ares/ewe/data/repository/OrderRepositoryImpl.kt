@@ -47,6 +47,7 @@ class OrderRepositoryImpl @Inject constructor(
                     createdAt = dto.createdAt,
                     shopName = dto.shopName,
                     estimatedPreparationMinutes = dto.estimatedPreparationMinutes,
+                    estimatedDeliveryMinutes = dto.estimatedDeliveryMinutes,
                     items = dto.items.map {
                         OrderTrackingItem(
                             productName = it.productName,

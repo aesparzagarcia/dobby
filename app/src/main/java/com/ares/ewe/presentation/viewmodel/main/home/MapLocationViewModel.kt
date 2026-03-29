@@ -3,6 +3,7 @@ package com.ares.ewe.presentation.viewmodel.main.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.data.location.FusedLocationProvider
 import com.ares.ewe.domain.repository.PlacesAutocompleteRepository
 import com.ares.ewe.domain.repository.UserAddressRepository
@@ -82,7 +83,7 @@ class MapLocationViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isReverseGeocoding = false,
-                            errorMessage = e.message
+                            errorMessage = e.toUserFacingMessage()
                         )
                     }
                 }
@@ -118,7 +119,7 @@ class MapLocationViewModel @Inject constructor(
                 }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(errorMessage = e.message ?: "Failed to save address")
+                        it.copy(errorMessage = e.toUserFacingMessage())
                     }
                 }
         }
@@ -137,7 +138,7 @@ class MapLocationViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    errorMessage = "Location permission is required to show your position on the map."
+                    errorMessage = "Ubicación: concede permiso para mostrar tu posición en el mapa."
                 )
             }
         }
@@ -156,7 +157,8 @@ class MapLocationViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = e.message ?: "Could not get location."
+                            errorMessage = e.message?.takeIf { it.isNotBlank() }
+                                ?: "Ubicación: no se pudo obtener. Comprueba que el GPS esté activado."
                         )
                     }
                 }

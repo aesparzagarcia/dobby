@@ -11,6 +11,8 @@ data class OrderTracking(
     val shopName: String?,
     /** Minutes the shop indicated for preparation; null if not set. */
     val estimatedPreparationMinutes: Int? = null,
+    /** Minutes until delivery (courier ETA), updated while ON_DELIVERY; null if not set. */
+    val estimatedDeliveryMinutes: Int? = null,
     val items: List<OrderTrackingItem>,
     val deliveryMan: OrderTrackingDeliveryMan?
 )

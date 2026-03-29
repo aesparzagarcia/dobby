@@ -40,6 +40,7 @@ data class OrderTrackingDto(
     @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("shop_name") val shopName: String? = null,
     @SerializedName("estimated_preparation_minutes") val estimatedPreparationMinutes: Int? = null,
+    @SerializedName("estimated_delivery_minutes") val estimatedDeliveryMinutes: Int? = null,
     @SerializedName("items") val items: List<OrderTrackingItemDto> = emptyList(),
     @SerializedName("delivery_man") val deliveryMan: OrderTrackingDeliveryManDto? = null
 )

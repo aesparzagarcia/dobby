@@ -3,6 +3,7 @@ package com.ares.ewe.presentation.viewmodel.main.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.model.OrderTracking
 import com.ares.ewe.domain.repository.DirectionsRepository
 import com.ares.ewe.domain.repository.OrderRepository
@@ -134,7 +135,7 @@ class OrderTrackingViewModel @Inject constructor(
 
     fun loadTracking() {
         if (orderId.isBlank()) {
-            _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Order ID missing")
+            _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Solicitud: falta el identificador del pedido")
             return
         }
         viewModelScope.launch {
@@ -143,7 +144,7 @@ class OrderTrackingViewModel @Inject constructor(
                 .onSuccess { tracking ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = if (tracking == null) "Order not found" else null,
+                        errorMessage = if (tracking == null) "No encontrado: el pedido no existe o no tienes acceso" else null,
                         tracking = tracking
                     )
                     if (tracking != null) {
@@ -153,7 +154,7 @@ class OrderTrackingViewModel @Inject constructor(
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Could not load order"
+                        errorMessage = e.toUserFacingMessage()
                     )
                 }
         }

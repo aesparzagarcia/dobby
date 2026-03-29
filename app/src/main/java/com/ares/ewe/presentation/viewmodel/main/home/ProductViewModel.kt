@@ -3,6 +3,7 @@ package com.ares.ewe.presentation.viewmodel.main.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.PlacesRepository
@@ -64,7 +65,7 @@ class ProductViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Failed to load product"
+                        errorMessage = e.toUserFacingMessage()
                     )
                 }
             }

@@ -2,6 +2,7 @@ package com.ares.ewe.presentation.viewmodel.main.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.model.UserAddress
 import com.ares.ewe.domain.repository.PlacesAutocompleteRepository
 import com.ares.ewe.domain.repository.UserAddressRepository
@@ -61,9 +62,13 @@ class AddressViewModel @Inject constructor(
                         it.copy(myAddresses = list, showMyAddressesSheet = true)
                     }
                 }
-                .onFailure {
+                .onFailure { e ->
                     _uiState.update {
-                        it.copy(showMyAddressesSheet = true, myAddresses = emptyList())
+                        it.copy(
+                            showMyAddressesSheet = true,
+                            myAddresses = emptyList(),
+                            errorMessage = e.toUserFacingMessage()
+                        )
                     }
                 }
         }
@@ -84,7 +89,7 @@ class AddressViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             showMyAddressesSheet = true,
-                            errorMessage = e.message ?: "Failed to set default address"
+                            errorMessage = e.toUserFacingMessage()
                         )
                     }
                 }
@@ -129,7 +134,7 @@ class AddressViewModel @Inject constructor(
                         it.copy(
                             searchResults = emptyList(),
                             isLoading = false,
-                            errorMessage = e.message
+                            errorMessage = e.toUserFacingMessage()
                         )
                     }
                 }
@@ -156,7 +161,7 @@ class AddressViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoadingPlaceDetails = false,
-                            errorMessage = e.message ?: "Could not get address location."
+                            errorMessage = e.toUserFacingMessage()
                         )
                     }
                 }

@@ -1,5 +1,6 @@
 package com.ares.ewe.data.repository
 
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.data.session.SessionEventBus
 import com.ares.ewe.data.remote.api.DobbyApi
@@ -30,7 +31,7 @@ class AuthRepositoryImpl @Inject constructor(
             val response = api.requestOtp(RequestOtpRequest(phone = phone))
             AuthResult.Success(OtpRequestResult(userExists = response.userExists))
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Failed to send code")
+            AuthResult.Error(e.toUserFacingMessage())
         }
     }
 
@@ -50,7 +51,7 @@ class AuthRepositoryImpl @Inject constructor(
                 AuthResult.Success(VerifyOtpOutcome.LoggedIn)
             }
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Invalid code")
+            AuthResult.Error(e.toUserFacingMessage())
         }
     }
 
@@ -77,7 +78,7 @@ class AuthRepositoryImpl @Inject constructor(
             sessionEventBus.resetExpiredGate()
             AuthResult.Success(Unit)
         } catch (e: Exception) {
-            AuthResult.Error(e.message ?: "Registration failed")
+            AuthResult.Error(e.toUserFacingMessage())
         }
     }
 

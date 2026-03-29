@@ -2,6 +2,7 @@ package com.ares.ewe.presentation.viewmodel.main.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.domain.model.toAddressWithColonyOnly
 import com.ares.ewe.domain.repository.CartRepository
@@ -89,7 +90,7 @@ class CartViewModel @Inject constructor(
     fun placeOrder(addressId: String?, items: List<CartItem>) {
         if (addressId == null || items.isEmpty()) {
             _deliveryState.update {
-                it.copy(placeOrderError = if (items.isEmpty()) "Cart is empty" else "Select a delivery address")
+                it.copy(placeOrderError = if (items.isEmpty()) "Carrito vacío: agrega productos para pedir." else "Dirección: selecciona una dirección de entrega.")
             }
             return
         }
@@ -108,7 +109,7 @@ class CartViewModel @Inject constructor(
                     _deliveryState.update {
                         it.copy(
                             isPlacingOrder = false,
-                            placeOrderError = e.message ?: "Failed to create order"
+                            placeOrderError = e.toUserFacingMessage()
                         )
                     }
                 }

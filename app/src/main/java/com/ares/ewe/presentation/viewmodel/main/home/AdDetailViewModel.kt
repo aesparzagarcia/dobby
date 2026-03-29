@@ -3,6 +3,7 @@ package com.ares.ewe.presentation.viewmodel.main.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.model.Ad
 import com.ares.ewe.domain.repository.AdsRepository
 import com.ares.ewe.domain.repository.CartRepository
@@ -52,14 +53,14 @@ class AdDetailViewModel @Inject constructor(
                     it.copy(
                         ad = ad,
                         isLoading = false,
-                        errorMessage = if (ad == null) "Ad not found" else null
+                        errorMessage = if (ad == null) "No encontrado: anuncio no disponible" else null
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Failed to load"
+                        errorMessage = e.toUserFacingMessage()
                     )
                 }
             }

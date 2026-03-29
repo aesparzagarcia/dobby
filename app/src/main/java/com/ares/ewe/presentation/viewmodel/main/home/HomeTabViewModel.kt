@@ -11,6 +11,7 @@ import com.ares.ewe.domain.repository.AdsRepository
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.OrderRepository
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.repository.UserAddressRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,9 @@ data class HomeTabUiState(
     val address: String? = null,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** Error secundario (anuncios, direcciones) mientras el home ya cargó; no bloquea la pantalla. */
+    val warningMessage: String? = null,
 )
 
 @HiltViewModel
@@ -85,9 +88,13 @@ class HomeTabViewModel @Inject constructor(
                         )
                     }
                 }
-                .onFailure { _ ->
+                .onFailure { e ->
                     _uiState.update {
-                        it.copy(addressLabel = "Casa", address = null)
+                        it.copy(
+                            addressLabel = "Casa",
+                            address = null,
+                            warningMessage = e.toUserFacingMessage()
+                        )
                     }
                 }
         }
@@ -98,13 +105,17 @@ class HomeTabViewModel @Inject constructor(
             try {
                 val ads = adsRepository.getAds()
                 _uiState.update { it.copy(ads = ads) }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(ads = emptyList(), warningMessage = e.toUserFacingMessage())
+                }
+            }
         }
     }
 
     fun loadHome() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null, warningMessage = null) }
             try {
                 val home = placesRepository.getHome()
                 _uiState.update {
@@ -119,7 +130,7 @@ class HomeTabViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.message ?: "Failed to load"
+                        errorMessage = e.toUserFacingMessage()
                     )
                 }
             }
@@ -141,7 +152,7 @@ class HomeTabViewModel @Inject constructor(
                             )
                         }
                     } catch (e: Exception) {
-                        _uiState.update { it.copy(errorMessage = e.message ?: "Failed to load") }
+                        _uiState.update { it.copy(errorMessage = e.toUserFacingMessage()) }
                     }
                 }
                 val addressesDeferred = async {
@@ -156,15 +167,25 @@ class HomeTabViewModel @Inject constructor(
                                 )
                             }
                         }
-                        .onFailure { _ ->
-                            _uiState.update { it.copy(addressLabel = "Casa", address = null) }
+                        .onFailure { e ->
+                            _uiState.update {
+                                it.copy(
+                                    addressLabel = "Casa",
+                                    address = null,
+                                    warningMessage = e.toUserFacingMessage()
+                                )
+                            }
                         }
                 }
                 val adsDeferred = async {
                     try {
                         val ads = adsRepository.getAds()
                         _uiState.update { it.copy(ads = ads) }
-                    } catch (_: Exception) { }
+                    } catch (e: Exception) {
+                        _uiState.update {
+                            it.copy(ads = emptyList(), warningMessage = e.toUserFacingMessage())
+                        }
+                    }
                 }
                 val activeOrderDeferred = async {
                     orderRepository.getActiveOrder()
@@ -182,5 +203,9 @@ class HomeTabViewModel @Inject constructor(
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun clearWarningMessage() {
+        _uiState.update { it.copy(warningMessage = null) }
     }
 }

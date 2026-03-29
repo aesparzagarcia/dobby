@@ -322,12 +322,26 @@ private fun OrderTrackingBottomSheetContent(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            tracking.estimatedPreparationMinutes?.let { minutes ->
-                Text(
-                    text = "Prep. estimada: ${minutes} min",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Column(horizontalAlignment = Alignment.End) {
+                val st = tracking.status.uppercase()
+                val deliveryEta =
+                    tracking.estimatedDeliveryMinutes?.takeIf {
+                        st == "ON_DELIVERY" || st == "ASSIGNED"
+                    }
+                if (deliveryEta != null) {
+                    Text(
+                        text = "Llegada ~$deliveryEta min",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                tracking.estimatedPreparationMinutes?.takeIf { deliveryEta == null }?.let { minutes ->
+                    Text(
+                        text = "Prep. estimada: ${minutes} min",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
