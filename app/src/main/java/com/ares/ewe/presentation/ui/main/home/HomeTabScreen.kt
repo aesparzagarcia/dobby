@@ -59,7 +59,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ares.ewe.domain.model.Ad
-import com.ares.ewe.domain.model.BestSellerProduct
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 import kotlinx.coroutines.delay
@@ -176,7 +175,7 @@ fun HomeTabScreen(
                     ) {
                         val restaurantsOnly = filteredPlaces.filter { !it.isService }
                         val servicesOnly = filteredPlaces.filter { it.isService }
-                        val cardWidth = ((screenWidthDp - 56) / 3).dp
+                        val cardWidth = ((screenWidthDp - 56) / 2).dp
                         val productCardWidth = ((screenWidthDp - 52) / 2.8).toInt().dp
 
                         LazyColumn(
@@ -229,8 +228,13 @@ fun HomeTabScreen(
                                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         items(filteredProducts) { product ->
-                                            BestSellerProductCard(
-                                                product = product,
+                                            UniversalProductCard(
+                                                name = product.name,
+                                                imageUrl = product.imageUrl,
+                                                price = product.price,
+                                                rate = product.rate,
+                                                hasPromotion = product.hasPromotion,
+                                                discount = product.discount,
                                                 modifier = Modifier.width(productCardWidth),
                                                 onClick = { onProductClick(product.id) }
                                             )
@@ -424,16 +428,20 @@ private fun FeaturedPlaceCard(
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp)
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                    .background(MaterialTheme.colorScheme.surface),
+                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 if (place.imageUrl != null) {
@@ -453,91 +461,25 @@ private fun FeaturedPlaceCard(
             }
             Text(
                 text = place.name,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                minLines = 2,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 40.dp)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RatingDisplay(rate = place.rate)
-            }
-        }
-    }
-}
-
-private val BestSellerCardCornerRadius = 16.dp
-
-@Composable
-private fun BestSellerProductCard(
-    product: BestSellerProduct,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(BestSellerCardCornerRadius),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.15f)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = BestSellerCardCornerRadius,
-                            topEnd = BestSellerCardCornerRadius
-                        )
-                    )
-                    .background(MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (product.imageUrl != null) {
-                    AsyncImage(
-                        model = product.imageUrl,
-                        contentDescription = product.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = product.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                minLines = 1,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-            )
-            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "$${String.format("%.2f", product.price)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                RatingDisplay(rate = product.rate)
-            }
+                    .padding(start = 6.dp, end = 6.dp)
+            )
+            Text(
+                text = place.typeLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 6.dp, end = 6.dp)
+            )
         }
     }
 }

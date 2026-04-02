@@ -3,6 +3,7 @@ package com.ares.ewe.data.repository
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.data.remote.model.CreateOrderItemRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
+import com.ares.ewe.data.remote.model.RateDeliveryRequest
 import com.ares.ewe.domain.model.ActiveOrder
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.domain.model.OrderTracking
@@ -48,6 +49,8 @@ class OrderRepositoryImpl @Inject constructor(
                     shopName = dto.shopName,
                     estimatedPreparationMinutes = dto.estimatedPreparationMinutes,
                     estimatedDeliveryMinutes = dto.estimatedDeliveryMinutes,
+                    deliveryRating = dto.deliveryRating,
+                    canRateDelivery = dto.canRateDelivery,
                     items = dto.items.map {
                         OrderTrackingItem(
                             productName = it.productName,
@@ -68,6 +71,17 @@ class OrderRepositoryImpl @Inject constructor(
                 )
             }
             else -> throw Exception(response.body()?.toString() ?: response.message())
+        }
+    }
+
+    override suspend fun rateDelivery(orderId: String, stars: Int): Result<Unit> = runCatching {
+        val response = api.rateDelivery(orderId, RateDeliveryRequest(stars))
+        when (response.code()) {
+            in 200..299 -> Unit
+            else -> {
+                val err = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+                throw Exception(err ?: response.message())
+            }
         }
     }
 

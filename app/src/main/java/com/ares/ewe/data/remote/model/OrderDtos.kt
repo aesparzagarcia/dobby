@@ -41,8 +41,18 @@ data class OrderTrackingDto(
     @SerializedName("shop_name") val shopName: String? = null,
     @SerializedName("estimated_preparation_minutes") val estimatedPreparationMinutes: Int? = null,
     @SerializedName("estimated_delivery_minutes") val estimatedDeliveryMinutes: Int? = null,
+    @SerializedName("delivery_rating") val deliveryRating: Int? = null,
+    @SerializedName("can_rate_delivery") val canRateDelivery: Boolean = false,
     @SerializedName("items") val items: List<OrderTrackingItemDto> = emptyList(),
     @SerializedName("delivery_man") val deliveryMan: OrderTrackingDeliveryManDto? = null
+)
+
+data class RateDeliveryRequest(
+    @SerializedName("stars") val stars: Int
+)
+
+data class RateDeliveryResponse(
+    @SerializedName("ok") val ok: Boolean = true
 )
 
 data class OrderTrackingItemDto(

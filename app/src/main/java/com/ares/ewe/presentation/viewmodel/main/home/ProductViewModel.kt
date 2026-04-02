@@ -4,14 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
+import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.repository.CartRepository
+import com.ares.ewe.domain.repository.FavoritesRepository
 import com.ares.ewe.domain.repository.PlacesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -21,6 +24,7 @@ import javax.inject.Inject
 data class ProductUiState(
     val product: ProductDetail? = null,
     val quantity: Int = 0,
+    val isFavorite: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 ) {
@@ -32,7 +36,8 @@ data class ProductUiState(
 class ProductViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val placesRepository: PlacesRepository,
-    private val cartRepository: CartRepository
+    private val cartRepository: CartRepository,
+    private val favoritesRepository: FavoritesRepository,
 ) : ViewModel() {
 
     private val productId: String = checkNotNull(savedStateHandle.get<String>("id"))
@@ -46,6 +51,15 @@ class ProductViewModel @Inject constructor(
 
     init {
         loadProduct()
+        observeFavorite()
+    }
+
+    private fun observeFavorite() {
+        viewModelScope.launch {
+            favoritesRepository.isFavorite(productId).collect { favorite ->
+                _uiState.update { it.copy(isFavorite = favorite) }
+            }
+        }
     }
 
     fun loadProduct() {
@@ -91,6 +105,21 @@ class ProductViewModel @Inject constructor(
             price = product.price,
             quantity = quantity,
             imageUrl = imageUrl
+        )
+    }
+
+    fun toggleFavorite() {
+        val product = _uiState.value.product ?: return
+        favoritesRepository.toggleFavorite(
+            FavoriteProduct(
+                productId = product.id,
+                name = product.name,
+                price = product.price,
+                imageUrl = product.imageUrls.firstOrNull(),
+                rate = product.rate,
+                hasPromotion = product.hasPromotion,
+                discount = product.discount,
+            )
         )
     }
 }

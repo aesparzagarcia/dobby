@@ -14,7 +14,9 @@ data class BestSellerProduct(
     val name: String,
     val imageUrl: String?,
     val price: Double,
-    val rate: Float = 0f
+    val rate: Float = 0f,
+    val hasPromotion: Boolean = false,
+    val discount: Int = 0
 )
 
 data class HomeData(
@@ -28,7 +30,9 @@ data class ShopProduct(
     val description: String?,
     val price: Double,
     val imageUrl: String?,
-    val rate: Float = 0f
+    val rate: Float = 0f,
+    val hasPromotion: Boolean = false,
+    val discount: Int = 0,
 )
 
 data class ProductDetail(
@@ -37,7 +41,9 @@ data class ProductDetail(
     val description: String,
     val price: Double,
     val imageUrls: List<String>,
-    val rate: Float = 0f
+    val rate: Float = 0f,
+    val hasPromotion: Boolean = false,
+    val discount: Int = 0,
 )
 
 data class ServiceDetail(

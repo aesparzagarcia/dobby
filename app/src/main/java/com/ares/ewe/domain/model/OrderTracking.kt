@@ -13,6 +13,8 @@ data class OrderTracking(
     val estimatedPreparationMinutes: Int? = null,
     /** Minutes until delivery (courier ETA), updated while ON_DELIVERY; null if not set. */
     val estimatedDeliveryMinutes: Int? = null,
+    val deliveryRating: Int? = null,
+    val canRateDelivery: Boolean = false,
     val items: List<OrderTrackingItem>,
     val deliveryMan: OrderTrackingDeliveryMan?
 )

@@ -22,6 +22,8 @@ data class OrderTrackingUiState(
     val tracking: OrderTracking? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
+    val rateSubmitting: Boolean = false,
+    val rateError: String? = null,
     /** Driving route from repartidor to delivery address (Google Directions), or straight segment if API fails. */
     val routePoints: List<LatLng> = emptyList(),
     /** True when Directions did not return a street polyline (key/API issue or empty result). */
@@ -158,5 +160,27 @@ class OrderTrackingViewModel @Inject constructor(
                     )
                 }
         }
+    }
+
+    fun submitDeliveryRating(stars: Int) {
+        if (orderId.isBlank() || stars !in 1..5) return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(rateSubmitting = true, rateError = null)
+            orderRepository.rateDelivery(orderId, stars)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(rateSubmitting = false, rateError = null)
+                    loadTracking()
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        rateSubmitting = false,
+                        rateError = e.toUserFacingMessage(),
+                    )
+                }
+        }
+    }
+
+    fun clearRateError() {
+        _uiState.value = _uiState.value.copy(rateError = null)
     }
 }

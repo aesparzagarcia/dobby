@@ -6,6 +6,8 @@ import com.ares.ewe.data.remote.model.ActiveOrderDto
 import com.ares.ewe.data.remote.model.CreateOrderRequest
 import com.ares.ewe.data.remote.model.CreateOrderResponse
 import com.ares.ewe.data.remote.model.OrderTrackingDto
+import com.ares.ewe.data.remote.model.RateDeliveryRequest
+import com.ares.ewe.data.remote.model.RateDeliveryResponse
 import com.ares.ewe.data.remote.model.CompleteRegistrationRequest
 import com.ares.ewe.data.remote.model.CreateAddressRequest
 import com.ares.ewe.data.remote.model.CompleteRegistrationResponse
@@ -17,6 +19,8 @@ import com.ares.ewe.data.remote.model.VerifyOtpRequest
 import com.ares.ewe.data.remote.model.VerifyOtpResponse
 import com.ares.ewe.data.remote.model.ServiceDetailDto
 import com.ares.ewe.data.remote.model.ProductDetailDto
+import com.ares.ewe.data.remote.model.GamificationDto
+import com.ares.ewe.data.remote.model.PromotionProductDto
 import com.ares.ewe.data.remote.model.ShopProductDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -42,6 +46,12 @@ interface DobbyApi {
 
     @GET("app/home")
     suspend fun getHome(): HomeResponse
+
+    @GET("app/me/gamification")
+    suspend fun getGamification(): GamificationDto
+
+    @GET("app/promotions")
+    suspend fun getPromotions(): List<PromotionProductDto>
 
     @GET("app/shops/{id}/products")
     suspend fun getShopProducts(@Path("id") shopId: String): List<ShopProductDto>
@@ -72,6 +82,12 @@ interface DobbyApi {
 
     @GET("orders/{id}/tracking")
     suspend fun getOrderTracking(@Path("id") orderId: String): Response<OrderTrackingDto>
+
+    @POST("orders/{id}/rate-delivery")
+    suspend fun rateDelivery(
+        @Path("id") orderId: String,
+        @Body body: RateDeliveryRequest,
+    ): Response<RateDeliveryResponse>
 
     @POST("orders")
     suspend fun createOrder(@Body body: CreateOrderRequest): CreateOrderResponse

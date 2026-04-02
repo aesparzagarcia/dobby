@@ -1,8 +1,10 @@
 package com.ares.ewe.presentation.ui.navigation
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -45,8 +47,9 @@ fun DobbyNavigation() {
         }
     }
     NavHost(
+        modifier = Modifier.fillMaxSize(),
         navController = navController,
-        startDestination = DobbyScreens.Splash
+        startDestination = DobbyScreens.Splash,
     ) {
         composable(DobbyScreens.Splash) {
             SplashScreen(

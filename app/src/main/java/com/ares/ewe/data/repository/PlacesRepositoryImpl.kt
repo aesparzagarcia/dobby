@@ -76,10 +76,26 @@ class PlacesRepositoryImpl @Inject constructor(
                 name = p.name,
                 imageUrl = p.imageUrl?.toFullImageUrl(),
                 price = p.price,
-                rate = p.rate
+                rate = p.rate,
+                hasPromotion = p.hasPromotion,
+                discount = p.discount
             )
         }
         return HomeData(featuredPlaces = featuredPlaces, bestSellerProducts = bestSellerProducts)
+    }
+
+    override suspend fun getPromotions(): List<BestSellerProduct> {
+        return api.getPromotions().map { p ->
+            BestSellerProduct(
+                id = p.id,
+                name = p.name,
+                imageUrl = p.imageUrl?.toFullImageUrl(),
+                price = p.price,
+                rate = p.rate,
+                hasPromotion = p.hasPromotion,
+                discount = p.discount
+            )
+        }
     }
 
     override suspend fun getShopProducts(shopId: String): List<ShopProduct> {
@@ -90,7 +106,9 @@ class PlacesRepositoryImpl @Inject constructor(
                 description = p.description,
                 price = p.price,
                 imageUrl = p.imageUrl?.toFullImageUrl(),
-                rate = p.rate
+                rate = p.rate,
+                hasPromotion = p.hasPromotion,
+                discount = p.discount,
             )
         }
     }
@@ -104,7 +122,9 @@ class PlacesRepositoryImpl @Inject constructor(
             description = dto.description ?: "",
             price = dto.price,
             imageUrls = urls,
-            rate = dto.rate
+            rate = dto.rate,
+            hasPromotion = dto.hasPromotion,
+            discount = dto.discount,
         )
     }
 

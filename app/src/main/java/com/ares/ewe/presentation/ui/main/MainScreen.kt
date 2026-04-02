@@ -58,8 +58,12 @@ fun HomeScreen(
                         onCartClick = onCartClick,
                         onTrackOrderClick = onTrackOrderClick
                     )
-                    MainTab.Promotions -> PromotionsTabScreen()
-                    MainTab.Favorites -> FavoritesTabScreen()
+                    MainTab.Promotions -> PromotionsTabScreen(
+                        onProductClick = onProductClick
+                    )
+                    MainTab.Favorites -> FavoritesTabScreen(
+                        onProductClick = onProductClick
+                    )
                     MainTab.Profile -> ProfileTabScreen(onLogout = { viewModel.logout(onLogout) })
                 }
             }

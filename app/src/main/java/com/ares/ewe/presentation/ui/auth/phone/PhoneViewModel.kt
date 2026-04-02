@@ -12,8 +12,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val MX_NATIONAL_LENGTH = 10
+
 data class PhoneUiState(
-    val phone: String = "",
+    /** National digits only (no country code), 10 digits for Mexico. */
+    val nationalDigits: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
@@ -26,15 +29,18 @@ class PhoneViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PhoneUiState())
     val uiState: StateFlow<PhoneUiState> = _uiState.asStateFlow()
 
-    fun onPhoneChange(phone: String) {
-        _uiState.update { it.copy(phone = phone.filter { c -> c.isDigit() || c == '+' }, errorMessage = null) }
+    fun onPhoneChange(raw: String) {
+        val digits = raw.filter { it.isDigit() }.take(MX_NATIONAL_LENGTH)
+        _uiState.update { it.copy(nationalDigits = digits, errorMessage = null) }
     }
 
     fun sendCode(onResult: (phone: String, userExists: Boolean) -> Unit) {
         viewModelScope.launch {
-            val phone = _uiState.value.phone.trim()
-            if (phone.isBlank()) {
-                _uiState.update { it.copy(errorMessage = "Enter your phone number") }
+            val phone = _uiState.value.nationalDigits
+            if (phone.length < MX_NATIONAL_LENGTH) {
+                _uiState.update {
+                    it.copy(errorMessage = "Enter a 10-digit phone number")
+                }
                 return@launch
             }
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }

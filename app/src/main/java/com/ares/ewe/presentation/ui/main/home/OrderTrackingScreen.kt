@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -250,6 +252,10 @@ fun OrderTrackingScreen(
                         ) {
                             OrderTrackingBottomSheetContent(
                                 tracking = uiState.tracking!!,
+                                rateSubmitting = uiState.rateSubmitting,
+                                rateError = uiState.rateError,
+                                onSubmitRating = { stars -> viewModel.submitDeliveryRating(stars) },
+                                onClearRateError = { viewModel.clearRateError() },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 20.dp)
@@ -282,6 +288,10 @@ fun OrderTrackingScreen(
 @Composable
 private fun OrderTrackingBottomSheetContent(
     tracking: com.ares.ewe.domain.model.OrderTracking,
+    rateSubmitting: Boolean,
+    rateError: String?,
+    onSubmitRating: (Int) -> Unit,
+    onClearRateError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -434,10 +444,11 @@ private fun OrderTrackingBottomSheetContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (!dm.profilePhotoUrl.isNullOrBlank()) {
-                    val imageUrl = dm.profilePhotoUrl!!.let { url ->
+                    val imageUrl = dm.profilePhotoUrl.let { url ->
                         if (url.startsWith("http")) url
                         else BuildConfig.BASE_URL.substringBefore("api/").dropLast(1) + url
                     }
+                    Log.d("ArmandoLog", "Cargando imagen de repartidor desde URL: $imageUrl")
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = dm.name,
@@ -482,6 +493,57 @@ private fun OrderTrackingBottomSheetContent(
                 text = "Aún no se ha asignado un repartidor.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (tracking.canRateDelivery) {
+            Text(
+                text = "¿Cómo fue el reparto?",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                text = "Tu valoración ayuda a otros usuarios.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                for (s in 1..5) {
+                    FilterChip(
+                        selected = false,
+                        onClick = { if (!rateSubmitting) onSubmitRating(s) },
+                        enabled = !rateSubmitting,
+                        label = { Text("$s ⭐") }
+                    )
+                }
+            }
+            if (rateSubmitting) {
+                Text(
+                    text = "Enviando…",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            rateError?.let { err ->
+                Text(
+                    text = err,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable { onClearRateError() }
+                )
+            }
+        } else if (tracking.deliveryRating != null) {
+            val r = tracking.deliveryRating.coerceIn(1, 5)
+            Text(
+                text = "Tu valoración: ${"⭐".repeat(r)}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
     }

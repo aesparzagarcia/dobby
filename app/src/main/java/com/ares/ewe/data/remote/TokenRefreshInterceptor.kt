@@ -106,7 +106,9 @@ class TokenRefreshInterceptor @Inject constructor(
 
     private fun isDobbyBackendRequest(request: Request): Boolean {
         val base = BuildConfig.BASE_URL.toHttpUrlOrNull() ?: return false
-        return request.url.host == base.host && request.url.port == base.port
+        val url = request.url
+        if (!url.host.equals(base.host, ignoreCase = true)) return false
+        return url.port == base.port
     }
 
     private fun shouldSkipRefresh(request: Request): Boolean {
