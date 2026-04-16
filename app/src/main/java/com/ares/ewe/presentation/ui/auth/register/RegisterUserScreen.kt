@@ -42,13 +42,13 @@ fun AddUserInfoScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Complete your profile",
+            text = "Completa tu perfil",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Add your details to create an account",
+            text = "Añade tus datos para crear una cuenta",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -57,7 +57,7 @@ fun AddUserInfoScreen(
         OutlinedTextField(
             value = uiState.name,
             onValueChange = viewModel::onNameChange,
-            label = { Text("Name") },
+            label = { Text("Nombre") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -68,7 +68,7 @@ fun AddUserInfoScreen(
         OutlinedTextField(
             value = uiState.lastName,
             onValueChange = viewModel::onLastNameChange,
-            label = { Text("Last name") },
+            label = { Text("Apellidos") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -79,7 +79,7 @@ fun AddUserInfoScreen(
         OutlinedTextField(
             value = uiState.phone,
             onValueChange = { },
-            label = { Text("Phone number") },
+            label = { Text("Teléfono") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = false,
@@ -90,7 +90,7 @@ fun AddUserInfoScreen(
         OutlinedTextField(
             value = uiState.email,
             onValueChange = viewModel::onEmailChange,
-            label = { Text("Email") },
+            label = { Text("Correo electrónico") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
@@ -115,7 +115,7 @@ fun AddUserInfoScreen(
                 onClick = { viewModel.submit(onComplete) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Create account")
+                Text("Crear cuenta")
             }
         }
     }

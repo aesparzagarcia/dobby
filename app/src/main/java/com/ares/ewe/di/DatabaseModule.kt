@@ -42,6 +42,13 @@ object DatabaseModule {
             db.execSQL("ALTER TABLE `favorite_products` ADD COLUMN `discount` INTEGER NOT NULL DEFAULT 0")
         }
     }
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE cart ADD COLUMN listPrice REAL NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE cart ADD COLUMN hasPromotion INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE cart ADD COLUMN discount INTEGER NOT NULL DEFAULT 0")
+        }
+    }
 
     @Provides
     @Singleton
@@ -51,7 +58,7 @@ object DatabaseModule {
         context,
         AppDatabase::class.java,
         DATABASE_NAME
-    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
 
     @Provides
     @Singleton

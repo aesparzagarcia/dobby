@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.ui.main.home.UniversalProductCard
 import com.ares.ewe.presentation.viewmodel.main.promotions.PromotionsTabViewModel
 
@@ -95,6 +96,7 @@ fun PromotionsTabScreen(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(MainTabContentBottomInset))
             }
         }
     }

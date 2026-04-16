@@ -27,7 +27,7 @@ fun CartIconBadge(
         Box {
             Icon(
                 imageVector = Icons.Default.ShoppingCart,
-                contentDescription = "Cart"
+                contentDescription = "Carrito"
             )
             if (itemCount > 0) {
                 Box(

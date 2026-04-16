@@ -28,8 +28,16 @@ data class ProductUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 ) {
+    /** Precio por unidad que paga el cliente (con descuento si aplica). */
+    val unitPriceEffective: Double
+        get() {
+            val p = product ?: return 0.0
+            val d = p.discount.coerceIn(0, 100)
+            return if (p.hasPromotion && d > 0) p.price * (1 - d / 100.0) else p.price
+        }
+
     val total: Double
-        get() = (product?.price ?: 0.0) * quantity
+        get() = unitPriceEffective * quantity
 }
 
 @HiltViewModel
@@ -99,12 +107,16 @@ class ProductViewModel @Inject constructor(
         val quantity = _uiState.value.quantity
         if (quantity <= 0) return
         val imageUrl = product.imageUrls.firstOrNull()
+        val unitPrice = _uiState.value.unitPriceEffective
         cartRepository.addItem(
             productId = product.id,
             name = product.name,
-            price = product.price,
+            price = unitPrice,
             quantity = quantity,
-            imageUrl = imageUrl
+            imageUrl = imageUrl,
+            listPrice = product.price,
+            hasPromotion = product.hasPromotion,
+            discount = product.discount
         )
     }
 

@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,17 +40,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.presentation.viewmodel.main.home.ProductViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +68,6 @@ fun ProductScreen(
     val uiState by viewModel.uiState.collectAsState()
     val cartItemCount by viewModel.cartItemCount.collectAsState(0)
     val listState = rememberLazyListState()
-    val screenWidthPx = LocalConfiguration.current.screenWidthDp.dp
     val imageCount = uiState.product?.imageUrls?.size ?: 0
     val currentPage = remember {
         derivedStateOf {
@@ -75,10 +79,10 @@ fun ProductScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.product?.name?.take(20)?.plus(if ((uiState.product?.name?.length ?: 0) > 20) "…" else "") ?: "Product") },
+                title = { Text(uiState.product?.name?.take(20)?.plus(if ((uiState.product?.name?.length ?: 0) > 20) "…" else "") ?: "Producto") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
@@ -114,7 +118,7 @@ fun ProductScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { viewModel.loadProduct() }) {
-                                Text("Retry")
+                                Text("Reintentar")
                             }
                         }
                     }
@@ -144,6 +148,7 @@ fun ProductScreen(
                                 Text(
                                     text = uiState.product!!.name,
                                     style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f)
                                 )
@@ -155,7 +160,9 @@ fun ProductScreen(
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ProductDetailPriceRow(product = uiState.product!!)
+                            Spacer(modifier = Modifier.height(8.dp))
                             RatingDisplay(rate = uiState.product!!.rate)
                             if (uiState.product!!.description.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -179,53 +186,48 @@ fun ProductScreen(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.CenterVertically)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    if (uiState.quantity > 0) {
-                                        IconButton(
-                                            onClick = { viewModel.decrementQuantity() },
-                                            modifier = Modifier
-                                                .size(40.dp)
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Remove,
-                                                contentDescription = "Decrease quantity"
-                                            )
-                                        }
-                                    } else {
-                                        Spacer(modifier = Modifier.size(40.dp))
-                                    }
-                                    Text(
-                                        text = uiState.quantity.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier
-                                            .width(32.dp)
-                                            .padding(horizontal = 4.dp),
-                                        textAlign = TextAlign.Center
-                                    )
+                                if (uiState.quantity > 0) {
                                     IconButton(
-                                        onClick = { viewModel.incrementQuantity() },
+                                        onClick = { viewModel.decrementQuantity() },
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(CircleShape)
                                             .background(MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Icon(
-                                            Icons.Default.Add,
-                                            contentDescription = "Increase quantity"
+                                            Icons.Default.Remove,
+                                            contentDescription = "Quitar una unidad"
                                         )
                                     }
+                                } else {
+                                    Spacer(modifier = Modifier.size(40.dp))
+                                }
+                                Text(
+                                    text = uiState.quantity.toString(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier
+                                        .width(32.dp)
+                                        .padding(horizontal = 4.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                                IconButton(
+                                    onClick = { viewModel.incrementQuantity() },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Añadir una unidad"
+                                    )
                                 }
                             }
                             Button(
@@ -233,15 +235,65 @@ fun ProductScreen(
                                     viewModel.addToCart()
                                     onAddToCartClick()
                                 },
-                                enabled = uiState.quantity > 0
+                                enabled = uiState.quantity > 0,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text("Add to cart")
+                                Text(
+                                    text = "Añadir al carrito · ${formatMoney(uiState.total)}",
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+private fun formatMoney(amount: Double): String =
+    "$${String.format(Locale.US, "%.2f", amount)}"
+
+@Composable
+private fun ProductDetailPriceRow(product: ProductDetail) {
+    val validDiscount = product.discount.coerceIn(0, 100)
+    val showPromotion = product.hasPromotion && validDiscount > 0
+    val unit = if (showPromotion) product.price * (1 - validDiscount / 100.0) else product.price
+
+    Column {
+        if (showPromotion) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFE34D))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "-$validDiscount%",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    text = formatMoney(product.price),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textDecoration = TextDecoration.LineThrough
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+        }
+        Text(
+            text = formatMoney(unit),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

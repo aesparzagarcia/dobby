@@ -21,6 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
+/**
+ * Reserve space above [FloatingBottomNavBar] so scrollable tab content (e.g. logout on Perfil)
+ * is not covered. Matches bar bottom inset (~70dp) + pill height (~80dp) + small margin.
+ */
+val MainTabContentBottomInset = 160.dp
+
 @Composable
 fun FloatingBottomNavBar(
     currentTab: MainTab,

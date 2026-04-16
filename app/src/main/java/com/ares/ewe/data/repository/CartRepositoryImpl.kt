@@ -22,14 +22,44 @@ class CartRepositoryImpl @Inject constructor(
         list.map { it.toCartItem() }
     }
 
-    override fun addItem(productId: String, name: String, price: Double, quantity: Int, imageUrl: String?) {
+    override fun addItem(
+        productId: String,
+        name: String,
+        price: Double,
+        quantity: Int,
+        imageUrl: String?,
+        listPrice: Double,
+        hasPromotion: Boolean,
+        discount: Int
+    ) {
         if (quantity <= 0) return
         scope.launch {
             val existing = cartDao.getByProductId(productId)
             if (existing != null) {
-                cartDao.updateQuantity(productId, existing.quantity + quantity)
+                cartDao.insert(
+                    existing.copy(
+                        name = name,
+                        price = price,
+                        quantity = existing.quantity + quantity,
+                        imageUrl = imageUrl ?: existing.imageUrl,
+                        listPrice = listPrice,
+                        hasPromotion = hasPromotion,
+                        discount = discount
+                    )
+                )
             } else {
-                cartDao.insert(CartInfo(productId = productId, name = name, price = price, quantity = quantity, imageUrl = imageUrl))
+                cartDao.insert(
+                    CartInfo(
+                        productId = productId,
+                        name = name,
+                        price = price,
+                        quantity = quantity,
+                        imageUrl = imageUrl,
+                        listPrice = listPrice,
+                        hasPromotion = hasPromotion,
+                        discount = discount
+                    )
+                )
             }
         }
     }
@@ -62,5 +92,8 @@ private fun CartInfo.toCartItem() = CartItem(
     name = name,
     price = price,
     quantity = quantity,
-    imageUrl = imageUrl
+    imageUrl = imageUrl,
+    listPrice = listPrice,
+    hasPromotion = hasPromotion,
+    discount = discount
 )

@@ -53,10 +53,10 @@ fun ServiceDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.service?.name ?: "Service") },
+                title = { Text(uiState.service?.name ?: "Servicio") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
@@ -92,7 +92,7 @@ fun ServiceDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { viewModel.loadService() }) {
-                                Text("Retry")
+                                Text("Reintentar")
                             }
                         }
                     }
@@ -141,7 +141,7 @@ fun ServiceDetailScreen(
                         }
                         service.description?.takeIf { it.isNotBlank() }?.let { desc ->
                             Text(
-                                text = "Description",
+                                text = "Descripción",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -162,7 +162,7 @@ fun ServiceDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = "Amount to pay",
+                                    text = "Importe a pagar",
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -170,7 +170,7 @@ fun ServiceDetailScreen(
                                 OutlinedTextField(
                                     value = uiState.amountToPay,
                                     onValueChange = { viewModel.onAmountChange(it) },
-                                    label = { Text("Quantity or amount (\$)") },
+                                    label = { Text("Cantidad o importe (\$)") },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)

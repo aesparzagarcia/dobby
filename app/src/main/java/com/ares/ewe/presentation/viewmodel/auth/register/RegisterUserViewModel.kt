@@ -51,19 +51,19 @@ class AddUserInfoViewModel @Inject constructor(
             val state = _uiState.value
             when {
                 state.name.isBlank() -> {
-                    _uiState.update { it.copy(errorMessage = "Name is required") }
+                    _uiState.update { it.copy(errorMessage = "El nombre es obligatorio") }
                     return@launch
                 }
                 state.lastName.isBlank() -> {
-                    _uiState.update { it.copy(errorMessage = "Last name is required") }
+                    _uiState.update { it.copy(errorMessage = "Los apellidos son obligatorios") }
                     return@launch
                 }
                 state.email.isBlank() -> {
-                    _uiState.update { it.copy(errorMessage = "Email is required") }
+                    _uiState.update { it.copy(errorMessage = "El correo es obligatorio") }
                     return@launch
                 }
                 !Patterns.EMAIL_ADDRESS.matcher(state.email).matches() -> {
-                    _uiState.update { it.copy(errorMessage = "Enter a valid email") }
+                    _uiState.update { it.copy(errorMessage = "Introduce un correo válido") }
                     return@launch
                 }
             }

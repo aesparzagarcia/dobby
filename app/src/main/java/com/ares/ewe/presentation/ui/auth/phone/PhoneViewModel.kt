@@ -39,7 +39,7 @@ class PhoneViewModel @Inject constructor(
             val phone = _uiState.value.nationalDigits
             if (phone.length < MX_NATIONAL_LENGTH) {
                 _uiState.update {
-                    it.copy(errorMessage = "Enter a 10-digit phone number")
+                    it.copy(errorMessage = "Ingresa un número de 10 dígitos")
                 }
                 return@launch
             }

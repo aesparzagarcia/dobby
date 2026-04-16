@@ -55,10 +55,10 @@ fun AdDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.ad?.name ?: "Ad") },
+                title = { Text(uiState.ad?.name ?: "Anuncio") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
@@ -86,7 +86,7 @@ fun AdDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = uiState.errorMessage ?: "Ad not found",
+                        text = uiState.errorMessage ?: "Anuncio no encontrado",
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -154,7 +154,7 @@ fun AdDetailScreen(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Icon(Icons.Default.Call, contentDescription = null)
                                 Text(
-                                    text = "Call",
+                                    text = "Llamar",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -210,7 +210,7 @@ fun AdDetailScreen(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Icon(Icons.Default.LocationOn, contentDescription = null)
                                 Text(
-                                    text = "Address",
+                                    text = "Dirección",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )

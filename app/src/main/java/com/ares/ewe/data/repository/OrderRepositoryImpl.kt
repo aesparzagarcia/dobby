@@ -92,7 +92,7 @@ class OrderRepositoryImpl @Inject constructor(
                 CreateOrderItemRequest(
                     productId = item.productId,
                     quantity = item.quantity,
-                    price = item.price
+                    price = item.chargedUnitPrice
                 )
             }
         )

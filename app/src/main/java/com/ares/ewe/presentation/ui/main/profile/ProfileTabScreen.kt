@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.profile.ProfileTabViewModel
 
 @Composable
@@ -239,7 +240,9 @@ fun ProfileTabScreen(
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = onLogout,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = MainTabContentBottomInset),
         ) {
             Text("Cerrar sesión")
         }

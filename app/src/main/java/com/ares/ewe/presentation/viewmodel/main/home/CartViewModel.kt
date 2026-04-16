@@ -24,11 +24,11 @@ data class CartUiState(
     val items: List<CartItem> = emptyList(),
     val grandTotal: Double = 0.0,
     val addressId: String? = null,
-    val addressLabel: String = "Home",
+    val addressLabel: String = "Casa",
     val addressText: String = "",
     val addressDetails: String? = null,
     val estimatedDeliveryTime: String = "30–45 min",
-    val paymentMethod: String = "Cash on delivery",
+    val paymentMethod: String = "Efectivo contra entrega",
     val isPlacingOrder: Boolean = false,
     val orderPlaced: Boolean = false,
     val placeOrderError: String? = null
@@ -41,7 +41,7 @@ class CartViewModel @Inject constructor(
     private val orderRepository: OrderRepository
 ) : ViewModel() {
 
-    private val _deliveryState = MutableStateFlow(CartUiState(addressLabel = "Home", addressText = "", addressDetails = null, estimatedDeliveryTime = "30–45 min", paymentMethod = "Cash on delivery"))
+    private val _deliveryState = MutableStateFlow(CartUiState(addressLabel = "Casa", addressText = "", addressDetails = null, estimatedDeliveryTime = "30–45 min", paymentMethod = "Efectivo contra entrega"))
     private val deliveryState: StateFlow<CartUiState> = _deliveryState.asStateFlow()
 
     val uiState: StateFlow<CartUiState> = combine(

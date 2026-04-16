@@ -103,7 +103,7 @@ class OtpViewModel @Inject constructor(
         viewModelScope.launch {
             val code = _uiState.value.code
             if (code.length < 4) {
-                _uiState.update { it.copy(errorMessage = "Enter the code you received") }
+                _uiState.update { it.copy(errorMessage = "Introduce el código que recibiste") }
                 return@launch
             }
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }

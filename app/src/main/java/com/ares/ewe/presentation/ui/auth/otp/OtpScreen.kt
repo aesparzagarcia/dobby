@@ -130,7 +130,7 @@ fun OtpScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Enter the code we sent 👀",
+                text = "Introduce el código que enviamos 👀",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
@@ -142,7 +142,7 @@ fun OtpScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "TO YOUR CELL PHONE NUMBER",
+                text = "A TU NÚMERO DE CELULAR",
                 style = MaterialTheme.typography.labelSmall.copy(
                     color = Color.Black,
                     fontWeight = FontWeight.Medium,
@@ -211,7 +211,7 @@ fun OtpScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "You can request a new code in",
+                text = "Podrás solicitar un nuevo código en",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = TimerLabelGray,
                     fontWeight = FontWeight.Normal,

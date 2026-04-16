@@ -84,14 +84,14 @@ fun AddressScreen(
                     .padding(bottom = 32.dp)
             ) {
                 Text(
-                    text = "My addresses",
+                    text = "Mis direcciones",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
                 if (uiState.myAddresses.isEmpty()) {
                     Text(
-                        text = "No saved addresses",
+                        text = "No hay direcciones guardadas",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 24.dp)
@@ -115,10 +115,10 @@ fun AddressScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My current address") },
+                title = { Text("Mi dirección actual") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
@@ -140,7 +140,7 @@ fun AddressScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp),
-                placeholder = { Text("Search address") },
+                placeholder = { Text("Buscar dirección") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -195,7 +195,7 @@ fun AddressScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "My addresses",
+                        text = "Mis direcciones",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -225,7 +225,7 @@ fun AddressScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "My current location",
+                        text = "Mi ubicación actual",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -267,7 +267,7 @@ fun AddressScreen(
                             strokeWidth = 3.dp
                         )
                         Text(
-                            text = "Loading location…",
+                            text = "Cargando ubicación…",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )

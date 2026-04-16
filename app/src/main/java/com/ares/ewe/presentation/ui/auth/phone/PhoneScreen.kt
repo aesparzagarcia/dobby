@@ -88,7 +88,7 @@ fun PhoneScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Enter your cell phone number",
+            text = "Ingresa tu número celular",
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
@@ -100,7 +100,7 @@ fun PhoneScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "WE WILL SEND YOU A CODE TO CONFIRM IT",
+            text = "TE ENVIAREMOS UN CÓDIGO PARA CONFIRMARLO",
             style = MaterialTheme.typography.labelSmall.copy(
                 color = SubtitleBlack,
                 fontWeight = FontWeight.Medium,
@@ -211,7 +211,7 @@ fun PhoneScreen(
                 )
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(
-                    text = "Receive code by SMS",
+                    text = "Recibir código por SMS",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                     ),
@@ -240,7 +240,7 @@ fun PhoneScreen(
                 )
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(
-                    text = "Receive code by WhatsApp",
+                    text = "Recibir código por WhatsApp",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = BrandGreen,

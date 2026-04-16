@@ -173,7 +173,7 @@ fun OrderTrackingScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Cargando...", style = MaterialTheme.typography.bodyLarge)
+                        Text("Cargando…", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 uiState.errorMessage != null -> {

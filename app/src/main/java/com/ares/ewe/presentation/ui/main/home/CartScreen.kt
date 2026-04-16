@@ -2,6 +2,7 @@ package com.ares.ewe.presentation.ui.main.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -44,7 +44,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ares.ewe.domain.model.CartItem
@@ -69,10 +73,10 @@ fun CartScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cart") },
+                title = { Text("Carrito") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
@@ -91,7 +95,7 @@ fun CartScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Your cart is empty",
+                        text = "Tu carrito está vacío",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -163,7 +167,7 @@ fun CartScreen(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         } else {
-                            Text("Pay $${String.format("%.2f", uiState.grandTotal)}")
+                            Text("Pagar $${String.format("%.2f", uiState.grandTotal)}")
                         }
                     }
                 }
@@ -186,9 +190,9 @@ private fun CartDetailsSection(
             .padding(top = 16.dp, bottom = 8.dp)
     ) {
         DetailBlock(
-            title = "Home",
+            title = "Domicilio",
             icon = Icons.Default.LocationOn,
-            content = addressText.ifBlank { "Add delivery address" }
+            content = addressText.ifBlank { "Añade una dirección de entrega" }
         )
         HorizontalDivider(
             modifier = Modifier.padding(vertical = 12.dp),
@@ -196,7 +200,7 @@ private fun CartDetailsSection(
         )
         if (!addressDetails.isNullOrBlank()) {
             DetailBlock(
-                title = "Details",
+                title = "Detalles",
                 icon = Icons.Default.Info,
                 content = addressDetails
             )
@@ -206,7 +210,7 @@ private fun CartDetailsSection(
             )
         }
         DetailBlock(
-            title = "Estimated delivery",
+            title = "Entrega estimada",
             icon = Icons.Default.Schedule,
             content = estimatedDeliveryTime
         )
@@ -215,7 +219,7 @@ private fun CartDetailsSection(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
         )
         DetailBlock(
-            title = "Payment method",
+            title = "Método de pago",
             icon = Icons.Default.Payment,
             content = paymentMethod
         )
@@ -298,16 +302,45 @@ private fun CartItemRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (item.hasDiscount) {
+                    val d = item.discount.coerceIn(0, 100)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFFFE34D))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "-$d%",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = "$${String.format(Locale.US, "%.2f", item.originalUnitPrice)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textDecoration = TextDecoration.LineThrough
+                        )
+                    }
+                }
                 Text(
-                    text = "Qty: ${item.quantity} × $${String.format("%.2f", item.price)} = $${String.format("%.2f", item.lineTotal)}",
+                    text = "${item.quantity} × $${String.format(Locale.US, "%.2f", item.chargedUnitPrice)} = $${String.format(Locale.US, "%.2f", item.lineTotal)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
             IconButton(onClick = onRemove) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Remove"
+                    contentDescription = "Eliminar"
                 )
             }
         }

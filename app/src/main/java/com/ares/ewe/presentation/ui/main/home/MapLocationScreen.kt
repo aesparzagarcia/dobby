@@ -162,7 +162,7 @@ fun MapLocationScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Save address",
+                    text = "Guardar dirección",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 20.dp)
@@ -170,7 +170,7 @@ fun MapLocationScreen(
 
                 // Description section
                 Text(
-                    text = "Description",
+                    text = "Descripción",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -181,7 +181,7 @@ fun MapLocationScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp),
-                    placeholder = { Text("e.g. Casa verde, Piso 2") },
+                    placeholder = { Text("ej. Casa verde, piso 2") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -192,7 +192,7 @@ fun MapLocationScreen(
 
                 // Label section (5 options in 2 columns)
                 Text(
-                    text = "Label",
+                    text = "Etiqueta",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -254,7 +254,7 @@ fun MapLocationScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = viewModel::onDismissDescriptionDialog) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                        Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
                     }
                     TextButton(
                         onClick = {
@@ -267,7 +267,7 @@ fun MapLocationScreen(
                             )
                         }
                     ) {
-                        Text("Save", color = MaterialTheme.colorScheme.primary)
+                        Text("Guardar", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -279,14 +279,14 @@ fun MapLocationScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (uiState.isChosenAddress) "Chosen address" else "My location"
+                        if (uiState.isChosenAddress) "Dirección elegida" else "Mi ubicación"
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Volver"
                         )
                     }
                 }
@@ -340,8 +340,8 @@ fun MapLocationScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), RoundedCornerShape(12.dp)),
-                    label = { Text("Is this your address?") },
-                    placeholder = { Text("Address") },
+                    label = { Text("¿Es esta tu dirección?") },
+                    placeholder = { Text("Dirección") },
                     singleLine = false,
                     maxLines = 3,
                     shape = RoundedCornerShape(12.dp),
@@ -362,7 +362,7 @@ fun MapLocationScreen(
                 enabled = !uiState.isReverseGeocoding
             ) {
                 Text(
-                    if (uiState.isReverseGeocoding) "Saving…" else "Save address"
+                    if (uiState.isReverseGeocoding) "Guardando…" else "Guardar dirección"
                 )
             }
 

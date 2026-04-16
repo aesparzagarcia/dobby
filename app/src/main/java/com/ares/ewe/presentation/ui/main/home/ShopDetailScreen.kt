@@ -46,10 +46,10 @@ fun ShopDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.shopName.ifEmpty { "Products" }) },
+                title = { Text(uiState.shopName.ifEmpty { "Productos" }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
@@ -85,14 +85,14 @@ fun ShopDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { viewModel.loadProducts() }) {
-                                Text("Retry")
+                                Text("Reintentar")
                             }
                         }
                     }
                 }
                 else -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 160.dp),
+                        columns = GridCells.Fixed(2),
                         contentPadding = PaddingValues(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)

@@ -44,13 +44,13 @@ import androidx.compose.ui.unit.dp
 import com.ares.ewe.domain.model.ActiveOrder
 
 private val STAGE_LABELS = listOf(
-    "Pending",
-    "Confirmed",
-    "Preparing",
-    "Ready",
-    "Assigned",
-    "On delivery",
-    "Delivered"
+    "Pendiente",
+    "Confirmado",
+    "Preparando",
+    "Listo",
+    "Asignado",
+    "En camino",
+    "Entregado"
 )
 private val STAGE_ICONS = listOf(
     Icons.Default.Schedule,
@@ -84,7 +84,7 @@ fun OrderTrackingSection(
                 .padding(horizontal = 12.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "Your order",
+                text = "Tu pedido",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)

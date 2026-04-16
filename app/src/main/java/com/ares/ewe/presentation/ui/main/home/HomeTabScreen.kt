@@ -60,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ares.ewe.domain.model.Ad
 import com.ares.ewe.domain.model.FeaturedPlace
+import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 import kotlinx.coroutines.delay
 
@@ -180,7 +181,7 @@ fun HomeTabScreen(
 
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(bottom = 24.dp),
+                            contentPadding = PaddingValues(bottom = 0.dp),
                             verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
                             item {
@@ -196,7 +197,7 @@ fun HomeTabScreen(
                             }
                             item {
                                 Text(
-                                    text = "Featured",
+                                    text = "Destacados",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
@@ -218,7 +219,7 @@ fun HomeTabScreen(
                             if (filteredProducts.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Best sellers",
+                                        text = "Más vendidos",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
@@ -247,7 +248,7 @@ fun HomeTabScreen(
                                 item {
                                     Spacer(modifier = Modifier.height(24.dp))
                                     Text(
-                                        text = "No results for \"$query\"",
+                                        text = "Sin resultados para «$query»",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(horizontal = 20.dp)
@@ -270,7 +271,7 @@ fun HomeTabScreen(
                             if (restaurantsOnly.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Restaurants",
+                                        text = "Restaurantes",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
@@ -293,7 +294,7 @@ fun HomeTabScreen(
                             if (servicesOnly.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Services",
+                                        text = "Servicios",
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
@@ -312,6 +313,11 @@ fun HomeTabScreen(
                                     }
                                     Spacer(modifier = Modifier.height(20.dp))
                                 }
+                            }
+                            item {
+                                Spacer(
+                                    modifier = Modifier.height(24.dp + MainTabContentBottomInset),
+                                )
                             }
                         }
                     }
@@ -362,7 +368,7 @@ private fun HomeHeader(
                 .clickable(onClick = onAddressLabelClick)
         )
         Text(
-            text = address ?: "Add your address",
+            text = address ?: "Añade tu dirección",
             style = MaterialTheme.typography.bodyMedium,
             color = if (address != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
@@ -389,7 +395,7 @@ private fun HomeHeader(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     Text(
-                        text = "Search for \"${searchHints[hintIndex]}\"",
+                        text = "Buscar «${searchHints[hintIndex]}»",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
