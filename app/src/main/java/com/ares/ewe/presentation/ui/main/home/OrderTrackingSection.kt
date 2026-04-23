@@ -63,6 +63,8 @@ private val STAGE_ICONS = listOf(
 )
 
 private const val TRACKING_LAST_STEP = 6
+/// Step index for [ActiveOrder.status] `ASSIGNED` — no map/courier until then.
+private const val TRACKING_STEP_ASSIGNED = 4
 
 @Composable
 fun OrderTrackingSection(
@@ -71,6 +73,7 @@ fun OrderTrackingSection(
     modifier: Modifier = Modifier
 ) {
     val stepIndex = activeOrder.stepIndex.coerceIn(0, TRACKING_LAST_STEP)
+    val showMapButton = stepIndex >= TRACKING_STEP_ASSIGNED
     val scroll = rememberScrollState()
 
     Card(
@@ -113,13 +116,15 @@ fun OrderTrackingSection(
                     }
                 }
             }
-            Button(
-                onClick = onViewClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp)
-            ) {
-                Text("Ver mapa y detalles")
+            if (showMapButton) {
+                Button(
+                    onClick = onViewClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                ) {
+                    Text("Ver mapa y detalles")
+                }
             }
         }
     }

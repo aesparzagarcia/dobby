@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
     id("kotlin-kapt")
     id("kotlinx-serialization")
 }
@@ -131,4 +132,8 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     implementation(libs.maps.compose)
+
+    // Push (FCM)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 }

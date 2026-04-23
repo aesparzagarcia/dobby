@@ -21,6 +21,8 @@ import com.ares.ewe.data.remote.model.ServiceDetailDto
 import com.ares.ewe.data.remote.model.ProductDetailDto
 import com.ares.ewe.data.remote.model.GamificationDto
 import com.ares.ewe.data.remote.model.PromotionProductDto
+import com.ares.ewe.data.remote.model.RegisterPushDeviceRequest
+import com.ares.ewe.data.remote.model.RegisterPushDeviceResponse
 import com.ares.ewe.data.remote.model.ShopProductDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -94,4 +96,10 @@ interface DobbyApi {
 
     @DELETE("addresses/{id}")
     suspend fun deleteAddress(@Path("id") id: String): Unit
+
+    @POST("app/push-device")
+    suspend fun registerPushDevice(@Body body: RegisterPushDeviceRequest): RegisterPushDeviceResponse
+
+    @DELETE("app/push-device")
+    suspend fun unregisterPushDevice(): Unit
 }
