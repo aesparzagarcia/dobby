@@ -1,20 +1,16 @@
 package com.ares.ewe.data.remote
 
-import com.ares.ewe.BuildConfig
 import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.data.session.SessionEventBus
 import java.io.IOException
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.Request
 import okhttp3.Response
 
-private const val HEADER_AUTH_RETRY = "X-Dobby-Auth-Retry"
-
 /**
- * Refreshes consumer (Dobby) access token on 401. Only runs for requests to [BuildConfig.BASE_URL] host
+ * Refreshes consumer (Dobby) access token on 401. Only runs for requests to the Dobby API host
  * so Google Places / other hosts are untouched. Transient refresh failures keep the stored session;
  * only invalid refresh or missing tokens trigger logout.
  */
@@ -30,15 +26,19 @@ class TokenRefreshInterceptor @Inject constructor(
 
         if (response.code != 401) return response
 
-        if (request.header(HEADER_AUTH_RETRY) != null) {
+        if (request.header(DobbyConsumerHttpAuthPolicy.HEADER_AUTH_RETRY) != null) {
             return response
         }
 
-        if (!isDobbyBackendRequest(request)) {
+        if (!DobbyConsumerHttpAuthPolicy.isDobbyBackendRequest(request)) {
             return response
         }
 
-        if (shouldSkipRefresh(request)) {
+        if (DobbyConsumerHttpAuthPolicy.shouldSkipRefresh(request)) {
+            return response
+        }
+
+        if (!runBlocking { sessionManager.isLoggedIn.first() }) {
             return response
         }
 
@@ -58,7 +58,7 @@ class TokenRefreshInterceptor @Inject constructor(
                 sessionEventBus.notifySessionExpired()
                 return chain.proceed(
                     request.newBuilder()
-                        .header(HEADER_AUTH_RETRY, "1")
+                        .header(DobbyConsumerHttpAuthPolicy.HEADER_AUTH_RETRY, "1")
                         .removeHeader("Authorization")
                         .build()
                 )
@@ -68,7 +68,7 @@ class TokenRefreshInterceptor @Inject constructor(
                 sessionEventBus.notifySessionExpired()
                 return chain.proceed(
                     request.newBuilder()
-                        .header(HEADER_AUTH_RETRY, "1")
+                        .header(DobbyConsumerHttpAuthPolicy.HEADER_AUTH_RETRY, "1")
                         .removeHeader("Authorization")
                         .build()
                 )
@@ -85,7 +85,7 @@ class TokenRefreshInterceptor @Inject constructor(
                 }
                 val retry = request.newBuilder()
                     .header("Authorization", "Bearer $access")
-                    .header(HEADER_AUTH_RETRY, "1")
+                    .header(DobbyConsumerHttpAuthPolicy.HEADER_AUTH_RETRY, "1")
                     .build()
                 val retryResp = chain.proceed(retry)
                 if (retryResp.code == 401) {
@@ -94,7 +94,7 @@ class TokenRefreshInterceptor @Inject constructor(
                     sessionEventBus.notifySessionExpired()
                     return chain.proceed(
                         request.newBuilder()
-                            .header(HEADER_AUTH_RETRY, "1")
+                            .header(DobbyConsumerHttpAuthPolicy.HEADER_AUTH_RETRY, "1")
                             .removeHeader("Authorization")
                             .build()
                     )
@@ -102,20 +102,5 @@ class TokenRefreshInterceptor @Inject constructor(
                 return retryResp
             }
         }
-    }
-
-    private fun isDobbyBackendRequest(request: Request): Boolean {
-        val base = BuildConfig.BASE_URL.toHttpUrlOrNull() ?: return false
-        val url = request.url
-        if (!url.host.equals(base.host, ignoreCase = true)) return false
-        return url.port == base.port
-    }
-
-    private fun shouldSkipRefresh(request: Request): Boolean {
-        val u = request.url.toString()
-        return u.contains("auth/request-otp") ||
-            u.contains("auth/verify-otp") ||
-            u.contains("auth/complete-registration") ||
-            u.contains("/auth/refresh")
     }
 }

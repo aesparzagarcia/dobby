@@ -18,6 +18,7 @@ import javax.inject.Inject
 
 data class MapLocationUiState(
     val currentLocation: LatLng? = null,
+    val userStartLocation: LatLng? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val permissionGranted: Boolean = false,
@@ -48,6 +49,7 @@ class MapLocationViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     currentLocation = LatLng(lat, lng),
+                    userStartLocation = LatLng(lat, lng),
                     isLoading = false,
                     isChosenAddress = true,
                     chosenAddressLabel = address,
@@ -150,7 +152,12 @@ class MapLocationViewModel @Inject constructor(
             locationProvider.getLastLocation()
                 .onSuccess { latLng ->
                     _uiState.update {
-                        it.copy(currentLocation = latLng, isLoading = false, errorMessage = null)
+                        it.copy(
+                            currentLocation = latLng,
+                            userStartLocation = latLng,
+                            isLoading = false,
+                            errorMessage = null
+                        )
                     }
                 }
                 .onFailure { e ->

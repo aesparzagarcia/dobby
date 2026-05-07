@@ -1,6 +1,7 @@
 package com.ares.ewe.presentation.ui.main.home
 
 import android.content.pm.PackageManager
+import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -11,21 +12,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,8 +52,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.presentation.viewmodel.main.home.MapLocationViewModel
@@ -60,6 +69,10 @@ import com.google.maps.android.compose.rememberCameraPositionState
 
 private const val DEFAULT_ZOOM = 15f
 private val DEFAULT_POSITION = LatLng(20.6507582, -103.7029606) // Plaza Tala fallback
+private val FloatingAddressCardColor = Color(0xFF3967FF)
+private val ConfirmButtonColor = Color(0xFF22C55E)
+private val PinTipToCenterOffset = (-24).dp
+private val AddressCardOffsetFromPin = (-67).dp
 
 private val ADDRESS_LABEL_OPTIONS = listOf(
     "Casa",
@@ -68,6 +81,19 @@ private val ADDRESS_LABEL_OPTIONS = listOf(
     "Novia",
     "Fiesta"
 )
+
+private fun String.toAddressCardPreview(): String {
+    val segments = split(",")
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+    val streetAndNumber = segments.getOrNull(0).orEmpty()
+    val neighborhood = segments.getOrNull(1).orEmpty()
+    return when {
+        streetAndNumber.isBlank() -> "Dirección no disponible"
+        neighborhood.isBlank() -> streetAndNumber
+        else -> "$streetAndNumber, $neighborhood"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +104,7 @@ fun MapLocationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    var showFarAddressWarningBeforeSheet by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -272,6 +299,32 @@ fun MapLocationScreen(
                 }
             }
         }
+
+    }
+
+    if (showFarAddressWarningBeforeSheet) {
+        AlertDialog(
+            onDismissRequest = { showFarAddressWarningBeforeSheet = false },
+            title = { Text("Dirección lejana") },
+            text = {
+                Text("El pin está a más de 200 metros de tu ubicación actual. ¿Deseas continuar?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showFarAddressWarningBeforeSheet = false
+                        viewModel.onSaveAddressClick()
+                    }
+                ) {
+                    Text("Sí, continuar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFarAddressWarningBeforeSheet = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -317,9 +370,9 @@ fun MapLocationScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(48.dp)
-                    .padding(bottom = 24.dp),
-                tint = MaterialTheme.colorScheme.primary
+                    .offset(y = PinTipToCenterOffset)
+                    .size(48.dp),
+                tint = FloatingAddressCardColor
             )
 
             if (uiState.isLoading && uiState.currentLocation == null) {
@@ -332,37 +385,76 @@ fun MapLocationScreen(
 
             // Address field over the map (top)
             if (uiState.currentLocation != null) {
-                OutlinedTextField(
-                    value = uiState.editableAddress,
-                    onValueChange = { viewModel.onAddressChange(it) },
+                Card(
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f), RoundedCornerShape(12.dp)),
-                    label = { Text("¿Es esta tu dirección?") },
-                    placeholder = { Text("Dirección") },
-                    singleLine = false,
-                    maxLines = 3,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary
-                    )
-                )
+                        .align(Alignment.Center)
+                        .offset(y = AddressCardOffsetFromPin)
+                        .padding(horizontal = 44.dp)
+                        .padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = FloatingAddressCardColor),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "Ajusta la ubicación de entrega",
+                            color = Color.White.copy(alpha = 0.95f),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
+                        Text(
+                            text = uiState.editableAddress.toAddressCardPreview(),
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 22.sp
+                            ),
+                            maxLines = 2
+                        )
+                    }
+                }
             }
 
             // Save address button over the map (bottom)
             Button(
-                onClick = { viewModel.onSaveAddressClick() },
+                onClick = {
+                    val center = cameraPositionState.position.target
+                    val distanceMeters = uiState.userStartLocation?.let { start ->
+                        val results = FloatArray(1)
+                        Location.distanceBetween(
+                            start.latitude,
+                            start.longitude,
+                            center.latitude,
+                            center.longitude,
+                            results
+                        )
+                        results[0]
+                    }
+                    if (distanceMeters != null && distanceMeters > 200f) {
+                        showFarAddressWarningBeforeSheet = true
+                    } else {
+                        viewModel.onSaveAddressClick()
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ConfirmButtonColor,
+                    contentColor = Color.White
+                ),
                 enabled = !uiState.isReverseGeocoding
             ) {
                 Text(
-                    if (uiState.isReverseGeocoding) "Guardando…" else "Guardar dirección"
+                    if (uiState.isReverseGeocoding) "Guardando…" else "Confirmar ubicación",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
 

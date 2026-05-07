@@ -2,6 +2,7 @@ package com.ares.ewe.di
 
 import com.ares.ewe.BuildConfig
 import com.ares.ewe.data.local.datastore.SessionManager
+import com.ares.ewe.data.remote.ProactiveTokenRefreshInterceptor
 import com.ares.ewe.data.remote.TokenRefreshInterceptor
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.data.remote.api.GoogleDirectionsApi
@@ -54,7 +55,8 @@ class NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         sessionManager: SessionManager,
-        tokenRefreshInterceptor: TokenRefreshInterceptor
+        proactiveTokenRefreshInterceptor: ProactiveTokenRefreshInterceptor,
+        tokenRefreshInterceptor: TokenRefreshInterceptor,
     ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -74,8 +76,9 @@ class NetworkModule {
             }
         }
         return OkHttpClient.Builder()
-            .addInterceptor(tokenRefreshInterceptor)
             .addInterceptor(authInterceptor)
+            .addInterceptor(proactiveTokenRefreshInterceptor)
+            .addInterceptor(tokenRefreshInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

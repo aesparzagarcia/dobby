@@ -32,20 +32,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.delay
 
 /** Brand green aligned with the reference UI (~#2ECC71). */
 private val BrandGreen = Color(0xFF2ECC71)
@@ -60,6 +66,12 @@ fun PhoneScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    val phoneFieldFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        delay(100)
+        phoneFieldFocusRequester.requestFocus()
+    }
 
     Column(
         modifier = Modifier
@@ -69,21 +81,6 @@ fun PhoneScreen(
             .navigationBarsPadding()
             .padding(horizontal = 24.dp),
     ) {
-        IconButton(
-            onClick = { backDispatcher?.onBackPressed() },
-            modifier = Modifier
-                .padding(top = 8.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(BackButtonSurface),
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver",
-                tint = Color.Black,
-                modifier = Modifier.size(22.dp),
-            )
-        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -119,7 +116,7 @@ fun PhoneScreen(
             Row(
                 modifier = Modifier
                     .shadow(
-                        elevation = 3.dp,
+                        elevation = 16.dp,
                         shape = RoundedCornerShape(28.dp),
                         ambientColor = Color.Black.copy(alpha = 0.12f),
                         spotColor = Color.Black.copy(alpha = 0.12f),
@@ -148,6 +145,9 @@ fun PhoneScreen(
             BasicTextField(
                 value = uiState.nationalDigits,
                 onValueChange = viewModel::onPhoneChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(phoneFieldFocusRequester),
                 singleLine = true,
                 enabled = !uiState.isLoading,
                 textStyle = TextStyle(
@@ -155,12 +155,25 @@ fun PhoneScreen(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
                 decorationBox = { inner ->
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.CenterStart,
                     ) {
+                        if (uiState.nationalDigits.isEmpty()) {
+                            Text(
+                                text = "Tu número celular",
+                                style = TextStyle(
+                                    color = Color.Black.copy(alpha = 0.35f),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            )
+                        }
                         inner()
                     }
                 },

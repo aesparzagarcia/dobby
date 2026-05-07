@@ -90,4 +90,30 @@ class AddUserInfoViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    /** Valida el paso actual antes de avanzar en el carrusel (0 = nombre, 1 = apellidos). */
+    fun tryAdvanceFromStep(step: Int): Boolean {
+        val state = _uiState.value
+        return when (step) {
+            0 -> {
+                if (state.name.isBlank()) {
+                    _uiState.update { it.copy(errorMessage = "El nombre es obligatorio") }
+                    false
+                } else {
+                    _uiState.update { it.copy(errorMessage = null) }
+                    true
+                }
+            }
+            1 -> {
+                if (state.lastName.isBlank()) {
+                    _uiState.update { it.copy(errorMessage = "Los apellidos son obligatorios") }
+                    false
+                } else {
+                    _uiState.update { it.copy(errorMessage = null) }
+                    true
+                }
+            }
+            else -> true
+        }
+    }
 }
