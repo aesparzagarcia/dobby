@@ -49,6 +49,9 @@ class ProductViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val productId: String = checkNotNull(savedStateHandle.get<String>("id"))
+    private val pickupLatitude: Double? = savedStateHandle.get<String>("pickupLat").toNavPickupDouble()
+    private val pickupLongitude: Double? = savedStateHandle.get<String>("pickupLng").toNavPickupDouble()
+    private val navShopId: String? = savedStateHandle.get<String>("shopId").toNavShopId()
 
     private val _uiState = MutableStateFlow(ProductUiState())
     val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
@@ -116,7 +119,10 @@ class ProductViewModel @Inject constructor(
             imageUrl = imageUrl,
             listPrice = product.price,
             hasPromotion = product.hasPromotion,
-            discount = product.discount
+            discount = product.discount,
+            pickupLatitude = pickupLatitude,
+            pickupLongitude = pickupLongitude,
+            shopId = product.shopId ?: navShopId,
         )
     }
 
@@ -134,4 +140,16 @@ class ProductViewModel @Inject constructor(
             )
         )
     }
+}
+
+private fun String?.toNavPickupDouble(): Double? {
+    val s = this ?: return null
+    if (s == "none" || s.isBlank()) return null
+    return s.toDoubleOrNull()
+}
+
+private fun String?.toNavShopId(): String? {
+    val s = this ?: return null
+    if (s == "none" || s.isBlank()) return null
+    return s
 }

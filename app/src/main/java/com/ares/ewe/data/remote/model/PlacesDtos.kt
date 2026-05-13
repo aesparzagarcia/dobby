@@ -12,7 +12,9 @@ data class ShopDto(
     @SerializedName("name") val name: String,
     @SerializedName("logoUrl") val logoUrl: String? = null,
     @SerializedName("type") val type: String,
-    @SerializedName("rate") val rate: Float = 0f
+    @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("lat") val lat: Double? = null,
+    @SerializedName("lng") val lng: Double? = null,
 )
 
 data class ServiceDto(

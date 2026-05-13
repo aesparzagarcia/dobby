@@ -40,10 +40,15 @@ class PlacesAutocompleteRepositoryImpl @Inject constructor(
             val response = api.getReverseGeocode(
                 latlng = "$lat,$lng",
                 key = BuildConfig.PLACES_API_KEY,
-                language = "en"
+                language = "es"
             )
             if (response.status != "OK") {
-                return Result.failure(Exception("Geocoding: ${response.status}"))
+                val detail = when (response.status) {
+                    "ZERO_RESULTS" -> "Sin resultados para esas coordenadas."
+                    "REQUEST_DENIED" -> "Geocoding no autorizado: revisa la clave y restricciones en Google Cloud."
+                    else -> "Geocoding: ${response.status}"
+                }
+                return Result.failure(Exception(detail))
             }
             val address = response.results?.firstOrNull()?.formattedAddress
                 ?: return Result.failure(Exception("No address found"))

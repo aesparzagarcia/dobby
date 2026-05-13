@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 private const val OTP_LENGTH = 6
@@ -35,6 +37,9 @@ class OtpViewModel @Inject constructor(
 ) : ViewModel() {
 
     val phone: String = savedStateHandle.get<String>("phone").orEmpty()
+
+    private val verifyMutex = Mutex()
+    private var authCompletedSuccessfully = false
 
     private val _uiState = MutableStateFlow(OtpUiState())
     val uiState: StateFlow<OtpUiState> = _uiState.asStateFlow()
@@ -101,23 +106,27 @@ class OtpViewModel @Inject constructor(
 
     fun verifyCode(onLoggedIn: () -> Unit, onRequiresRegistration: () -> Unit) {
         viewModelScope.launch {
-            val code = _uiState.value.code
-            if (code.length < 4) {
-                _uiState.update { it.copy(errorMessage = "Introduce el código que recibiste") }
-                return@launch
-            }
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = authRepository.verifyOtp(phone, code)) {
-                is AuthResult.Success -> {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = null) }
-                    when (result.data) {
-                        is VerifyOtpOutcome.LoggedIn -> onLoggedIn()
-                        is VerifyOtpOutcome.RequiresRegistration -> onRequiresRegistration()
-                    }
+            verifyMutex.withLock {
+                if (authCompletedSuccessfully) return@withLock
+                val code = _uiState.value.code
+                if (code.length < 4) {
+                    _uiState.update { it.copy(errorMessage = "Introduce el código que recibiste") }
+                    return@withLock
                 }
-                is AuthResult.Error -> {
-                    _uiState.update {
-                        it.copy(isLoading = false, errorMessage = result.message)
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                when (val result = authRepository.verifyOtp(phone, code)) {
+                    is AuthResult.Success -> {
+                        authCompletedSuccessfully = true
+                        _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                        when (result.data) {
+                            is VerifyOtpOutcome.LoggedIn -> onLoggedIn()
+                            is VerifyOtpOutcome.RequiresRegistration -> onRequiresRegistration()
+                        }
+                    }
+                    is AuthResult.Error -> {
+                        _uiState.update {
+                            it.copy(isLoading = false, errorMessage = result.message)
+                        }
                     }
                 }
             }

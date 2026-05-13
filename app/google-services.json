@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "ewe-dobby-placeholder",
-    "storage_bucket": "ewe-dobby-placeholder.appspot.com"
+    "project_number": "356139319793",
+    "project_id": "ewe-app-ba5b7",
+    "storage_bucket": "ewe-app-ba5b7.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:placeholder0000000000",
+        "mobilesdk_app_id": "1:356139319793:android:c0f2452c8f9742ed520450",
         "android_client_info": {
           "package_name": "com.ares.ewe"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyPlaceholderReplaceWithFirebaseConsoleDownload"
+          "current_key": "AIzaSyAaTXsuRzzNw0i5fmFefLLjJ0oXjxY6rPQ"
         }
       ],
       "services": {

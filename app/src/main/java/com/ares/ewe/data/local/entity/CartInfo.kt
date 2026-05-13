@@ -15,5 +15,8 @@ data class CartInfo(
     /** Precio de lista (sin descuento); 0 si no hay promo guardada. */
     val listPrice: Double = 0.0,
     val hasPromotion: Boolean = false,
-    val discount: Int = 0
+    val discount: Int = 0,
+    val pickupLatitude: Double? = null,
+    val pickupLongitude: Double? = null,
+    val shopId: String? = null,
 )

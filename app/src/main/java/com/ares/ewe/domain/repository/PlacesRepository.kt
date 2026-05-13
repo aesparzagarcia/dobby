@@ -19,4 +19,7 @@ interface PlacesRepository {
     suspend fun getProduct(productId: String): ProductDetail
 
     suspend fun getService(serviceId: String): ServiceDetail
+
+    /** Tiendas con `lat`/`lng` desde `GET app/places` (para ETA en carrito por `shop_id`). */
+    suspend fun getShopCoordinatesByShopId(): Map<String, Pair<Double, Double>>
 }

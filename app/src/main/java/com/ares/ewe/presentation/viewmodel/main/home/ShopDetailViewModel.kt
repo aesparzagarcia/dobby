@@ -32,8 +32,11 @@ class ShopDetailViewModel @Inject constructor(
     cartRepository: CartRepository
 ) : ViewModel() {
 
-    private val shopId: String = checkNotNull(savedStateHandle.get<String>("id"))
+    val openedShopId: String = checkNotNull(savedStateHandle.get<String>("id"))
     private val shopName: String = savedStateHandle.get<String>("name").orEmpty()
+
+    val pickupLatitude: Double? = savedStateHandle.get<String>("pickupLat").toNavPickupDouble()
+    val pickupLongitude: Double? = savedStateHandle.get<String>("pickupLng").toNavPickupDouble()
 
     private val _uiState = MutableStateFlow(ShopDetailUiState())
     val uiState: StateFlow<ShopDetailUiState> = _uiState.asStateFlow()
@@ -50,7 +53,7 @@ class ShopDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val products = placesRepository.getShopProducts(shopId)
+                val products = placesRepository.getShopProducts(openedShopId)
                 _uiState.update {
                     it.copy(
                         shopName = shopName,
@@ -69,4 +72,10 @@ class ShopDetailViewModel @Inject constructor(
             }
         }
     }
+}
+
+private fun String?.toNavPickupDouble(): Double? {
+    val s = this ?: return null
+    if (s == "none" || s.isBlank()) return null
+    return s.toDoubleOrNull()
 }

@@ -6,7 +6,9 @@ data class FeaturedPlace(
     val imageUrl: String?,
     val typeLabel: String,
     val isService: Boolean = false,
-    val rate: Float = 0f
+    val rate: Float = 0f,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 data class BestSellerProduct(
@@ -16,7 +18,8 @@ data class BestSellerProduct(
     val price: Double,
     val rate: Float = 0f,
     val hasPromotion: Boolean = false,
-    val discount: Int = 0
+    val discount: Int = 0,
+    val shopId: String? = null,
 )
 
 data class HomeData(
@@ -33,6 +36,7 @@ data class ShopProduct(
     val rate: Float = 0f,
     val hasPromotion: Boolean = false,
     val discount: Int = 0,
+    val shopId: String? = null,
 )
 
 data class ProductDetail(
@@ -44,6 +48,7 @@ data class ProductDetail(
     val rate: Float = 0f,
     val hasPromotion: Boolean = false,
     val discount: Int = 0,
+    val shopId: String? = null,
 )
 
 data class ServiceDetail(

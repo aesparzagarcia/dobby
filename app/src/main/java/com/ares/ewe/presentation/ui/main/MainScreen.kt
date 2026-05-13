@@ -30,7 +30,7 @@ fun HomeScreen(
     onPlaceClick: (FeaturedPlace) -> Unit = {},
     onAdClick: (String) -> Unit = {},
     onAddressLabelClick: () -> Unit = {},
-    onProductClick: (String) -> Unit = {},
+    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()

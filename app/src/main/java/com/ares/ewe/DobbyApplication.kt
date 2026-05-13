@@ -15,6 +15,8 @@ class DobbyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         proactiveAccessTokenRefresh.start()
-        MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LATEST) { }
+        // LATEST triggers cloud "client parameters" RPCs (policy_maps_core_dynamite) that often
+        // time out on emulators or devices without full Play Store — same Logcat noise, not our HTTP geocode.
+        MapsInitializer.initialize(applicationContext, MapsInitializer.Renderer.LEGACY) { }
     }
 }

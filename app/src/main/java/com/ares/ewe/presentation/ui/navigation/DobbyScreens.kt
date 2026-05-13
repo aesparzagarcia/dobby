@@ -8,8 +8,8 @@ object DobbyScreens {
     const val Otp = "otp/{phone}/{userExists}"
     const val AddUserInfo = "add_user_info/{phone}"
     const val Home = "home"
-    const val ShopDetail = "shop/{id}/{name}"
-    const val ProductDetail = "product/{id}"
+    const val ShopDetail = "shop/{id}/{name}/{pickupLat}/{pickupLng}"
+    const val ProductDetail = "product/{id}/{pickupLat}/{pickupLng}/{shopId}"
     const val Cart = "cart"
     const val ServiceDetail = "service/{id}"
     const val AdDetail = "ad/{id}"
@@ -23,8 +23,11 @@ object DobbyScreens {
     fun currentLocationMapWithLocation(lat: Double, lng: Double, address: String) =
         "current_location_map/$lat/$lng/${Uri.encode(address)}"
     fun addUserInfo(phone: String) = "add_user_info/${Uri.encode(phone)}"
-    fun shopDetail(shopId: String, shopName: String) = "shop/${Uri.encode(shopId)}/${Uri.encode(shopName)}"
-    fun productDetail(productId: String) = "product/${Uri.encode(productId)}"
+    fun shopDetail(shopId: String, shopName: String, pickupLat: Double?, pickupLng: Double?) =
+        "shop/${Uri.encode(shopId)}/${Uri.encode(shopName)}/${pickupLat?.toString() ?: "none"}/${pickupLng?.toString() ?: "none"}"
+
+    fun productDetail(productId: String, pickupLat: Double?, pickupLng: Double?, shopId: String?) =
+        "product/${Uri.encode(productId)}/${pickupLat?.toString() ?: "none"}/${pickupLng?.toString() ?: "none"}/${Uri.encode(shopId ?: "none")}"
     fun serviceDetail(serviceId: String) = "service/${Uri.encode(serviceId)}"
     fun adDetail(adId: String) = "ad/${Uri.encode(adId)}"
 }

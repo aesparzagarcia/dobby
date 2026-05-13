@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -59,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.core.location.DeliveryServiceArea
 import com.ares.ewe.presentation.viewmodel.main.home.MapLocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -83,13 +85,15 @@ private val ADDRESS_LABEL_OPTIONS = listOf(
 )
 
 private fun String.toAddressCardPreview(): String {
-    val segments = split(",")
+    val trimmed = trim()
+    if (trimmed.isBlank()) return "Dirección no disponible"
+    val segments = trimmed.split(",")
         .map { it.trim() }
         .filter { it.isNotBlank() }
-    val streetAndNumber = segments.getOrNull(0).orEmpty()
+    if (segments.isEmpty()) return "Dirección no disponible"
+    val streetAndNumber = segments[0]
     val neighborhood = segments.getOrNull(1).orEmpty()
     return when {
-        streetAndNumber.isBlank() -> "Dirección no disponible"
         neighborhood.isBlank() -> streetAndNumber
         else -> "$streetAndNumber, $neighborhood"
     }
@@ -143,13 +147,12 @@ fun MapLocationScreen(
         )
     }
 
-    LaunchedEffect(uiState.currentLocation) {
-        uiState.currentLocation?.let { latLng ->
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM),
-                durationMs = 800
-            )
-        }
+    LaunchedEffect(uiState.userStartLocation) {
+        val latLng = uiState.userStartLocation ?: return@LaunchedEffect
+        cameraPositionState.animate(
+            CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM),
+            durationMs = 800
+        )
     }
 
     // When the user moves the map, update the pin and address after they stop (debounced)
@@ -313,7 +316,7 @@ fun MapLocationScreen(
                 TextButton(
                     onClick = {
                         showFarAddressWarningBeforeSheet = false
-                        viewModel.onSaveAddressClick()
+                        viewModel.onSaveAddressClick(cameraPositionState.position.target)
                     }
                 ) {
                     Text("Sí, continuar")
@@ -360,7 +363,8 @@ fun MapLocationScreen(
                 ),
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
-                    zoomGesturesEnabled = false
+                    zoomGesturesEnabled = true,
+                    scrollGesturesEnabled = true
                 )
             )
 
@@ -421,6 +425,18 @@ fun MapLocationScreen(
             }
 
             // Save address button over the map (bottom)
+            val mapCenter = cameraPositionState.position.target
+            val hasPolygon = viewModel.hasValidServiceAreaPolygon()
+            val configBlocking = viewModel.isServiceAreaConfigBlocking()
+            val insideArea = viewModel.isInsideServiceArea(mapCenter)
+            val canConfirmByArea = !configBlocking && (!hasPolygon || insideArea)
+            val confirmEnabled = !uiState.isReverseGeocoding && canConfirmByArea
+            val confirmLabel = when {
+                uiState.isReverseGeocoding -> "Guardando…"
+                configBlocking -> DeliveryServiceArea.CONFIG_FIX_LABEL
+                hasPolygon && !insideArea -> DeliveryServiceArea.OUTSIDE_LIMITS_LABEL
+                else -> "Confirmar ubicación"
+            }
             Button(
                 onClick = {
                     val center = cameraPositionState.position.target
@@ -438,23 +454,29 @@ fun MapLocationScreen(
                     if (distanceMeters != null && distanceMeters > 200f) {
                         showFarAddressWarningBeforeSheet = true
                     } else {
-                        viewModel.onSaveAddressClick()
+                        viewModel.onSaveAddressClick(center)
                     }
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
-                shape = RoundedCornerShape(28.dp),
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .height(64.dp),
+                shape = RoundedCornerShape(32.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = ConfirmButtonColor,
-                    contentColor = Color.White
+                    contentColor = Color.White,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
-                enabled = !uiState.isReverseGeocoding
+                enabled = confirmEnabled
             ) {
                 Text(
-                    if (uiState.isReverseGeocoding) "Guardando…" else "Confirmar ubicación",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    confirmLabel,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize * 1.1f
+                    )
                 )
             }
 

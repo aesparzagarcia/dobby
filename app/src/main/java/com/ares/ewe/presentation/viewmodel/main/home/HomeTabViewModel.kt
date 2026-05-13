@@ -34,6 +34,10 @@ data class HomeTabUiState(
     val searchQuery: String = "",
     val addressLabel: String? = null,
     val address: String? = null,
+    /** True after the first `getAddresses` completes (success or failure). */
+    val addressFetchCompleted: Boolean = false,
+    /** True when the user has no saved addresses (API returned an empty list). */
+    val needsDeliveryAddressCallout: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
@@ -84,7 +88,9 @@ class HomeTabViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             addressLabel = addressLabel,
-                            address = displayAddress
+                            address = displayAddress,
+                            addressFetchCompleted = true,
+                            needsDeliveryAddressCallout = list.isEmpty(),
                         )
                     }
                 }
@@ -93,6 +99,8 @@ class HomeTabViewModel @Inject constructor(
                         it.copy(
                             addressLabel = "Casa",
                             address = null,
+                            addressFetchCompleted = true,
+                            needsDeliveryAddressCallout = false,
                             warningMessage = e.toUserFacingMessage()
                         )
                     }
@@ -163,7 +171,9 @@ class HomeTabViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     addressLabel = addressLabel,
-                                    address = displayAddress
+                                    address = displayAddress,
+                                    addressFetchCompleted = true,
+                                    needsDeliveryAddressCallout = list.isEmpty(),
                                 )
                             }
                         }
@@ -172,6 +182,8 @@ class HomeTabViewModel @Inject constructor(
                                 it.copy(
                                     addressLabel = "Casa",
                                     address = null,
+                                    addressFetchCompleted = true,
+                                    needsDeliveryAddressCallout = false,
                                     warningMessage = e.toUserFacingMessage()
                                 )
                             }

@@ -34,7 +34,9 @@ class PlacesRepositoryImpl @Inject constructor(
                     "SHOP" -> "Shop"
                     "SERVICE_PROVIDER" -> "Service"
                     else -> shop.type
-                }
+                },
+                latitude = shop.lat,
+                longitude = shop.lng,
             )
         }
         val services = response.services.map { service ->
@@ -42,11 +44,20 @@ class PlacesRepositoryImpl @Inject constructor(
                 id = service.id,
                 name = service.name,
                 imageUrl = service.logoUrl?.toFullImageUrl(),
-                typeLabel = "Service"
+                typeLabel = "Service",
+                latitude = null,
+                longitude = null,
             )
         }
         return shops + services
     }
+
+    override suspend fun getShopCoordinatesByShopId(): Map<String, Pair<Double, Double>> =
+        getPlaces().mapNotNull { place ->
+            val lat = place.latitude ?: return@mapNotNull null
+            val lng = place.longitude ?: return@mapNotNull null
+            place.id to Pair(lat, lng)
+        }.toMap()
 
     override suspend fun getHome(): HomeData {
         val response = api.getHome()
@@ -67,7 +78,9 @@ class PlacesRepositoryImpl @Inject constructor(
                     else -> p.type ?: p.category ?: ""
                 },
                 isService = isService,
-                rate = p.rate
+                rate = p.rate,
+                latitude = p.lat,
+                longitude = p.lng,
             )
         }
         val bestSellerProducts = response.bestSellerProducts.map { p ->
@@ -78,7 +91,8 @@ class PlacesRepositoryImpl @Inject constructor(
                 price = p.price,
                 rate = p.rate,
                 hasPromotion = p.hasPromotion,
-                discount = p.discount
+                discount = p.discount,
+                shopId = p.shopId,
             )
         }
         return HomeData(featuredPlaces = featuredPlaces, bestSellerProducts = bestSellerProducts)
@@ -93,7 +107,8 @@ class PlacesRepositoryImpl @Inject constructor(
                 price = p.price,
                 rate = p.rate,
                 hasPromotion = p.hasPromotion,
-                discount = p.discount
+                discount = p.discount,
+                shopId = p.shopId,
             )
         }
     }
@@ -109,6 +124,7 @@ class PlacesRepositoryImpl @Inject constructor(
                 rate = p.rate,
                 hasPromotion = p.hasPromotion,
                 discount = p.discount,
+                shopId = p.shopId ?: shopId,
             )
         }
     }
@@ -125,6 +141,7 @@ class PlacesRepositoryImpl @Inject constructor(
             rate = dto.rate,
             hasPromotion = dto.hasPromotion,
             discount = dto.discount,
+            shopId = dto.shopId,
         )
     }
 

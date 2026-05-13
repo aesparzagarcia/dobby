@@ -13,7 +13,10 @@ interface CartRepository {
         imageUrl: String? = null,
         listPrice: Double = 0.0,
         hasPromotion: Boolean = false,
-        discount: Int = 0
+        discount: Int = 0,
+        pickupLatitude: Double? = null,
+        pickupLongitude: Double? = null,
+        shopId: String? = null,
     )
     fun removeItem(productId: String)
     fun updateQuantity(productId: String, quantity: Int)

@@ -29,7 +29,7 @@ import com.ares.ewe.presentation.viewmodel.main.promotions.PromotionsTabViewMode
 
 @Composable
 fun PromotionsTabScreen(
-    onProductClick: (String) -> Unit = {},
+    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: PromotionsTabViewModel = hiltViewModel(),
 ) {
@@ -92,7 +92,7 @@ fun PromotionsTabScreen(
                             hasPromotion = product.hasPromotion,
                             discount = product.discount,
                             modifier = Modifier.width(productCardWidth),
-                            onClick = { onProductClick(product.id) },
+                            onClick = { onProductClick(product.id, product.shopId) },
                         )
                     }
                 }

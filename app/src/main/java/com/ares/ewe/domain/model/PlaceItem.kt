@@ -4,5 +4,7 @@ data class PlaceItem(
     val id: String,
     val name: String,
     val imageUrl: String?,
-    val typeLabel: String
+    val typeLabel: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )

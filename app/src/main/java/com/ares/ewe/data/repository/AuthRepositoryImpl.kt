@@ -13,9 +13,12 @@ import com.ares.ewe.domain.model.VerifyOtpOutcome
 import com.ares.ewe.domain.repository.AuthRepository
 import com.ares.ewe.data.remote.ConsumerLaunchRefreshOutcome
 import com.ares.ewe.data.remote.ConsumerTokenRefreshService
+import com.ares.ewe.di.ApplicationScope
 import com.ares.ewe.push.PushTokenRegistrar
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
@@ -24,6 +27,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val consumerTokenRefreshService: ConsumerTokenRefreshService,
     private val sessionEventBus: SessionEventBus,
     private val pushTokenRegistrar: PushTokenRegistrar,
+    @ApplicationScope private val applicationScope: CoroutineScope,
 ) : AuthRepository {
 
     override val isLoggedIn: Flow<Boolean> = sessionManager.isLoggedIn
@@ -50,7 +54,7 @@ class AuthRepositoryImpl @Inject constructor(
                 }
                 sessionManager.saveSession(access, refresh, response.user?.id)
                 sessionEventBus.resetExpiredGate()
-                pushTokenRegistrar.registerCurrentToken()
+                applicationScope.launch { pushTokenRegistrar.registerCurrentToken() }
                 AuthResult.Success(VerifyOtpOutcome.LoggedIn)
             }
         } catch (e: Exception) {
@@ -79,7 +83,7 @@ class AuthRepositoryImpl @Inject constructor(
             }
             sessionManager.saveSession(response.token, refresh, response.user?.id)
             sessionEventBus.resetExpiredGate()
-            pushTokenRegistrar.registerCurrentToken()
+            applicationScope.launch { pushTokenRegistrar.registerCurrentToken() }
             AuthResult.Success(Unit)
         } catch (e: Exception) {
             AuthResult.Error(e.toUserFacingMessage())

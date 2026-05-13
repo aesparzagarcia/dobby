@@ -69,6 +69,7 @@ private fun RegistrationBasicField(
             color = Color.Black,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
         ),
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
@@ -77,11 +78,13 @@ private fun RegistrationBasicField(
         decorationBox = { inner ->
             Box(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.CenterStart,
+                contentAlignment = Alignment.Center,
             ) {
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                         style = TextStyle(
                             color = Color.Black.copy(alpha = 0.35f),
                             fontSize = 20.sp,
@@ -127,7 +130,7 @@ fun AddUserInfoScreen(
                         .size(8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (pagerState.currentPage == index) BrandGreen
+                            if (pagerState.currentPage == index) Color(0xFF3967FF)
                             else Color(0xFFE0E0E0)
                         ),
                 )
@@ -146,6 +149,7 @@ fun AddUserInfoScreen(
         ) { page ->
             Column(
                 modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 when (page) {
                     0 -> RegistrationStepTexts(
@@ -195,6 +199,7 @@ fun AddUserInfoScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Teléfono verificado: ${uiState.phone}",
+                        modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.bodySmall.copy(color = SubtitleBlack),
                     )
                 }
@@ -203,6 +208,8 @@ fun AddUserInfoScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = message,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -262,6 +269,8 @@ fun AddUserInfoScreen(
 private fun RegistrationStepTexts(title: String, subtitle: String) {
     Text(
         text = title,
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
         style = MaterialTheme.typography.headlineSmall.copy(
             fontWeight = FontWeight.Bold,
             color = Color.Black,
@@ -272,6 +281,8 @@ private fun RegistrationStepTexts(title: String, subtitle: String) {
     Spacer(modifier = Modifier.height(10.dp))
     Text(
         text = subtitle,
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
         style = MaterialTheme.typography.labelSmall.copy(
             color = SubtitleBlack,
             fontWeight = FontWeight.Medium,

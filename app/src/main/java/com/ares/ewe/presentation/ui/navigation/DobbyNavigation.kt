@@ -115,7 +115,9 @@ fun DobbyNavigation() {
                     if (place.isService) {
                         navController.navigate(DobbyScreens.serviceDetail(place.id))
                     } else {
-                        navController.navigate(DobbyScreens.shopDetail(place.id, place.name))
+                        navController.navigate(
+                            DobbyScreens.shopDetail(place.id, place.name, place.latitude, place.longitude)
+                        )
                     }
                 },
                 onAdClick = { adId ->
@@ -124,8 +126,8 @@ fun DobbyNavigation() {
                 onAddressLabelClick = {
                     navController.navigate(DobbyScreens.DeliveryAddress)
                 },
-                onProductClick = { productId ->
-                    navController.navigate(DobbyScreens.productDetail(productId))
+                onProductClick = { productId, shopId ->
+                    navController.navigate(DobbyScreens.productDetail(productId, null, null, shopId))
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) },
                 onTrackOrderClick = { orderId ->
@@ -178,20 +180,27 @@ fun DobbyNavigation() {
             route = DobbyScreens.ShopDetail,
             arguments = listOf(
                 navArgument("id") { type = NavType.StringType },
-                navArgument("name") { type = NavType.StringType }
+                navArgument("name") { type = NavType.StringType },
+                navArgument("pickupLat") { type = NavType.StringType; defaultValue = "none" },
+                navArgument("pickupLng") { type = NavType.StringType; defaultValue = "none" },
             )
         ) {
             ShopDetailScreen(
                 onBack = { navController.popBackStack() },
-                onProductClick = { productId ->
-                    navController.navigate(DobbyScreens.productDetail(productId))
+                onProductClick = { productId, pickupLat, pickupLng, shopId ->
+                    navController.navigate(DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId))
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) }
             )
         }
         composable(
             route = DobbyScreens.ProductDetail,
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("pickupLat") { type = NavType.StringType; defaultValue = "none" },
+                navArgument("pickupLng") { type = NavType.StringType; defaultValue = "none" },
+                navArgument("shopId") { type = NavType.StringType; defaultValue = "none" },
+            )
         ) {
             ProductScreen(
                 onBack = { navController.popBackStack() },

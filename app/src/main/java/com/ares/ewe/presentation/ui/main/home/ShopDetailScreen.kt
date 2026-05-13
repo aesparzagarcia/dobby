@@ -36,7 +36,7 @@ import com.ares.ewe.presentation.viewmodel.main.home.ShopDetailViewModel
 @Composable
 fun ShopDetailScreen(
     onBack: () -> Unit,
-    onProductClick: (String) -> Unit = {},
+    onProductClick: (productId: String, pickupLat: Double?, pickupLng: Double?, shopId: String) -> Unit = { _, _, _, _ -> },
     onCartClick: () -> Unit = {},
     viewModel: ShopDetailViewModel = hiltViewModel()
 ) {
@@ -105,7 +105,14 @@ fun ShopDetailScreen(
                                 rate = product.rate,
                                 hasPromotion = product.hasPromotion,
                                 discount = product.discount,
-                                onClick = { onProductClick(product.id) }
+                                onClick = {
+                                    onProductClick(
+                                        product.id,
+                                        viewModel.pickupLatitude,
+                                        viewModel.pickupLongitude,
+                                        viewModel.openedShopId
+                                    )
+                                }
                             )
                         }
                     }

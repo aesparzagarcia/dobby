@@ -30,12 +30,18 @@ class CartRepositoryImpl @Inject constructor(
         imageUrl: String?,
         listPrice: Double,
         hasPromotion: Boolean,
-        discount: Int
+        discount: Int,
+        pickupLatitude: Double?,
+        pickupLongitude: Double?,
+        shopId: String?,
     ) {
         if (quantity <= 0) return
         scope.launch {
             val existing = cartDao.getByProductId(productId)
             if (existing != null) {
+                val mergedLat = pickupLatitude ?: existing.pickupLatitude
+                val mergedLng = pickupLongitude ?: existing.pickupLongitude
+                val mergedShopId = shopId ?: existing.shopId
                 cartDao.insert(
                     existing.copy(
                         name = name,
@@ -44,7 +50,10 @@ class CartRepositoryImpl @Inject constructor(
                         imageUrl = imageUrl ?: existing.imageUrl,
                         listPrice = listPrice,
                         hasPromotion = hasPromotion,
-                        discount = discount
+                        discount = discount,
+                        pickupLatitude = mergedLat,
+                        pickupLongitude = mergedLng,
+                        shopId = mergedShopId,
                     )
                 )
             } else {
@@ -57,7 +66,10 @@ class CartRepositoryImpl @Inject constructor(
                         imageUrl = imageUrl,
                         listPrice = listPrice,
                         hasPromotion = hasPromotion,
-                        discount = discount
+                        discount = discount,
+                        pickupLatitude = pickupLatitude,
+                        pickupLongitude = pickupLongitude,
+                        shopId = shopId,
                     )
                 )
             }
@@ -95,5 +107,8 @@ private fun CartInfo.toCartItem() = CartItem(
     imageUrl = imageUrl,
     listPrice = listPrice,
     hasPromotion = hasPromotion,
-    discount = discount
+    discount = discount,
+    pickupLatitude = pickupLatitude,
+    pickupLongitude = pickupLongitude,
+    shopId = shopId,
 )

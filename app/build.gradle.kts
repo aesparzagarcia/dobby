@@ -22,8 +22,13 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Emulator: 10.0.2.2 = host machine's localhost. Backend mounts at /api (e.g. /api/auth/request-otp).
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api/\"")
+        // Local API: default 10.0.2.2 = emulator → host localhost. Physical device: set DEV_API_HOST in gradle.properties
+        // (PC LAN IP) or use adb reverse tcp:3001 tcp:3001 with DEV_API_HOST=127.0.0.1. Path must end with /api/.
+        val devApiHost = (project.findProperty("DEV_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
+            ?: "192.168.1.15"
+        val devApiPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
+            ?: "3001"
+        buildConfigField("String", "BASE_URL", "\"http://$devApiHost:$devApiPort/api/\"")
         // Replace with your Google Places API key (enable Places API in Cloud Console)
         buildConfigField("String", "PLACES_API_KEY", "\"${project.findProperty("PLACES_API_KEY") ?: ""}\"")
         // SHA-1 of your signing key (no colons), for Android app restriction. Get with: keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
@@ -36,7 +41,9 @@ android {
         val directionsKey = (project.findProperty("DIRECTIONS_API_KEY") as String?)?.takeIf { it.isNotBlank() }
             ?: mapsApiKey
         buildConfigField("String", "DIRECTIONS_API_KEY", "\"$directionsKey\"")
-        manifestPlaceholders["PLACES_API_KEY"] = project.findProperty("PLACES_API_KEY") ?: ""
+        // Same resolution as MAPS_API_KEY BuildConfig so the Maps SDK manifest key is never empty
+        // when only MAPS_API_KEY is set in gradle.properties.
+        manifestPlaceholders["PLACES_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -132,8 +139,11 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     implementation(libs.maps.compose)
+    // Misma lógica punto-en-polígono que el ecosistema Google Maps (evita desajustes con LatLng).
+    implementation("com.google.maps.android:android-maps-utils:3.10.0")
 
     // Push (FCM)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.analytics)
 }

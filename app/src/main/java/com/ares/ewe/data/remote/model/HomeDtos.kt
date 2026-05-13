@@ -14,7 +14,9 @@ data class FeaturedPlaceDto(
     @SerializedName("type") val type: String? = null,
     @SerializedName("category") val category: String? = null,
     @SerializedName("kind") val kind: String,
-    @SerializedName("rate") val rate: Float = 0f
+    @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("lat") val lat: Double? = null,
+    @SerializedName("lng") val lng: Double? = null,
 )
 
 data class BestSellerProductDto(
@@ -24,7 +26,8 @@ data class BestSellerProductDto(
     @SerializedName("price") val price: Double,
     @SerializedName("rate") val rate: Float = 0f,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
-    @SerializedName("discount") val discount: Int = 0
+    @SerializedName("discount") val discount: Int = 0,
+    @SerializedName("shop_id") val shopId: String? = null,
 )
 
 data class PromotionProductDto(
@@ -34,7 +37,8 @@ data class PromotionProductDto(
     @SerializedName("price") val price: Double,
     @SerializedName("rate") val rate: Float = 0f,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
-    @SerializedName("discount") val discount: Int = 0
+    @SerializedName("discount") val discount: Int = 0,
+    @SerializedName("shop_id") val shopId: String? = null,
 )
 
 data class ShopProductDto(
@@ -46,6 +50,7 @@ data class ShopProductDto(
     @SerializedName("rate") val rate: Float = 0f,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
+    @SerializedName("shop_id") val shopId: String? = null,
 )
 
 data class ProductDetailDto(
@@ -57,6 +62,7 @@ data class ProductDetailDto(
     @SerializedName("rate") val rate: Float = 0f,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
+    @SerializedName("shop_id") val shopId: String? = null,
 )
 
 data class ServiceDetailDto(

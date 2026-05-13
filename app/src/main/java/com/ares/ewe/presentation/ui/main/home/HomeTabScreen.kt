@@ -60,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ares.ewe.domain.model.Ad
 import com.ares.ewe.domain.model.FeaturedPlace
+import com.ares.ewe.presentation.components.DeliveryAddressCallout
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 import kotlinx.coroutines.delay
@@ -70,7 +71,7 @@ fun HomeTabScreen(
     onPlaceClick: (FeaturedPlace) -> Unit = {},
     onAdClick: (String) -> Unit = {},
     onAddressLabelClick: () -> Unit = {},
-    onProductClick: (String) -> Unit = {},
+    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -159,7 +160,10 @@ fun HomeTabScreen(
                             searchQuery = uiState.searchQuery,
                             onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
                             onAddressLabelClick = onAddressLabelClick,
-                            focusManager = focusManager
+                            focusManager = focusManager,
+                            showAddAddressCallout = uiState.addressFetchCompleted &&
+                                uiState.needsDeliveryAddressCallout &&
+                                uiState.warningMessage == null,
                         )
                         CartIconBadge(
                             itemCount = cartItemCount,
@@ -237,7 +241,7 @@ fun HomeTabScreen(
                                                 hasPromotion = product.hasPromotion,
                                                 discount = product.discount,
                                                 modifier = Modifier.width(productCardWidth),
-                                                onClick = { onProductClick(product.id) }
+                                                onClick = { onProductClick(product.id, product.shopId) }
                                             )
                                         }
                                     }
@@ -334,7 +338,8 @@ private fun HomeHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onAddressLabelClick: () -> Unit,
-    focusManager: FocusManager
+    focusManager: FocusManager,
+    showAddAddressCallout: Boolean = false,
 ) {
     val searchHints = remember {
         listOf(
@@ -375,6 +380,17 @@ private fun HomeHeader(
                 .padding(horizontal = 20.dp)
                 .clickable(onClick = onAddressLabelClick)
         )
+        if (showAddAddressCallout) {
+            DeliveryAddressCallout(
+                title = "Añade tu dirección de entrega",
+                subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
+                onClick = onAddressLabelClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 13.dp)
+                    .padding(top = 5.dp, bottom = 3.dp),
+            )
+        }
         Card(
             modifier = Modifier
                 .fillMaxWidth()
