@@ -2,12 +2,18 @@ package com.ares.ewe.data.remote.model
 
 import com.google.gson.annotations.SerializedName
 
+data class ActiveOrderItemDto(
+    @SerializedName("product_name") val productName: String,
+    @SerializedName("quantity") val quantity: Int,
+)
+
 data class ActiveOrderDto(
     @SerializedName("id") val id: String,
     @SerializedName("status") val status: String,
     @SerializedName("total") val total: Double = 0.0,
     @SerializedName("delivery_address") val deliveryAddress: String? = null,
-    @SerializedName("created_at") val createdAt: String? = null
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("items") val items: List<ActiveOrderItemDto>? = null,
 )
 
 data class CreateOrderItemRequest(

@@ -12,6 +12,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.domain.model.ActiveOrder
 
@@ -70,7 +73,9 @@ private const val TRACKING_STEP_ASSIGNED = 4
 fun OrderTrackingSection(
     activeOrder: ActiveOrder,
     onViewClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Encabezado; por defecto "Tu pedido". En lista de varios pedidos pasa [ActiveOrder.productSummary]. */
+    headerTitle: String = "Tu pedido",
 ) {
     val stepIndex = activeOrder.stepIndex.coerceIn(0, TRACKING_LAST_STEP)
     val showMapButton = stepIndex >= TRACKING_STEP_ASSIGNED
@@ -87,11 +92,14 @@ fun OrderTrackingSection(
                 .padding(horizontal = 12.dp, vertical = 16.dp)
         ) {
             Text(
-                text = "Tu pedido",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp)
+                text = headerTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
+            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

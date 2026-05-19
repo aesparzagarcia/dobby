@@ -5,6 +5,7 @@ import com.ares.ewe.data.remote.model.CreateOrderItemRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
 import com.ares.ewe.data.remote.model.RateDeliveryRequest
 import com.ares.ewe.domain.model.ActiveOrder
+import com.ares.ewe.domain.model.ActiveOrderProductLine
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.domain.model.OrderTracking
 import com.ares.ewe.domain.model.OrderTrackingDeliveryMan
@@ -16,17 +17,23 @@ class OrderRepositoryImpl @Inject constructor(
     private val api: DobbyApi
 ) : OrderRepository {
 
-    override suspend fun getActiveOrder(): Result<ActiveOrder?> = runCatching {
-        val response = api.getActiveOrder()
+    override suspend fun getActiveOrders(): Result<List<ActiveOrder>> = runCatching {
+        val response = api.getActiveOrders()
         when (response.code()) {
-            204 -> null
-            200 -> response.body()?.let { dto ->
+            204 -> emptyList()
+            200 -> response.body().orEmpty().map { dto ->
                 ActiveOrder(
                     id = dto.id,
                     status = dto.status,
                     total = dto.total,
                     deliveryAddress = dto.deliveryAddress,
-                    createdAt = dto.createdAt
+                    createdAt = dto.createdAt,
+                    productLines = dto.items.orEmpty().map { item ->
+                        ActiveOrderProductLine(
+                            name = item.productName,
+                            quantity = item.quantity,
+                        )
+                    },
                 )
             }
             else -> throw Exception(response.message())

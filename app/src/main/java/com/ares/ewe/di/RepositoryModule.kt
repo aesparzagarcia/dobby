@@ -3,6 +3,7 @@ package com.ares.ewe.di
 import com.ares.ewe.data.repository.AdsRepositoryImpl
 import com.ares.ewe.data.repository.AuthRepositoryImpl
 import com.ares.ewe.data.repository.CartRepositoryImpl
+import com.ares.ewe.data.repository.DeliveryPricingConfigRepositoryImpl
 import com.ares.ewe.data.repository.DirectionsRepositoryImpl
 import com.ares.ewe.data.repository.FavoritesRepositoryImpl
 import com.ares.ewe.data.repository.OrderRepositoryImpl
@@ -13,6 +14,7 @@ import com.ares.ewe.data.repository.UserAddressRepositoryImpl
 import com.ares.ewe.domain.repository.AdsRepository
 import com.ares.ewe.domain.repository.AuthRepository
 import com.ares.ewe.domain.repository.CartRepository
+import com.ares.ewe.domain.repository.DeliveryPricingConfigRepository
 import com.ares.ewe.domain.repository.DirectionsRepository
 import com.ares.ewe.domain.repository.FavoritesRepository
 import com.ares.ewe.domain.repository.OrderRepository
@@ -57,6 +59,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCartRepository(impl: CartRepositoryImpl): CartRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDeliveryPricingConfigRepository(
+        impl: DeliveryPricingConfigRepositoryImpl
+    ): DeliveryPricingConfigRepository
 
     @Binds
     @Singleton

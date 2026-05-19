@@ -4,9 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.delivery.DeliveryEtaEstimator
 import com.ares.ewe.core.network.toUserFacingMessage
+import com.ares.ewe.core.pricing.DeliveryPricingCalculator
+import com.ares.ewe.core.pricing.DeliveryPricingInput
+import com.ares.ewe.core.pricing.GeoDistance
+import com.ares.ewe.core.pricing.OrderPricing
+import com.ares.ewe.core.pricing.roundMoney
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.domain.model.toAddressWithColonyOnly
 import com.ares.ewe.domain.repository.CartRepository
+import com.ares.ewe.domain.repository.DeliveryPricingConfigRepository
 import com.ares.ewe.domain.repository.OrderRepository
 import com.ares.ewe.domain.repository.PlacesRepository
 import com.ares.ewe.domain.repository.UserAddressRepository
@@ -22,11 +28,15 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class CartUiState(
     val items: List<CartItem> = emptyList(),
+    val productsSubtotal: Double = 0.0,
+    /** Desglose de envío; `null` si no hay coords de entrega o pickups. */
+    val pricing: OrderPricing? = null,
     val grandTotal: Double = 0.0,
     val addressId: String? = null,
     val addressLabel: String = "Casa",
@@ -48,7 +58,12 @@ class CartViewModel @Inject constructor(
     private val userAddressRepository: UserAddressRepository,
     private val orderRepository: OrderRepository,
     private val placesRepository: PlacesRepository,
+    private val deliveryPricingConfigRepository: DeliveryPricingConfigRepository,
 ) : ViewModel() {
+
+    init {
+        viewModelScope.launch { deliveryPricingConfigRepository.refresh() }
+    }
 
     private val _deliveryState = MutableStateFlow(
         CartUiState(
@@ -91,19 +106,45 @@ class CartViewModel @Inject constructor(
         cartRepository.items.map { list ->
             CartUiState(
                 items = list,
-                grandTotal = list.sumOf { it.lineTotal }
+                productsSubtotal = roundMoney(list.sumOf { it.lineTotal }),
             )
         },
         deliveryState,
-        shopCoordsByShopId
-    ) { cart, delivery, shopCoords ->
+        shopCoordsByShopId,
+        deliveryPricingConfigRepository.settings,
+    ) { cart, delivery, shopCoords, pricingSettings ->
         val eta = DeliveryEtaEstimator.estimateLabel(
             userLat = delivery.userLatitude,
             userLng = delivery.userLongitude,
             items = cart.items,
             shopCoordsByShopId = shopCoords,
         )
+        val productsSubtotal = cart.productsSubtotal
+        val distanceKm = GeoDistance.maxRoadKmFromPickups(
+            userLat = delivery.userLatitude,
+            userLng = delivery.userLongitude,
+            items = cart.items,
+            shopCoordsByShopId = shopCoords,
+        )
+        val orderPricing = distanceKm?.let { km ->
+            val deliveryBreakdown = DeliveryPricingCalculator.calculate(
+                DeliveryPricingInput(
+                    distanceKm = km,
+                    demandMultiplier = pricingSettings.defaultDemandMultiplier,
+                    isRaining = pricingSettings.defaultIsRaining,
+                ),
+                config = pricingSettings,
+            )
+            OrderPricing(
+                productsSubtotal = productsSubtotal,
+                delivery = deliveryBreakdown,
+            )
+        }
+        val grandTotal = orderPricing?.grandTotal ?: productsSubtotal
         cart.copy(
+            productsSubtotal = productsSubtotal,
+            pricing = orderPricing,
+            grandTotal = grandTotal,
             addressId = delivery.addressId,
             addressLabel = delivery.addressLabel,
             addressText = delivery.addressText,
@@ -167,6 +208,8 @@ class CartViewModel @Inject constructor(
             orderRepository.createOrder(addressId, items)
                 .onSuccess {
                     cartRepository.clear()
+                    // Paridad iOS: mantener overlay ~5s tras éxito antes de cerrar carrito.
+                    delay(5_000)
                     _deliveryState.update {
                         it.copy(isPlacingOrder = false, orderPlaced = true, placeOrderError = null)
                     }

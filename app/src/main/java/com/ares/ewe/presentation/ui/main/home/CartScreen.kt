@@ -1,5 +1,6 @@
 package com.ares.ewe.presentation.ui.main.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +26,6 @@ import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.ares.ewe.core.pricing.OrderPricing
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.presentation.viewmodel.main.home.CartViewModel
 
@@ -58,7 +59,7 @@ import com.ares.ewe.presentation.viewmodel.main.home.CartViewModel
 @Composable
 fun CartScreen(
     onBack: () -> Unit,
-    onPayClick: () -> Unit = {},
+    onCheckoutComplete: suspend () -> Unit = {},
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -66,16 +67,21 @@ fun CartScreen(
     LaunchedEffect(uiState.orderPlaced) {
         if (uiState.orderPlaced) {
             viewModel.clearOrderPlaced()
-            onBack()
+            onCheckoutComplete()
         }
     }
 
+    if (uiState.isPlacingOrder) {
+        BackHandler { /* bloquear atrás mientras se crea el pedido */ }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Carrito") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, enabled = !uiState.isPlacingOrder) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
@@ -137,44 +143,133 @@ fun CartScreen(
                         .background(MaterialTheme.colorScheme.surface)
                         .padding(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Total",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "$${String.format("%.2f", uiState.grandTotal)}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    CartPricingFooter(pricing = uiState.pricing, grandTotal = uiState.grandTotal)
                     Spacer(modifier = Modifier.height(12.dp))
                     androidx.compose.material3.Button(
                         onClick = {
                             viewModel.placeOrder(uiState.addressId, uiState.items)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isPlacingOrder
+                        enabled = !uiState.isPlacingOrder,
                     ) {
-                        if (uiState.isPlacingOrder) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text("Pagar $${String.format("%.2f", uiState.grandTotal)}")
-                        }
+                        Text("Pagar $${String.format("%.2f", uiState.grandTotal)}")
                     }
                 }
             }
         }
     }
+
+        if (uiState.isPlacingOrder) {
+            PlaceOrderLoadingOverlay()
+        }
+    }
 }
+
+@Composable
+private fun CartPricingFooter(
+    pricing: OrderPricing?,
+    grandTotal: Double,
+) {
+    if (pricing == null) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Subtotal",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = money(grandTotal),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "El costo de envío se calculará al tener una dirección de entrega válida.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    } else {
+        PricingLine(label = "Subtotal productos", amount = pricing.productsSubtotal)
+        Spacer(modifier = Modifier.height(6.dp))
+        PricingLine(
+            label = "Envío",
+            amount = pricing.delivery.finalDeliveryFee,
+            subtitle = buildString {
+                append("Base, distancia (${String.format(Locale.US, "%.1f", pricing.delivery.distanceKm)} km) y zona")
+                if (pricing.delivery.weatherFee > 0) append(" · clima")
+            }
+        )
+        if (pricing.delivery.dynamicMultiplier > 1.0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Incluye tarifa dinámica (×${String.format(Locale.US, "%.2f", pricing.delivery.dynamicMultiplier)})",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+        Spacer(modifier = Modifier.height(10.dp))
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Total",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = money(grandTotal),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun PricingLine(
+    label: String,
+    amount: Double,
+    subtitle: String? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Text(
+            text = money(amount),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+private fun money(value: Double): String =
+    "$${String.format(Locale.US, "%.2f", value)}"
 
 @Composable
 private fun CartDetailsSection(

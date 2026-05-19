@@ -3,10 +3,13 @@ package com.ares.ewe.presentation.ui.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -18,6 +21,7 @@ import com.ares.ewe.presentation.ui.auth.register.AddUserInfoScreen
 import com.ares.ewe.presentation.ui.auth.otp.OtpScreen
 import com.ares.ewe.presentation.ui.auth.phone.PhoneScreen
 import com.ares.ewe.presentation.ui.main.HomeScreen
+import com.ares.ewe.presentation.ui.main.home.ActiveOrdersScreen
 import com.ares.ewe.presentation.ui.main.home.AdDetailScreen
 import com.ares.ewe.presentation.ui.main.home.AddressScreen
 import com.ares.ewe.presentation.ui.main.home.CartScreen
@@ -27,6 +31,7 @@ import com.ares.ewe.presentation.ui.main.home.ProductScreen
 import com.ares.ewe.presentation.ui.main.home.ServiceDetailScreen
 import com.ares.ewe.presentation.ui.main.home.ShopDetailScreen
 import com.ares.ewe.presentation.ui.splash.SplashScreen
+import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 
 @Composable
 fun DobbyNavigation() {
@@ -132,7 +137,23 @@ fun DobbyNavigation() {
                 onCartClick = { navController.navigate(DobbyScreens.Cart) },
                 onTrackOrderClick = { orderId ->
                     navController.navigate(DobbyScreens.orderTracking(orderId))
-                }
+                },
+                onActiveOrdersClick = {
+                    navController.navigate(DobbyScreens.ActiveOrders)
+                },
+            )
+        }
+        composable(DobbyScreens.ActiveOrders) {
+            val homeTabViewModel: HomeTabViewModel = hiltViewModel(
+                navController.getBackStackEntry(DobbyScreens.Home),
+            )
+            val homeState by homeTabViewModel.uiState.collectAsState()
+            ActiveOrdersScreen(
+                activeOrders = homeState.activeOrders,
+                onBack = { navController.popBackStack() },
+                onTrackOrderClick = { orderId ->
+                    navController.navigate(DobbyScreens.orderTracking(orderId))
+                },
             )
         }
         composable(DobbyScreens.DeliveryAddress) {
@@ -209,8 +230,15 @@ fun DobbyNavigation() {
             )
         }
         composable(DobbyScreens.Cart) {
+            val homeTabViewModel: HomeTabViewModel = hiltViewModel(
+                navController.getBackStackEntry(DobbyScreens.Home)
+            )
             CartScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onCheckoutComplete = {
+                    homeTabViewModel.refreshActiveOrder()
+                    navController.popBackStack(DobbyScreens.Home, inclusive = false)
+                },
             )
         }
         composable(

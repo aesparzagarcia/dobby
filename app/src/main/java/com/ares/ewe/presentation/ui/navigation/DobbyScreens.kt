@@ -17,6 +17,7 @@ object DobbyScreens {
     const val CurrentLocationMap = "current_location_map"
     const val CurrentLocationMapWithLocation = "current_location_map/{lat}/{lng}/{address}"
     const val OrderTracking = "order_tracking/{orderId}"
+    const val ActiveOrders = "active_orders"
 
     fun otp(phone: String, userExists: Boolean) = "otp/${Uri.encode(phone)}/$userExists"
     fun orderTracking(orderId: String) = "order_tracking/${Uri.encode(orderId)}"

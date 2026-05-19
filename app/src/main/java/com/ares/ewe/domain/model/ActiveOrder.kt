@@ -4,16 +4,28 @@ package com.ares.ewe.domain.model
  * One UI step per backend [OrderStatus] stage (see [orderStatusToTrackingStep]).
  * Backend: PENDING, CONFIRMED, PREPARING, READY_FOR_PICKUP, ASSIGNED, ON_DELIVERY, DELIVERED, CANCELLED.
  */
+data class ActiveOrderProductLine(
+    val name: String,
+    val quantity: Int,
+)
+
 data class ActiveOrder(
     val id: String,
     val status: String,
     val total: Double = 0.0,
     val deliveryAddress: String? = null,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val productLines: List<ActiveOrderProductLine> = emptyList(),
 ) {
     /** Step index 0–6 for the 7-stage progress (6 = delivered). */
     val stepIndex: Int
         get() = orderStatusToTrackingStep(status)
+
+    /** Etiqueta para listas con varios pedidos activos. */
+    val productSummary: String
+        get() = productLines.joinToString(", ") { line ->
+            if (line.quantity > 1) "${line.name} ×${line.quantity}" else line.name
+        }
 }
 
 /** Maps each API status to its own step in the tracking UI (0 = first, 6 = delivered). */

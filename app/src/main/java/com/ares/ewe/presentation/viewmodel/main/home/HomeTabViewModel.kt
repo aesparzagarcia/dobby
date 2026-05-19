@@ -30,7 +30,7 @@ data class HomeTabUiState(
     val featuredPlaces: List<FeaturedPlace> = emptyList(),
     val bestSellerProducts: List<BestSellerProduct> = emptyList(),
     val ads: List<Ad> = emptyList(),
-    val activeOrder: ActiveOrder? = null,
+    val activeOrders: List<ActiveOrder> = emptyList(),
     val searchQuery: String = "",
     val addressLabel: String? = null,
     val address: String? = null,
@@ -68,15 +68,18 @@ class HomeTabViewModel @Inject constructor(
     }
 
     fun loadActiveOrder() {
-        viewModelScope.launch {
-            orderRepository.getActiveOrder()
-                .onSuccess { order ->
-                    _uiState.update { it.copy(activeOrder = order) }
-                }
-                .onFailure { _ ->
-                    _uiState.update { it.copy(activeOrder = null) }
-                }
-        }
+        viewModelScope.launch { refreshActiveOrder() }
+    }
+
+    /** Espera el API antes de volver al home tras checkout (paridad iOS). */
+    suspend fun refreshActiveOrder() {
+        orderRepository.getActiveOrders()
+            .onSuccess { orders ->
+                _uiState.update { it.copy(activeOrders = orders) }
+            }
+            .onFailure { _ ->
+                _uiState.update { it.copy(activeOrders = emptyList()) }
+            }
     }
 
     fun loadAddresses() {
@@ -200,9 +203,9 @@ class HomeTabViewModel @Inject constructor(
                     }
                 }
                 val activeOrderDeferred = async {
-                    orderRepository.getActiveOrder()
-                        .onSuccess { order -> _uiState.update { it.copy(activeOrder = order) } }
-                        .onFailure { _ -> _uiState.update { it.copy(activeOrder = null) } }
+                    orderRepository.getActiveOrders()
+                        .onSuccess { orders -> _uiState.update { it.copy(activeOrders = orders) } }
+                        .onFailure { _ -> _uiState.update { it.copy(activeOrders = emptyList()) } }
                 }
                 homeDeferred.await()
                 addressesDeferred.await()

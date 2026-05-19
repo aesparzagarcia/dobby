@@ -10,6 +10,7 @@ import com.ares.ewe.data.remote.model.RateDeliveryRequest
 import com.ares.ewe.data.remote.model.RateDeliveryResponse
 import com.ares.ewe.data.remote.model.CompleteRegistrationRequest
 import com.ares.ewe.data.remote.model.CreateAddressRequest
+import com.ares.ewe.data.remote.model.DeliveryPricingConfigDto
 import com.ares.ewe.data.remote.model.CompleteRegistrationResponse
 import com.ares.ewe.data.remote.model.HomeResponse
 import com.ares.ewe.data.remote.model.PlacesResponse
@@ -49,6 +50,9 @@ interface DobbyApi {
     @GET("app/home")
     suspend fun getHome(): HomeResponse
 
+    @GET("app/delivery-pricing-config")
+    suspend fun getDeliveryPricingConfig(): DeliveryPricingConfigDto
+
     @GET("app/me/gamification")
     suspend fun getGamification(): GamificationDto
 
@@ -80,7 +84,7 @@ interface DobbyApi {
     suspend fun setDefaultAddress(@Path("id") id: String): Unit
 
     @GET("orders/active")
-    suspend fun getActiveOrder(): Response<ActiveOrderDto>
+    suspend fun getActiveOrders(): Response<List<ActiveOrderDto>>
 
     @GET("orders/{id}/tracking")
     suspend fun getOrderTracking(@Path("id") orderId: String): Response<OrderTrackingDto>

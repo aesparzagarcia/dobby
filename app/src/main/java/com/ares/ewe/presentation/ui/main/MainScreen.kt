@@ -33,6 +33,7 @@ fun HomeScreen(
     onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
+    onActiveOrdersClick: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()
 ) {
     var currentTab by remember { mutableStateOf(MainTab.Home) }
@@ -54,7 +55,8 @@ fun HomeScreen(
                         onAddressLabelClick = onAddressLabelClick,
                         onProductClick = onProductClick,
                         onCartClick = onCartClick,
-                        onTrackOrderClick = onTrackOrderClick
+                        onTrackOrderClick = onTrackOrderClick,
+                        onActiveOrdersClick = onActiveOrdersClick,
                     )
                     MainTab.Promotions -> PromotionsTabScreen(
                         onProductClick = onProductClick

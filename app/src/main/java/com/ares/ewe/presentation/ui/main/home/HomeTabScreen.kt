@@ -74,6 +74,7 @@ fun HomeTabScreen(
     onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
+    onActiveOrdersClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeTabViewModel = hiltViewModel()
 ) {
@@ -123,29 +124,34 @@ fun HomeTabScreen(
                 }
             }
             else -> {
+                val listState = rememberLazyListState()
+                LaunchedEffect(uiState.activeOrders.map { it.id }) {
+                    listState.scrollToItem(0)
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = 8.dp)
+                        .padding(bottom = 8.dp),
                 ) {
                     uiState.warningMessage?.let { msg ->
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
                         ) {
                             Row(
                                 Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
                                     text = msg,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 )
                                 TextButton(onClick = { viewModel.clearWarningMessage() }) {
                                     Text("Cerrar")
@@ -168,7 +174,7 @@ fun HomeTabScreen(
                         CartIconBadge(
                             itemCount = cartItemCount,
                             onClick = onCartClick,
-                            modifier = Modifier.align(Alignment.TopEnd)
+                            modifier = Modifier.align(Alignment.TopEnd),
                         )
                     }
                     PullToRefreshBox(
@@ -176,7 +182,7 @@ fun HomeTabScreen(
                         onRefresh = { viewModel.refresh() },
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth()
+                            .fillMaxWidth(),
                     ) {
                         val restaurantsOnly = filteredPlaces.filter { !it.isService }
                         val servicesOnly = filteredPlaces.filter { it.isService }
@@ -184,22 +190,24 @@ fun HomeTabScreen(
                         val productCardWidth = ((screenWidthDp - 52) / 2.8).toInt().dp
 
                         LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 0.dp),
-                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                            verticalArrangement = Arrangement.spacedBy(0.dp),
                         ) {
-                            item {
-                                if (uiState.activeOrder != null) {
-                                    OrderTrackingSection(
-                                        activeOrder = uiState.activeOrder!!,
-                                        onViewClick = { onTrackOrderClick(uiState.activeOrder!!.id) },
+                            if (uiState.activeOrders.isNotEmpty()) {
+                                item(key = "active_orders") {
+                                    ActiveOrdersHomeSection(
+                                        activeOrders = uiState.activeOrders,
+                                        onTrackOrderClick = onTrackOrderClick,
+                                        onMultipleOrdersClick = onActiveOrdersClick,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
                                     )
                                 }
                             }
-                            item {
+                            item(key = "featured") {
                                 Text(
                                     text = "Destacados",
                                     style = MaterialTheme.typography.titleMedium,
@@ -318,7 +326,7 @@ fun HomeTabScreen(
                                     Spacer(modifier = Modifier.height(20.dp))
                                 }
                             }
-                            item {
+                            item(key = "bottom_spacer") {
                                 Spacer(
                                     modifier = Modifier.height(24.dp + MainTabContentBottomInset),
                                 )
@@ -348,7 +356,7 @@ private fun HomeHeader(
             "la huerta de vega",
             "pizza",
             "café",
-            "restaurantes"
+            "restaurantes",
         )
     }
     var hintIndex by remember { mutableStateOf(0) }
@@ -362,34 +370,44 @@ private fun HomeHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(bottom = 8.dp)
+            .padding(bottom = 8.dp),
     ) {
-        Text(
-            text = addressLabel ?: "Casa",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+        Column(
             modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .clickable(onClick = onAddressLabelClick)
-        )
-        Text(
-            text = address ?: "Añade tu dirección",
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (address != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .clickable(onClick = onAddressLabelClick)
-        )
-        if (showAddAddressCallout) {
-            DeliveryAddressCallout(
-                title = "Añade tu dirección de entrega",
-                subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
-                onClick = onAddressLabelClick,
+                .fillMaxWidth()
+                .padding(end = 56.dp),
+        ) {
+            Text(
+                text = addressLabel ?: "Casa",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 13.dp)
-                    .padding(top = 5.dp, bottom = 3.dp),
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .clickable(onClick = onAddressLabelClick),
             )
+            Text(
+                text = address ?: "Añade tu dirección",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (address != null) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .clickable(onClick = onAddressLabelClick),
+            )
+            if (showAddAddressCallout) {
+                DeliveryAddressCallout(
+                    title = "Añade tu dirección de entrega",
+                    subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
+                    onClick = onAddressLabelClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 13.dp)
+                        .padding(top = 5.dp, bottom = 3.dp),
+                )
+            }
         }
         Card(
             modifier = Modifier
@@ -399,11 +417,11 @@ private fun HomeHeader(
                     elevation = 6.dp,
                     shape = RoundedCornerShape(28.dp),
                     ambientColor = Color.Black.copy(alpha = 0.08f),
-                    spotColor = Color.Black.copy(alpha = 0.06f)
+                    spotColor = Color.Black.copy(alpha = 0.06f),
                 ),
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -413,14 +431,14 @@ private fun HomeHeader(
                     Text(
                         text = "Buscar «${searchHints[hintIndex]}»",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
                 singleLine = true,
@@ -432,10 +450,10 @@ private fun HomeHeader(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     cursorColor = MaterialTheme.colorScheme.primary,
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
             )
         }
     }
