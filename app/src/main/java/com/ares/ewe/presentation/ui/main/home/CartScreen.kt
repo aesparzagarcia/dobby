@@ -147,10 +147,16 @@ fun CartScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     androidx.compose.material3.Button(
                         onClick = {
-                            viewModel.placeOrder(uiState.addressId, uiState.items)
+                            viewModel.placeOrder(
+                                uiState.addressId,
+                                uiState.items,
+                                uiState.pricing?.delivery?.finalDeliveryFee ?: 0.0
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isPlacingOrder,
+                        enabled = uiState.hasValidDeliveryAddress &&
+                            uiState.items.isNotEmpty() &&
+                            !uiState.isPlacingOrder,
                     ) {
                         Text("Pagar $${String.format("%.2f", uiState.grandTotal)}")
                     }

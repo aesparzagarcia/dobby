@@ -10,3 +10,7 @@ data class RegisterPushDeviceRequest(
 data class RegisterPushDeviceResponse(
     @SerializedName("ok") val ok: Boolean? = null,
 )
+
+data class FirebaseTokenResponse(
+    val token: String,
+)

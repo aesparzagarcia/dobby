@@ -15,6 +15,9 @@ class DobbyFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var pushTokenRegistrar: PushTokenRegistrar
 
+    @Inject
+    lateinit var orderRealtimeBus: ConsumerOrderRealtimeBus
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
@@ -24,7 +27,40 @@ class DobbyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        // Notification payload is shown by system when app is in background.
-        // Foreground: could post to a local bus; not required for basic order status pushes.
+        when (message.data["type"]) {
+            "order_status" -> {
+                val orderId = message.data["order_id"]
+                val status = message.data["status"]
+                val deliveryManName = message.data["delivery_man_name"]
+                val fallback = OrderStatusNotificationHelper.titleAndBodyForStatus(status, deliveryManName)
+                val title = message.notification?.title ?: fallback.first
+                val body = message.notification?.body ?: fallback.second
+                OrderStatusNotificationHelper.show(this, title, body, orderId)
+                orderRealtimeBus.notifyOrderChanged(orderId)
+            }
+            "courier_arrived" -> {
+                val orderId = message.data["order_id"]
+                val deliveryManName = message.data["delivery_man_name"]
+                val fallback = OrderStatusNotificationHelper.titleAndBodyForCourierArrived(deliveryManName)
+                val title = message.notification?.title ?: fallback.first
+                val body = message.notification?.body ?: fallback.second
+                OrderStatusNotificationHelper.show(this, title, body, orderId)
+                orderRealtimeBus.notifyOrderChanged(orderId)
+            }
+            "product_promotion" -> {
+                val productId = message.data["product_id"]?.trim().orEmpty()
+                if (productId.isEmpty()) return
+                val shopId = message.data["shop_id"]?.trim()?.takeIf { it.isNotEmpty() }
+                val discount = message.data["discount"]?.toIntOrNull()
+                val productName = message.data["product_name"]
+                val fallback = OrderStatusNotificationHelper.titleAndBodyForProductPromotion(
+                    productName = productName,
+                    discountPercent = discount,
+                )
+                val title = message.notification?.title ?: fallback.first
+                val body = message.notification?.body ?: fallback.second
+                OrderStatusNotificationHelper.showProductPromotion(this, title, body, productId, shopId)
+            }
+        }
     }
 }

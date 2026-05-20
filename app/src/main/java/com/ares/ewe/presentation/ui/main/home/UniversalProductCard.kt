@@ -87,8 +87,15 @@ fun UniversalProductCard(
                         Row(
                             modifier = Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(end = 6.dp, top = 6.dp, bottom = 6.dp)
-                                .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))
+                                .padding(end = 6.dp)
+                                .clip(
+                                    RoundedCornerShape(
+                                        topStart = 0.dp,
+                                        topEnd = 12.dp,
+                                        bottomEnd = 12.dp,
+                                        bottomStart = 0.dp,
+                                    ),
+                                )
                                 .background(androidx.compose.ui.graphics.Color(0xFFFFE34D))
                                 .padding(horizontal = 6.dp, vertical = 3.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),

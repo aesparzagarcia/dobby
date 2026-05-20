@@ -24,7 +24,8 @@ data class CreateOrderItemRequest(
 
 data class CreateOrderRequest(
     @SerializedName("addressId") val addressId: String,
-    @SerializedName("items") val items: List<CreateOrderItemRequest>
+    @SerializedName("items") val items: List<CreateOrderItemRequest>,
+    @SerializedName("deliveryFee") val deliveryFee: Double = 0.0
 )
 
 data class CreateOrderResponse(
@@ -40,6 +41,8 @@ data class OrderTrackingDto(
     @SerializedName("id") val id: String,
     @SerializedName("status") val status: String,
     @SerializedName("total") val total: Double = 0.0,
+    @SerializedName("delivery_fee") val deliveryFee: Double = 0.0,
+    @SerializedName("products_subtotal") val productsSubtotal: Double = 0.0,
     @SerializedName("delivery_address") val deliveryAddress: String? = null,
     @SerializedName("lat") val lat: Double? = null,
     @SerializedName("lng") val lng: Double? = null,
@@ -47,8 +50,11 @@ data class OrderTrackingDto(
     @SerializedName("shop_name") val shopName: String? = null,
     @SerializedName("estimated_preparation_minutes") val estimatedPreparationMinutes: Int? = null,
     @SerializedName("estimated_delivery_minutes") val estimatedDeliveryMinutes: Int? = null,
+    @SerializedName("arrived_at_customer_at") val arrivedAtCustomerAt: String? = null,
     @SerializedName("delivery_rating") val deliveryRating: Int? = null,
     @SerializedName("can_rate_delivery") val canRateDelivery: Boolean = false,
+    @SerializedName("shop_rating") val shopRating: Int? = null,
+    @SerializedName("can_rate_shop") val canRateShop: Boolean = false,
     @SerializedName("items") val items: List<OrderTrackingItemDto> = emptyList(),
     @SerializedName("delivery_man") val deliveryMan: OrderTrackingDeliveryManDto? = null
 )
@@ -62,9 +68,21 @@ data class RateDeliveryResponse(
 )
 
 data class OrderTrackingItemDto(
+    @SerializedName("product_id") val productId: String,
     @SerializedName("product_name") val productName: String,
     @SerializedName("quantity") val quantity: Int,
-    @SerializedName("price") val price: Double
+    @SerializedName("price") val price: Double,
+    @SerializedName("rating") val rating: Int? = null,
+    @SerializedName("can_rate") val canRate: Boolean = false
+)
+
+data class RateProductEntryDto(
+    @SerializedName("productId") val productId: String,
+    @SerializedName("stars") val stars: Int
+)
+
+data class RateProductsRequest(
+    @SerializedName("ratings") val ratings: List<RateProductEntryDto>
 )
 
 data class OrderTrackingDeliveryManDto(

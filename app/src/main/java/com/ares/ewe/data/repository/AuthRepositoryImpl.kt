@@ -14,7 +14,7 @@ import com.ares.ewe.domain.repository.AuthRepository
 import com.ares.ewe.data.remote.ConsumerLaunchRefreshOutcome
 import com.ares.ewe.data.remote.ConsumerTokenRefreshService
 import com.ares.ewe.di.ApplicationScope
-import com.ares.ewe.push.PushTokenRegistrar
+import com.ares.ewe.push.ConsumerRealtimeCoordinator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -26,7 +26,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val sessionManager: SessionManager,
     private val consumerTokenRefreshService: ConsumerTokenRefreshService,
     private val sessionEventBus: SessionEventBus,
-    private val pushTokenRegistrar: PushTokenRegistrar,
+    private val consumerRealtimeCoordinator: ConsumerRealtimeCoordinator,
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : AuthRepository {
 
@@ -54,7 +54,7 @@ class AuthRepositoryImpl @Inject constructor(
                 }
                 sessionManager.saveSession(access, refresh, response.user?.id)
                 sessionEventBus.resetExpiredGate()
-                applicationScope.launch { pushTokenRegistrar.registerCurrentToken() }
+                applicationScope.launch { consumerRealtimeCoordinator.onSessionReady() }
                 AuthResult.Success(VerifyOtpOutcome.LoggedIn)
             }
         } catch (e: Exception) {
@@ -83,7 +83,7 @@ class AuthRepositoryImpl @Inject constructor(
             }
             sessionManager.saveSession(response.token, refresh, response.user?.id)
             sessionEventBus.resetExpiredGate()
-            applicationScope.launch { pushTokenRegistrar.registerCurrentToken() }
+            applicationScope.launch { consumerRealtimeCoordinator.onSessionReady() }
             AuthResult.Success(Unit)
         } catch (e: Exception) {
             AuthResult.Error(e.toUserFacingMessage())
@@ -91,7 +91,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
-        pushTokenRegistrar.unregisterOnServer()
+        consumerRealtimeCoordinator.onLogout()
         sessionManager.clearSession()
     }
 
@@ -102,6 +102,8 @@ class AuthRepositoryImpl @Inject constructor(
             ConsumerLaunchRefreshOutcome.Skipped,
             ConsumerLaunchRefreshOutcome.Refreshed,
             ConsumerLaunchRefreshOutcome.Unchanged -> true
+        }.also { ok ->
+            if (ok) applicationScope.launch { consumerRealtimeCoordinator.onSessionReady() }
         }
     }
 }

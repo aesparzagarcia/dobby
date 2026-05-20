@@ -4,7 +4,10 @@ import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.data.remote.model.CreateOrderItemRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
 import com.ares.ewe.data.remote.model.RateDeliveryRequest
+import com.ares.ewe.data.remote.model.RateProductEntryDto
+import com.ares.ewe.data.remote.model.RateProductsRequest
 import com.ares.ewe.domain.model.ActiveOrder
+import retrofit2.Response
 import com.ares.ewe.domain.model.ActiveOrderProductLine
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.domain.model.OrderTracking
@@ -49,6 +52,8 @@ class OrderRepositoryImpl @Inject constructor(
                     id = dto.id,
                     status = dto.status,
                     total = dto.total,
+                    deliveryFee = dto.deliveryFee,
+                    productsSubtotal = dto.productsSubtotal,
                     deliveryAddress = dto.deliveryAddress,
                     lat = dto.lat,
                     lng = dto.lng,
@@ -56,13 +61,19 @@ class OrderRepositoryImpl @Inject constructor(
                     shopName = dto.shopName,
                     estimatedPreparationMinutes = dto.estimatedPreparationMinutes,
                     estimatedDeliveryMinutes = dto.estimatedDeliveryMinutes,
+                    arrivedAtCustomerAt = dto.arrivedAtCustomerAt,
                     deliveryRating = dto.deliveryRating,
                     canRateDelivery = dto.canRateDelivery,
+                    shopRating = dto.shopRating,
+                    canRateShop = dto.canRateShop,
                     items = dto.items.map {
                         OrderTrackingItem(
+                            productId = it.productId,
                             productName = it.productName,
                             quantity = it.quantity,
-                            price = it.price
+                            price = it.price,
+                            rating = it.rating,
+                            canRate = it.canRate
                         )
                     },
                     deliveryMan = dto.deliveryMan?.let {
@@ -81,20 +92,40 @@ class OrderRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun rateDelivery(orderId: String, stars: Int): Result<Unit> = runCatching {
-        val response = api.rateDelivery(orderId, RateDeliveryRequest(stars))
-        when (response.code()) {
-            in 200..299 -> Unit
-            else -> {
-                val err = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
-                throw Exception(err ?: response.message())
+    override suspend fun rateDelivery(orderId: String, stars: Int): Result<Unit> =
+        postRating { api.rateDelivery(orderId, RateDeliveryRequest(stars)) }
+
+    override suspend fun rateShop(orderId: String, stars: Int): Result<Unit> =
+        postRating { api.rateShop(orderId, RateDeliveryRequest(stars)) }
+
+    override suspend fun rateProduct(orderId: String, productId: String, stars: Int): Result<Unit> =
+        postRating {
+            api.rateProducts(
+                orderId,
+                RateProductsRequest(listOf(RateProductEntryDto(productId, stars)))
+            )
+        }
+
+    private suspend fun postRating(call: suspend () -> Response<com.ares.ewe.data.remote.model.RateDeliveryResponse>): Result<Unit> =
+        runCatching {
+            val response = call()
+            when (response.code()) {
+                in 200..299 -> Unit
+                else -> {
+                    val err = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+                    throw Exception(err ?: response.message())
+                }
             }
         }
-    }
 
-    override suspend fun createOrder(addressId: String, items: List<CartItem>): Result<Unit> = runCatching {
+    override suspend fun createOrder(
+        addressId: String,
+        items: List<CartItem>,
+        deliveryFee: Double
+    ): Result<Unit> = runCatching {
         val request = CreateOrderRequest(
             addressId = addressId,
+            deliveryFee = deliveryFee,
             items = items.map { item ->
                 CreateOrderItemRequest(
                     productId = item.productId,

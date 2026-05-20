@@ -7,6 +7,7 @@ import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.model.OrderTracking
 import com.ares.ewe.domain.repository.DirectionsRepository
 import com.ares.ewe.domain.repository.OrderRepository
+import com.ares.ewe.push.ConsumerOrderRealtimeBus
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlin.math.abs
@@ -38,6 +39,7 @@ private const val ROUTE_MIN_INTERVAL_MS = 20_000L
 class OrderTrackingViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val directionsRepository: DirectionsRepository,
+    private val orderRealtimeBus: ConsumerOrderRealtimeBus,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -53,6 +55,13 @@ class OrderTrackingViewModel @Inject constructor(
     init {
         loadTracking()
         startLocationRefreshPolling()
+        viewModelScope.launch {
+            orderRealtimeBus.events.collect { event ->
+                if (event.orderId == null || event.orderId == orderId) {
+                    loadTracking()
+                }
+            }
+        }
     }
 
     /** When order is in progress, refresh tracking periodically so delivery man position updates. */
@@ -163,10 +172,22 @@ class OrderTrackingViewModel @Inject constructor(
     }
 
     fun submitDeliveryRating(stars: Int) {
+        submitRating(stars) { orderRepository.rateDelivery(orderId, stars) }
+    }
+
+    fun submitShopRating(stars: Int) {
+        submitRating(stars) { orderRepository.rateShop(orderId, stars) }
+    }
+
+    fun submitProductRating(productId: String, stars: Int) {
+        submitRating(stars) { orderRepository.rateProduct(orderId, productId, stars) }
+    }
+
+    private fun submitRating(stars: Int, action: suspend () -> Result<Unit>) {
         if (orderId.isBlank() || stars !in 1..5) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(rateSubmitting = true, rateError = null)
-            orderRepository.rateDelivery(orderId, stars)
+            action()
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(rateSubmitting = false, rateError = null)
                     loadTracking()

@@ -142,8 +142,10 @@ dependencies {
     // Misma lógica punto-en-polígono que el ecosistema Google Maps (evita desajustes con LatLng).
     implementation("com.google.maps.android:android-maps-utils:3.10.0")
 
-    // Push (FCM)
+    // Firebase (FCM, Auth, Firestore) — use BOM only; do not add a second firebase-auth version.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
 }

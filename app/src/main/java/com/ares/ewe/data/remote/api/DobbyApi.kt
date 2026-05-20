@@ -22,6 +22,7 @@ import com.ares.ewe.data.remote.model.ServiceDetailDto
 import com.ares.ewe.data.remote.model.ProductDetailDto
 import com.ares.ewe.data.remote.model.GamificationDto
 import com.ares.ewe.data.remote.model.PromotionProductDto
+import com.ares.ewe.data.remote.model.RateProductsRequest
 import com.ares.ewe.data.remote.model.RegisterPushDeviceRequest
 import com.ares.ewe.data.remote.model.RegisterPushDeviceResponse
 import com.ares.ewe.data.remote.model.ShopProductDto
@@ -95,6 +96,18 @@ interface DobbyApi {
         @Body body: RateDeliveryRequest,
     ): Response<RateDeliveryResponse>
 
+    @POST("orders/{id}/rate-shop")
+    suspend fun rateShop(
+        @Path("id") orderId: String,
+        @Body body: RateDeliveryRequest,
+    ): Response<RateDeliveryResponse>
+
+    @POST("orders/{id}/rate-products")
+    suspend fun rateProducts(
+        @Path("id") orderId: String,
+        @Body body: RateProductsRequest,
+    ): Response<RateDeliveryResponse>
+
     @POST("orders")
     suspend fun createOrder(@Body body: CreateOrderRequest): CreateOrderResponse
 
@@ -106,4 +119,7 @@ interface DobbyApi {
 
     @DELETE("app/push-device")
     suspend fun unregisterPushDevice(): Unit
+
+    @POST("app/firebase-token")
+    suspend fun getFirebaseCustomToken(): com.ares.ewe.data.remote.model.FirebaseTokenResponse
 }

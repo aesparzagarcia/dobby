@@ -8,5 +8,7 @@ interface OrderRepository {
     suspend fun getActiveOrders(): Result<List<ActiveOrder>>
     suspend fun getOrderTracking(orderId: String): Result<OrderTracking?>
     suspend fun rateDelivery(orderId: String, stars: Int): Result<Unit>
-    suspend fun createOrder(addressId: String, items: List<CartItem>): Result<Unit>
+    suspend fun rateShop(orderId: String, stars: Int): Result<Unit>
+    suspend fun rateProduct(orderId: String, productId: String, stars: Int): Result<Unit>
+    suspend fun createOrder(addressId: String, items: List<CartItem>, deliveryFee: Double): Result<Unit>
 }

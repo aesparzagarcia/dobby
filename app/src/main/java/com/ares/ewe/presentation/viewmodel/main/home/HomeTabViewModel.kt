@@ -13,6 +13,7 @@ import com.ares.ewe.domain.repository.OrderRepository
 import com.ares.ewe.domain.repository.PlacesRepository
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.repository.UserAddressRepository
+import com.ares.ewe.push.ConsumerOrderRealtimeBus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,6 +52,7 @@ class HomeTabViewModel @Inject constructor(
     private val adsRepository: AdsRepository,
     private val userAddressRepository: UserAddressRepository,
     private val orderRepository: OrderRepository,
+    private val orderRealtimeBus: ConsumerOrderRealtimeBus,
     cartRepository: CartRepository
 ) : ViewModel() {
 
@@ -65,6 +67,11 @@ class HomeTabViewModel @Inject constructor(
         loadHome()
         loadAds()
         loadActiveOrder()
+        viewModelScope.launch {
+            orderRealtimeBus.events.collect {
+                refreshActiveOrder()
+            }
+        }
     }
 
     fun loadActiveOrder() {
@@ -72,13 +79,15 @@ class HomeTabViewModel @Inject constructor(
     }
 
     /** Espera el API antes de volver al home tras checkout (paridad iOS). */
-    suspend fun refreshActiveOrder() {
+    suspend fun refreshActiveOrder(clearOnFailure: Boolean = true) {
         orderRepository.getActiveOrders()
             .onSuccess { orders ->
                 _uiState.update { it.copy(activeOrders = orders) }
             }
             .onFailure { _ ->
-                _uiState.update { it.copy(activeOrders = emptyList()) }
+                if (clearOnFailure) {
+                    _uiState.update { it.copy(activeOrders = emptyList()) }
+                }
             }
     }
 
@@ -202,11 +211,7 @@ class HomeTabViewModel @Inject constructor(
                         }
                     }
                 }
-                val activeOrderDeferred = async {
-                    orderRepository.getActiveOrders()
-                        .onSuccess { orders -> _uiState.update { it.copy(activeOrders = orders) } }
-                        .onFailure { _ -> _uiState.update { it.copy(activeOrders = emptyList()) } }
-                }
+                val activeOrderDeferred = async { refreshActiveOrder(clearOnFailure = false) }
                 homeDeferred.await()
                 addressesDeferred.await()
                 adsDeferred.await()

@@ -47,6 +47,10 @@ class SessionManager @Inject constructor(
         !prefs[Keys.AUTH_TOKEN].isNullOrBlank() || !prefs[Keys.REFRESH_TOKEN].isNullOrBlank()
     }
 
+    val userId: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[Keys.USER_ID]
+    }
+
     val savedAddress: Flow<SavedAddress?> = context.dataStore.data.map { prefs ->
         val desc = prefs[Keys.SAVED_ADDRESS_DESCRIPTION] ?: return@map null
         val address = prefs[Keys.SAVED_ADDRESS_TEXT] ?: return@map null

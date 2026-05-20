@@ -49,7 +49,9 @@ data class CartUiState(
     val paymentMethod: String = "Efectivo contra entrega",
     val isPlacingOrder: Boolean = false,
     val orderPlaced: Boolean = false,
-    val placeOrderError: String? = null
+    val placeOrderError: String? = null,
+    /** Dirección guardada con id y coordenadas (necesarias para envío y checkout). */
+    val hasValidDeliveryAddress: Boolean = false,
 )
 
 @HiltViewModel
@@ -141,6 +143,10 @@ class CartViewModel @Inject constructor(
             )
         }
         val grandTotal = orderPricing?.grandTotal ?: productsSubtotal
+        val hasValidDeliveryAddress =
+            !delivery.addressId.isNullOrBlank() &&
+                delivery.userLatitude != null &&
+                delivery.userLongitude != null
         cart.copy(
             productsSubtotal = productsSubtotal,
             pricing = orderPricing,
@@ -155,7 +161,8 @@ class CartViewModel @Inject constructor(
             paymentMethod = delivery.paymentMethod,
             isPlacingOrder = delivery.isPlacingOrder,
             orderPlaced = delivery.orderPlaced,
-            placeOrderError = delivery.placeOrderError
+            placeOrderError = delivery.placeOrderError,
+            hasValidDeliveryAddress = hasValidDeliveryAddress,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -194,7 +201,7 @@ class CartViewModel @Inject constructor(
         }
     }
 
-    fun placeOrder(addressId: String?, items: List<CartItem>) {
+    fun placeOrder(addressId: String?, items: List<CartItem>, deliveryFee: Double) {
         if (addressId == null || items.isEmpty()) {
             _deliveryState.update {
                 it.copy(placeOrderError = if (items.isEmpty()) "Carrito vacío: agrega productos para pedir." else "Dirección: selecciona una dirección de entrega.")
@@ -205,7 +212,7 @@ class CartViewModel @Inject constructor(
             _deliveryState.update {
                 it.copy(isPlacingOrder = true, placeOrderError = null)
             }
-            orderRepository.createOrder(addressId, items)
+            orderRepository.createOrder(addressId, items, deliveryFee)
                 .onSuccess {
                     cartRepository.clear()
                     // Paridad iOS: mantener overlay ~5s tras éxito antes de cerrar carrito.

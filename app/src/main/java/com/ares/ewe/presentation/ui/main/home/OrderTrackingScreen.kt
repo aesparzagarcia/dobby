@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -93,6 +95,7 @@ private fun bitmapDescriptorFromRes(context: Context, resId: Int, sizeDp: Int = 
 @Composable
 fun OrderTrackingScreen(
     onBack: () -> Unit,
+    onFinish: () -> Unit,
     viewModel: OrderTrackingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -189,98 +192,237 @@ fun OrderTrackingScreen(
                     }
                 }
                 uiState.tracking != null -> {
-                    GoogleMap(
-                        modifier = Modifier.fillMaxSize(),
-                        cameraPositionState = cameraPositionState,
-                        properties = MapProperties(mapType = MapType.NORMAL),
-                        uiSettings = MapUiSettings(zoomControlsEnabled = true),
-                    ) {
-                        if (routePoints.size >= 2) {
-                            Polyline(
-                                points = routePoints,
-                                color = RoutePolylineColor,
-                                width = 10f
-                            )
-                        }
-                        deliveryLatLng?.let { latLng ->
-                            Marker(
-                                state = MarkerState(position = latLng),
-                                title = "Tu dirección de entrega",
-                                snippet = uiState.tracking?.deliveryAddress,
-                                icon = houseIcon ?: BitmapDescriptorFactory.fromResource(R.drawable.ic_house)
-                            )
-                        }
-                        deliveryManLatLng?.let {
-                            Marker(
-                                state = deliveryManMarkerState,
-                                title = "Repartidor",
-                                snippet = uiState.tracking?.deliveryMan?.name,
-                                icon = deliveryIcon ?: BitmapDescriptorFactory.fromResource(R.drawable.ic_delivery)
-                            )
-                        }
-                    }
-
-                    if (usingStraightLineRoute && deliveryLatLng != null && deliveryManLatLng != null) {
-                        Surface(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
-                            tonalElevation = 2.dp
-                        ) {
-                            Text(
-                                text = "La ruta por calles no está disponible (solo línea recta). " +
-                                    "Habilita Directions API y facturación en Google Cloud, y en local.properties " +
-                                    "define DIRECTIONS_API_KEY con una clave apta para el servicio web " +
-                                    "(no uses solo restricción «aplicaciones Android»).",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        }
-                    }
-
-                    // Bottom sheet: when dismissed, remove it so the map is fully touchable; reopen with button
-                    if (sheetVisible) {
-                        LaunchedEffect(sheetVisible) {
-                            if (sheetVisible) sheetState.expand()
-                        }
-                        ModalBottomSheet(
-                            onDismissRequest = { sheetVisible = false },
-                            sheetState = sheetState
-                        ) {
-                            OrderTrackingBottomSheetContent(
-                                tracking = uiState.tracking!!,
-                                rateSubmitting = uiState.rateSubmitting,
-                                rateError = uiState.rateError,
-                                onSubmitRating = { stars -> viewModel.submitDeliveryRating(stars) },
-                                onClearRateError = { viewModel.clearRateError() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                                    .padding(bottom = 32.dp)
-                            )
-                        }
+                    val tracking = uiState.tracking!!
+                    if (tracking.isDelivered) {
+                        DeliveredOrderTrackingLayout(
+                            tracking = tracking,
+                            routePoints = routePoints,
+                            usingStraightLineRoute = usingStraightLineRoute,
+                            deliveryLatLng = deliveryLatLng,
+                            deliveryManLatLng = deliveryManLatLng,
+                            deliveryManMarkerState = deliveryManMarkerState,
+                            houseIcon = houseIcon,
+                            deliveryIcon = deliveryIcon,
+                            cameraPositionState = cameraPositionState,
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onFinish = onFinish,
+                        )
                     } else {
-                        // Sheet closed: map is fully interactive; show button to reopen
-                        FilledTonalButton(
-                            onClick = { sheetVisible = true },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(16.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Icon(
-                                Icons.Default.KeyboardArrowUp,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                            Text("Ver detalles del pedido")
-                        }
+                    InProgressOrderTrackingLayout(
+                        tracking = tracking,
+                        routePoints = routePoints,
+                        usingStraightLineRoute = usingStraightLineRoute,
+                        deliveryLatLng = deliveryLatLng,
+                        deliveryManLatLng = deliveryManLatLng,
+                        deliveryManMarkerState = deliveryManMarkerState,
+                        houseIcon = houseIcon,
+                        deliveryIcon = deliveryIcon,
+                        cameraPositionState = cameraPositionState,
+                        sheetVisible = sheetVisible,
+                        sheetState = sheetState,
+                        onSheetVisibleChange = { sheetVisible = it },
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        onFinish = onFinish,
+                    )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DeliveredOrderTrackingLayout(
+    tracking: com.ares.ewe.domain.model.OrderTracking,
+    routePoints: List<LatLng>,
+    usingStraightLineRoute: Boolean,
+    deliveryLatLng: LatLng?,
+    deliveryManLatLng: LatLng?,
+    deliveryManMarkerState: MarkerState,
+    houseIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    deliveryIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
+    uiState: com.ares.ewe.presentation.viewmodel.main.home.OrderTrackingUiState,
+    viewModel: OrderTrackingViewModel,
+    onFinish: () -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        Box(Modifier.height(112.dp).fillMaxWidth()) {
+            OrderTrackingMapContent(
+                modifier = Modifier.fillMaxSize(),
+                routePoints = routePoints,
+                deliveryLatLng = deliveryLatLng,
+                deliveryManLatLng = deliveryManLatLng,
+                deliveryManMarkerState = deliveryManMarkerState,
+                houseIcon = houseIcon,
+                deliveryIcon = deliveryIcon,
+                deliveryAddress = tracking.deliveryAddress,
+                deliveryManName = tracking.deliveryMan?.name,
+                cameraPositionState = cameraPositionState,
+            )
+        }
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        ) {
+            OrderTrackingBottomSheetContent(
+                tracking = tracking,
+                rateSubmitting = uiState.rateSubmitting,
+                rateError = uiState.rateError,
+                onSubmitDeliveryRating = { viewModel.submitDeliveryRating(it) },
+                onSubmitShopRating = { viewModel.submitShopRating(it) },
+                onSubmitProductRating = { productId, stars -> viewModel.submitProductRating(productId, stars) },
+                onClearRateError = { viewModel.clearRateError() },
+                onFinish = onFinish,
+                fullScreen = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 24.dp),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun InProgressOrderTrackingLayout(
+    tracking: com.ares.ewe.domain.model.OrderTracking,
+    routePoints: List<LatLng>,
+    usingStraightLineRoute: Boolean,
+    deliveryLatLng: LatLng?,
+    deliveryManLatLng: LatLng?,
+    deliveryManMarkerState: MarkerState,
+    houseIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    deliveryIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
+    sheetVisible: Boolean,
+    sheetState: androidx.compose.material3.SheetState,
+    onSheetVisibleChange: (Boolean) -> Unit,
+    uiState: com.ares.ewe.presentation.viewmodel.main.home.OrderTrackingUiState,
+    viewModel: OrderTrackingViewModel,
+    onFinish: () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        OrderTrackingMapContent(
+            modifier = Modifier.fillMaxSize(),
+            routePoints = routePoints,
+            deliveryLatLng = deliveryLatLng,
+            deliveryManLatLng = deliveryManLatLng,
+            deliveryManMarkerState = deliveryManMarkerState,
+            houseIcon = houseIcon,
+            deliveryIcon = deliveryIcon,
+            deliveryAddress = tracking.deliveryAddress,
+            deliveryManName = tracking.deliveryMan?.name,
+            cameraPositionState = cameraPositionState,
+        )
+
+        if (usingStraightLineRoute && deliveryLatLng != null && deliveryManLatLng != null) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
+                tonalElevation = 2.dp,
+            ) {
+                Text(
+                    text = "La ruta por calles no está disponible (solo línea recta). " +
+                        "Habilita Directions API y facturación en Google Cloud, y en local.properties " +
+                        "define DIRECTIONS_API_KEY con una clave apta para el servicio web " +
+                        "(no uses solo restricción «aplicaciones Android»).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp),
+                )
+            }
+        }
+
+        if (sheetVisible) {
+            LaunchedEffect(sheetVisible) {
+                if (sheetVisible) sheetState.expand()
+            }
+            ModalBottomSheet(
+                onDismissRequest = { onSheetVisibleChange(false) },
+                sheetState = sheetState,
+            ) {
+                OrderTrackingBottomSheetContent(
+                    tracking = tracking,
+                    rateSubmitting = uiState.rateSubmitting,
+                    rateError = uiState.rateError,
+                    onSubmitDeliveryRating = { viewModel.submitDeliveryRating(it) },
+                    onSubmitShopRating = { viewModel.submitShopRating(it) },
+                    onSubmitProductRating = { productId, stars -> viewModel.submitProductRating(productId, stars) },
+                    onClearRateError = { viewModel.clearRateError() },
+                    onFinish = onFinish,
+                    fullScreen = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 32.dp),
+                )
+            }
+        } else {
+            FilledTonalButton(
+                onClick = { onSheetVisibleChange(true) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+            ) {
+                Icon(
+                    Icons.Default.KeyboardArrowUp,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text("Ver detalles del pedido")
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrderTrackingMapContent(
+    modifier: Modifier,
+    routePoints: List<LatLng>,
+    deliveryLatLng: LatLng?,
+    deliveryManLatLng: LatLng?,
+    deliveryManMarkerState: MarkerState,
+    houseIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    deliveryIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    deliveryAddress: String?,
+    deliveryManName: String?,
+    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
+) {
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = cameraPositionState,
+        properties = MapProperties(mapType = MapType.NORMAL),
+        uiSettings = MapUiSettings(zoomControlsEnabled = true),
+    ) {
+        if (routePoints.size >= 2) {
+            Polyline(points = routePoints, color = RoutePolylineColor, width = 10f)
+        }
+        deliveryLatLng?.let { latLng ->
+            Marker(
+                state = MarkerState(position = latLng),
+                title = "Tu dirección de entrega",
+                snippet = deliveryAddress,
+                icon = houseIcon ?: BitmapDescriptorFactory.fromResource(R.drawable.ic_house),
+            )
+        }
+        deliveryManLatLng?.let {
+            Marker(
+                state = deliveryManMarkerState,
+                title = "Repartidor",
+                snippet = deliveryManName,
+                icon = deliveryIcon ?: BitmapDescriptorFactory.fromResource(R.drawable.ic_delivery),
+            )
         }
     }
 }
@@ -290,9 +432,13 @@ private fun OrderTrackingBottomSheetContent(
     tracking: com.ares.ewe.domain.model.OrderTracking,
     rateSubmitting: Boolean,
     rateError: String?,
-    onSubmitRating: (Int) -> Unit,
+    onSubmitDeliveryRating: (Int) -> Unit,
+    onSubmitShopRating: (Int) -> Unit,
+    onSubmitProductRating: (String, Int) -> Unit,
     onClearRateError: () -> Unit,
-    modifier: Modifier = Modifier
+    onFinish: () -> Unit,
+    fullScreen: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -327,7 +473,7 @@ private fun OrderTrackingBottomSheetContent(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = statusLabel(tracking.status),
+                    text = trackingStatusLabel(tracking),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(start = 8.dp)
                 )
@@ -397,6 +543,38 @@ private fun OrderTrackingBottomSheetContent(
                 )
                 Text(
                     text = "$${String.format("%.2f", item.price * item.quantity)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+        val productsSubtotal = tracking.productsSubtotal.takeIf { it > 0 }
+            ?: tracking.items.sumOf { it.price * it.quantity }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Subtotal productos",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "$${String.format("%.2f", productsSubtotal)}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        if (tracking.deliveryFee > 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Envío",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "$${String.format("%.2f", tracking.deliveryFee)}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -496,36 +674,48 @@ private fun OrderTrackingBottomSheetContent(
             )
         }
 
-        if (tracking.canRateDelivery) {
+        if (tracking.isDelivered) {
             Text(
-                text = "¿Cómo fue el reparto?",
+                text = "Valora tu experiencia",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             )
-            Text(
-                text = "Tu valoración ayuda a otros usuarios.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                for (s in 1..5) {
-                    FilterChip(
-                        selected = false,
-                        onClick = { if (!rateSubmitting) onSubmitRating(s) },
-                        enabled = !rateSubmitting,
-                        label = { Text("$s ⭐") }
-                    )
-                }
+            if (tracking.canRateShop || tracking.shopRating != null) {
+                StarRatingBlock(
+                    title = "Restaurante",
+                    subtitle = tracking.shopName ?: "Tienda",
+                    existingRating = tracking.shopRating,
+                    canRate = tracking.canRateShop,
+                    rateSubmitting = rateSubmitting,
+                    onSelect = onSubmitShopRating,
+                )
+            }
+            if (tracking.deliveryMan != null && (tracking.canRateDelivery || tracking.deliveryRating != null)) {
+                StarRatingBlock(
+                    title = "Repartidor",
+                    subtitle = tracking.deliveryMan!!.name,
+                    existingRating = tracking.deliveryRating,
+                    canRate = tracking.canRateDelivery,
+                    rateSubmitting = rateSubmitting,
+                    onSelect = onSubmitDeliveryRating,
+                )
+            }
+            tracking.items.filter { it.canRate || it.rating != null }.forEach { item ->
+                StarRatingBlock(
+                    title = "Producto",
+                    subtitle = "${item.productName} x${item.quantity}",
+                    existingRating = item.rating,
+                    canRate = item.canRate,
+                    rateSubmitting = rateSubmitting,
+                    onSelect = { onSubmitProductRating(item.productId, it) },
+                )
             }
             if (rateSubmitting) {
                 Text(
                     text = "Enviando…",
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
             rateError?.let { err ->
@@ -535,18 +725,93 @@ private fun OrderTrackingBottomSheetContent(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .padding(top = 4.dp)
-                        .clickable { onClearRateError() }
+                        .clickable { onClearRateError() },
                 )
             }
-        } else if (tracking.deliveryRating != null) {
-            val r = tracking.deliveryRating.coerceIn(1, 5)
+        } else if (tracking.canRateDelivery) {
+            Text(
+                text = "¿Cómo fue el reparto?",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            StarRatingBlock(
+                title = "Repartidor",
+                subtitle = tracking.deliveryMan?.name ?: "",
+                existingRating = null,
+                canRate = true,
+                rateSubmitting = rateSubmitting,
+                onSelect = onSubmitDeliveryRating,
+            )
+        }
+
+        if (shouldShowFinishButton(tracking)) {
+            Button(
+                onClick = onFinish,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
+                Text("Finalizar")
+            }
+        }
+    }
+}
+
+@Composable
+private fun StarRatingBlock(
+    title: String,
+    subtitle: String,
+    existingRating: Int?,
+    canRate: Boolean,
+    rateSubmitting: Boolean,
+    onSelect: (Int) -> Unit,
+) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (canRate) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 6.dp),
+            ) {
+                for (s in 1..5) {
+                    FilterChip(
+                        selected = false,
+                        onClick = { if (!rateSubmitting) onSelect(s) },
+                        enabled = !rateSubmitting,
+                        label = { Text("$s ⭐") },
+                    )
+                }
+            }
+        } else if (existingRating != null) {
+            val r = existingRating.coerceIn(1, 5)
             Text(
                 text = "Tu valoración: ${"⭐".repeat(r)}",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 4.dp),
             )
         }
     }
+}
+
+private fun shouldShowFinishButton(tracking: com.ares.ewe.domain.model.OrderTracking): Boolean =
+    tracking.isDelivered && !tracking.hasPendingRatings
+
+private fun trackingStatusLabel(tracking: com.ares.ewe.domain.model.OrderTracking): String {
+    if (tracking.courierArrivedAtCustomer && tracking.status.equals("ON_DELIVERY", ignoreCase = true)) {
+        val name = tracking.deliveryMan?.name?.trim().orEmpty()
+        return if (name.isNotEmpty()) "$name está afuera con tu pedido" else "Repartidor afuera con tu pedido"
+    }
+    return statusLabel(tracking.status)
 }
 
 private fun statusLabel(status: String): String = when (status) {

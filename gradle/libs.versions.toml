@@ -24,7 +24,6 @@ coil = "2.5.0"
 play-services-maps = "19.0.0"
 play-services-location = "21.3.0"
 maps-compose = "4.3.3"
-
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
@@ -73,6 +72,8 @@ maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = 
 
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging-ktx" }
+firebase-auth = { module = "com.google.firebase:firebase-auth-ktx" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore-ktx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

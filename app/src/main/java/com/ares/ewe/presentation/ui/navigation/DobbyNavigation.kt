@@ -14,6 +14,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import androidx.compose.runtime.snapshotFlow
 import com.ares.ewe.di.SessionEventBusEntryPoint
 import com.ares.ewe.domain.model.FeaturedPlace
 import dagger.hilt.android.EntryPointAccessors
@@ -34,7 +37,13 @@ import com.ares.ewe.presentation.ui.splash.SplashScreen
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 
 @Composable
-fun DobbyNavigation() {
+fun DobbyNavigation(
+    pendingOrderTrackingId: String? = null,
+    onPendingOrderTrackingNavigated: () -> Unit = {},
+    pendingProductId: String? = null,
+    pendingProductShopId: String? = null,
+    onPendingProductNavigated: () -> Unit = {},
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val sessionEventBus = remember(context) {
@@ -51,6 +60,40 @@ fun DobbyNavigation() {
             }
         }
     }
+
+    LaunchedEffect(pendingOrderTrackingId) {
+        val orderId = pendingOrderTrackingId ?: return@LaunchedEffect
+        snapshotFlow { navController.currentBackStackEntry?.destination?.route }
+            .filter { route ->
+                route != null &&
+                    route != DobbyScreens.Splash &&
+                    route != DobbyScreens.Phone &&
+                    !route.startsWith("otp")
+            }
+            .first()
+        navController.navigate(DobbyScreens.orderTracking(orderId)) {
+            launchSingleTop = true
+        }
+        onPendingOrderTrackingNavigated()
+    }
+
+    LaunchedEffect(pendingProductId, pendingProductShopId) {
+        val productId = pendingProductId ?: return@LaunchedEffect
+        snapshotFlow { navController.currentBackStackEntry?.destination?.route }
+            .filter { route ->
+                route != null &&
+                    route != DobbyScreens.Splash &&
+                    route != DobbyScreens.Phone &&
+                    !route.startsWith("otp")
+            }
+            .first()
+        val shopId = pendingProductShopId?.takeIf { it.isNotEmpty() }
+        navController.navigate(DobbyScreens.productDetail(productId, null, null, shopId)) {
+            launchSingleTop = true
+        }
+        onPendingProductNavigated()
+    }
+
     NavHost(
         modifier = Modifier.fillMaxSize(),
         navController = navController,
@@ -254,7 +297,12 @@ fun DobbyNavigation() {
             route = DobbyScreens.OrderTracking,
             arguments = listOf(navArgument("orderId") { type = NavType.StringType })
         ) {
-            OrderTrackingScreen(onBack = { navController.popBackStack() })
+            OrderTrackingScreen(
+                onBack = { navController.popBackStack() },
+                onFinish = {
+                    navController.popBackStack(DobbyScreens.Home, inclusive = false)
+                }
+            )
         }
     }
 }
