@@ -109,10 +109,27 @@ object OrderStatusNotificationHelper {
         return "¡Promoción!" to body
     }
 
-    fun titleAndBodyForStatus(status: String?, deliveryManName: String? = null): Pair<String, String> = when (status) {
+    private fun formatPrepMinutes(minutes: Int): String {
+        if (minutes < 60) return "$minutes min"
+        val h = minutes / 60
+        val m = minutes % 60
+        return if (m == 0) "${h} h" else "${h} h $m min"
+    }
+
+    fun titleAndBodyForStatus(
+        status: String?,
+        deliveryManName: String? = null,
+        estimatedPreparationMinutes: Int? = null,
+    ): Pair<String, String> = when (status) {
         "PENDING" -> "Pedido recibido" to "Tu pedido está pendiente de confirmación."
         "CONFIRMED" -> "Pedido confirmado" to "La tienda aceptó tu pedido."
-        "PREPARING" -> "En preparación" to "Tu pedido se está preparando."
+        "PREPARING" -> {
+            var body = "Tu pedido se está preparando."
+            estimatedPreparationMinutes?.takeIf { it > 0 }?.let { mins ->
+                body += " Tiempo estimado: ${formatPrepMinutes(mins)}."
+            }
+            "En preparación" to body
+        }
         "READY_FOR_PICKUP" -> "Listo para envío" to "Tu pedido está listo para salir."
         "ASSIGNED" -> {
             val name = deliveryManName?.trim()

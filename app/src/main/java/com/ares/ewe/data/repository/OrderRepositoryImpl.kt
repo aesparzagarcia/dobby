@@ -1,5 +1,6 @@
 package com.ares.ewe.data.repository
 
+import com.ares.ewe.BuildConfig
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.data.remote.model.CreateOrderItemRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
@@ -59,6 +60,9 @@ class OrderRepositoryImpl @Inject constructor(
                     lng = dto.lng,
                     createdAt = dto.createdAt,
                     shopName = dto.shopName,
+                    shopAddress = dto.shopAddress,
+                    shopLat = dto.shopLat,
+                    shopLng = dto.shopLng,
                     estimatedPreparationMinutes = dto.estimatedPreparationMinutes,
                     estimatedDeliveryMinutes = dto.estimatedDeliveryMinutes,
                     arrivedAtCustomerAt = dto.arrivedAtCustomerAt,
@@ -72,6 +76,7 @@ class OrderRepositoryImpl @Inject constructor(
                             productName = it.productName,
                             quantity = it.quantity,
                             price = it.price,
+                            imageUrl = it.imageUrl.toOrderTrackingImageUrl(),
                             rating = it.rating,
                             canRate = it.canRate
                         )
@@ -136,4 +141,11 @@ class OrderRepositoryImpl @Inject constructor(
         )
         api.createOrder(request)
     }
+}
+
+private fun String?.toOrderTrackingImageUrl(): String? {
+    if (this.isNullOrBlank()) return null
+    if (startsWith("http")) return this
+    val base = BuildConfig.BASE_URL.removeSuffix("api/").trimEnd('/')
+    return "$base$this"
 }

@@ -48,6 +48,9 @@ data class OrderTrackingDto(
     @SerializedName("lng") val lng: Double? = null,
     @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("shop_name") val shopName: String? = null,
+    @SerializedName("shop_address") val shopAddress: String? = null,
+    @SerializedName("shop_lat") val shopLat: Double? = null,
+    @SerializedName("shop_lng") val shopLng: Double? = null,
     @SerializedName("estimated_preparation_minutes") val estimatedPreparationMinutes: Int? = null,
     @SerializedName("estimated_delivery_minutes") val estimatedDeliveryMinutes: Int? = null,
     @SerializedName("arrived_at_customer_at") val arrivedAtCustomerAt: String? = null,
@@ -72,6 +75,7 @@ data class OrderTrackingItemDto(
     @SerializedName("product_name") val productName: String,
     @SerializedName("quantity") val quantity: Int,
     @SerializedName("price") val price: Double,
+    @SerializedName("image_url") val imageUrl: String? = null,
     @SerializedName("rating") val rating: Int? = null,
     @SerializedName("can_rate") val canRate: Boolean = false
 )

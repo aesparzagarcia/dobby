@@ -297,11 +297,15 @@ fun DobbyNavigation(
             route = DobbyScreens.OrderTracking,
             arguments = listOf(navArgument("orderId") { type = NavType.StringType })
         ) {
+            val homeTabViewModel: HomeTabViewModel = hiltViewModel(
+                navController.getBackStackEntry(DobbyScreens.Home),
+            )
             OrderTrackingScreen(
                 onBack = { navController.popBackStack() },
                 onFinish = {
                     navController.popBackStack(DobbyScreens.Home, inclusive = false)
-                }
+                    homeTabViewModel.loadActiveOrder()
+                },
             )
         }
     }

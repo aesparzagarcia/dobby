@@ -32,7 +32,12 @@ class DobbyFirebaseMessagingService : FirebaseMessagingService() {
                 val orderId = message.data["order_id"]
                 val status = message.data["status"]
                 val deliveryManName = message.data["delivery_man_name"]
-                val fallback = OrderStatusNotificationHelper.titleAndBodyForStatus(status, deliveryManName)
+                val prepMinutes = message.data["estimated_preparation_minutes"]?.toIntOrNull()
+                val fallback = OrderStatusNotificationHelper.titleAndBodyForStatus(
+                    status,
+                    deliveryManName,
+                    prepMinutes,
+                )
                 val title = message.notification?.title ?: fallback.first
                 val body = message.notification?.body ?: fallback.second
                 OrderStatusNotificationHelper.show(this, title, body, orderId)

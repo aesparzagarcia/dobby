@@ -51,6 +51,7 @@ class OrderTrackingViewModel @Inject constructor(
     private var lastDmLat: Double? = null
     private var lastDmLng: Double? = null
     private var lastRouteFetchAt = 0L
+    private var lastRouteStatus: String? = null
 
     init {
         loadTracking()
@@ -106,8 +107,18 @@ class OrderTrackingViewModel @Inject constructor(
     }
 
     private fun maybeRefreshRoute(tracking: OrderTracking) {
-        val destLat = tracking.lat
-        val destLng = tracking.lng
+        val statusKey = tracking.status.uppercase()
+        if (lastRouteStatus != statusKey) {
+            lastRouteStatus = statusKey
+            lastRouteFetchAt = 0L
+            if (_uiState.value.routePoints.isNotEmpty()) {
+                _uiState.value = _uiState.value.copy(
+                    routePoints = emptyList(),
+                    usingStraightLineRoute = false,
+                )
+            }
+        }
+        val (destLat, destLng) = tracking.routeDestinationLatLng() ?: (null to null)
         val dm = tracking.deliveryMan
         val oLat = dm?.lat
         val oLng = dm?.lng

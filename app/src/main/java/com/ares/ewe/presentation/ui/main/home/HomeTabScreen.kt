@@ -65,6 +65,9 @@ import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 import kotlinx.coroutines.delay
 
+private val HomeScreenBackground = Color.White
+private val HomeSearchFieldBackground = Color(0xFFF2F2F7)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeTabScreen(
@@ -132,6 +135,7 @@ fun HomeTabScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(HomeScreenBackground)
                         .padding(bottom = 8.dp),
                 ) {
                     uiState.warningMessage?.let { msg ->
@@ -191,7 +195,9 @@ fun HomeTabScreen(
 
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(HomeScreenBackground),
                             contentPadding = PaddingValues(bottom = 0.dp),
                             verticalArrangement = Arrangement.spacedBy(0.dp),
                         ) {
@@ -369,7 +375,7 @@ private fun HomeHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(HomeScreenBackground)
             .padding(bottom = 8.dp),
     ) {
         Column(
@@ -420,7 +426,7 @@ private fun HomeHeader(
                     spotColor = Color.Black.copy(alpha = 0.06f),
                 ),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            colors = CardDefaults.cardColors(containerColor = HomeSearchFieldBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             OutlinedTextField(
@@ -446,8 +452,8 @@ private fun HomeHeader(
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
                     focusedBorderColor = Color.Transparent,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = HomeSearchFieldBackground,
+                    focusedContainerColor = HomeSearchFieldBackground,
                     cursorColor = MaterialTheme.colorScheme.primary,
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
                     unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -468,12 +474,13 @@ private fun FeaturedPlaceCard(
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(containerColor = HomeScreenBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(HomeScreenBackground)
                 .padding(bottom = 6.dp)
         ) {
             Box(
@@ -481,7 +488,7 @@ private fun FeaturedPlaceCard(
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
                     .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(HomeScreenBackground),
                 contentAlignment = Alignment.Center
             ) {
                 if (place.imageUrl != null) {

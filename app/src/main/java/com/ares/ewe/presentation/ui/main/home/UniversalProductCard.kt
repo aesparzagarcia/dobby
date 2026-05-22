@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -52,12 +53,13 @@ fun UniversalProductCard(
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
             shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(Color.White)
                     .padding(bottom = 6.dp),
             ) {
                 Box(
@@ -65,7 +67,7 @@ fun UniversalProductCard(
                         .fillMaxWidth()
                         .aspectRatio(1.08f)
                         .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .background(Color.White),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (imageUrl != null) {
