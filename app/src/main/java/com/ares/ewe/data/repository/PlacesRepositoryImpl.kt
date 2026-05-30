@@ -10,6 +10,8 @@ import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ServiceDetail
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.core.util.serviceCategoryLabelEs
+import com.ares.ewe.core.util.shopTypeLabelEs
 import javax.inject.Inject
 
 class PlacesRepositoryImpl @Inject constructor(
@@ -63,22 +65,24 @@ class PlacesRepositoryImpl @Inject constructor(
         val response = api.getHome()
         val featuredPlaces = response.featuredPlaces.map { p ->
             val isService = p.kind == "service"
+            val shopType = if (isService) null else p.type
+            val serviceCategory = if (isService) p.category else null
+            val typeLabel = when {
+                isService -> serviceCategoryLabelEs(p.category) ?: "Servicio"
+                else -> shopTypeLabelEs(p.type)
+            }
             FeaturedPlace(
                 id = p.id,
                 name = p.name,
                 imageUrl = p.logoUrl?.toFullImageUrl(),
-                typeLabel = when (p.kind) {
-                    "shop" -> when (p.type) {
-                        "RESTAURANT" -> "Restaurant"
-                        "SHOP" -> "Shop"
-                        "SERVICE_PROVIDER" -> "Service"
-                        else -> p.type ?: "Shop"
-                    }
-                    "service" -> "Service"
-                    else -> p.type ?: p.category ?: ""
-                },
+                typeLabel = typeLabel,
                 isService = isService,
+                shopType = shopType,
+                serviceCategory = serviceCategory,
                 rate = p.rate,
+                ratingCount = p.ratingCount,
+                openingHour = p.openingHour,
+                closingHour = p.closingHour,
                 latitude = p.lat,
                 longitude = p.lng,
             )
@@ -87,9 +91,11 @@ class PlacesRepositoryImpl @Inject constructor(
             BestSellerProduct(
                 id = p.id,
                 name = p.name,
+                description = p.description?.trim()?.takeIf { it.isNotEmpty() },
                 imageUrl = p.imageUrl?.toFullImageUrl(),
                 price = p.price,
                 rate = p.rate,
+                ratingCount = p.ratingCount,
                 hasPromotion = p.hasPromotion,
                 discount = p.discount,
                 shopId = p.shopId,
@@ -103,9 +109,11 @@ class PlacesRepositoryImpl @Inject constructor(
             BestSellerProduct(
                 id = p.id,
                 name = p.name,
+                description = p.description?.trim()?.takeIf { it.isNotEmpty() },
                 imageUrl = p.imageUrl?.toFullImageUrl(),
                 price = p.price,
                 rate = p.rate,
+                ratingCount = p.ratingCount,
                 hasPromotion = p.hasPromotion,
                 discount = p.discount,
                 shopId = p.shopId,
@@ -122,9 +130,11 @@ class PlacesRepositoryImpl @Inject constructor(
                 price = p.price,
                 imageUrl = p.imageUrl?.toFullImageUrl(),
                 rate = p.rate,
+                ratingCount = p.ratingCount,
                 hasPromotion = p.hasPromotion,
                 discount = p.discount,
                 shopId = p.shopId ?: shopId,
+                category = p.category,
             )
         }
     }

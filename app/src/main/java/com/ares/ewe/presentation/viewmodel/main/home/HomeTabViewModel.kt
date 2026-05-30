@@ -53,7 +53,7 @@ class HomeTabViewModel @Inject constructor(
     private val userAddressRepository: UserAddressRepository,
     private val orderRepository: OrderRepository,
     private val orderRealtimeBus: ConsumerOrderRealtimeBus,
-    cartRepository: CartRepository
+    cartRepository: CartRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeTabUiState())

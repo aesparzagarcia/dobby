@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
+import com.ares.ewe.core.util.ProductCategory
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.PlacesRepository
@@ -21,15 +22,26 @@ import javax.inject.Inject
 data class ShopDetailUiState(
     val shopName: String = "",
     val products: List<ShopProduct> = emptyList(),
+    val searchQuery: String = "",
+    val selectedCategoryId: String? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
-)
+    val errorMessage: String? = null,
+) {
+    val filteredProducts: List<ShopProduct>
+        get() {
+            val query = searchQuery.trim()
+            return products.filter { product ->
+                ProductCategory.matchesFilter(product.category, selectedCategoryId) &&
+                    (query.isBlank() || product.name.contains(query, ignoreCase = true))
+            }
+        }
+}
 
 @HiltViewModel
 class ShopDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val placesRepository: PlacesRepository,
-    cartRepository: CartRepository
+    private val cartRepository: CartRepository,
 ) : ViewModel() {
 
     val openedShopId: String = checkNotNull(savedStateHandle.get<String>("id"))
@@ -59,18 +71,48 @@ class ShopDetailViewModel @Inject constructor(
                         shopName = shopName,
                         products = products,
                         isLoading = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = e.toUserFacingMessage()
+                        errorMessage = e.toUserFacingMessage(),
                     )
                 }
             }
         }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun onCategorySelected(categoryId: String?) {
+        _uiState.update { it.copy(selectedCategoryId = categoryId) }
+    }
+
+    fun addToCart(product: ShopProduct) {
+        val validDiscount = product.discount.coerceIn(0, 100)
+        val unitPrice = if (product.hasPromotion && validDiscount > 0) {
+            product.price * (1 - validDiscount / 100.0)
+        } else {
+            product.price
+        }
+        cartRepository.addItem(
+            productId = product.id,
+            name = product.name,
+            price = unitPrice,
+            quantity = 1,
+            imageUrl = product.imageUrl,
+            listPrice = product.price,
+            hasPromotion = product.hasPromotion,
+            discount = product.discount,
+            pickupLatitude = pickupLatitude,
+            pickupLongitude = pickupLongitude,
+            shopId = product.shopId ?: openedShopId,
+        )
     }
 }
 

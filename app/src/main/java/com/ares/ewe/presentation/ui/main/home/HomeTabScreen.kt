@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,19 +19,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -47,14 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -66,7 +52,8 @@ import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 import kotlinx.coroutines.delay
 
 private val HomeScreenBackground = Color.White
-private val HomeSearchFieldBackground = Color(0xFFF2F2F7)
+private const val DESTACADOS_PREVIEW_LIMIT = 4
+private const val BEST_SELLERS_PREVIEW_LIMIT = 4
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,25 +65,40 @@ fun HomeTabScreen(
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     onActiveOrdersClick: () -> Unit = {},
+    onPromotionsTabClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeTabViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val cartItemCount by viewModel.cartItemCount.collectAsState(0)
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val focusManager = LocalFocusManager.current
+    var quickCategory by remember { mutableStateOf(HomeQuickCategory.All) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAddresses()
     }
 
     val query = uiState.searchQuery.trim()
-    val filteredPlaces = uiState.featuredPlaces.filter {
+    val categoryPlaces = filterPlacesByCategory(uiState.featuredPlaces, quickCategory)
+    val filteredPlaces = categoryPlaces.filter {
         query.isBlank() || it.name.contains(query, ignoreCase = true)
     }
-    val filteredProducts = uiState.bestSellerProducts.filter {
+    val categoryProducts = when (quickCategory) {
+        HomeQuickCategory.Offers -> uiState.bestSellerProducts.filter {
+            it.hasPromotion && it.discount > 0
+        }
+        else -> uiState.bestSellerProducts
+    }
+    val filteredProducts = categoryProducts.filter {
         query.isBlank() || it.name.contains(query, ignoreCase = true)
     }
+    // Card restaurante/tienda: 20% más compacto que el tamaño base
+    val featuredCardWidthPx = (screenWidthDp * 0.56f * 0.8f).toInt().coerceIn(160, 198)
+    val featuredCardWidth = featuredCardWidthPx.dp
+    val destacadosPreview = filteredPlaces.take(DESTACADOS_PREVIEW_LIMIT)
+    val bestSellersPreview = filteredProducts.take(BEST_SELLERS_PREVIEW_LIMIT)
+    // Ancho del producto: 10% menos que restaurante + 15% más compacto
+    val productCardWidth = (featuredCardWidthPx * 0.9f * 0.85f).toInt().dp
 
     Column(modifier = modifier.fillMaxSize()) {
         when {
@@ -135,8 +137,7 @@ fun HomeTabScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(HomeScreenBackground)
-                        .padding(bottom = 8.dp),
+                        .background(HomeScreenBackground),
                 ) {
                     uiState.warningMessage?.let { msg ->
                         Card(
@@ -164,17 +165,29 @@ fun HomeTabScreen(
                         }
                     }
                     Box(modifier = Modifier.fillMaxWidth()) {
-                        HomeHeader(
-                            addressLabel = uiState.addressLabel,
-                            address = uiState.address,
-                            searchQuery = uiState.searchQuery,
-                            onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-                            onAddressLabelClick = onAddressLabelClick,
-                            focusManager = focusManager,
-                            showAddAddressCallout = uiState.addressFetchCompleted &&
+                        Column {
+                            HomeAddressSearchHeader(
+                                addressLabel = uiState.addressLabel,
+                                address = uiState.address,
+                                searchQuery = uiState.searchQuery,
+                                onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+                                onAddressClick = onAddressLabelClick,
+                            )
+                            if (uiState.addressFetchCompleted &&
                                 uiState.needsDeliveryAddressCallout &&
-                                uiState.warningMessage == null,
-                        )
+                                uiState.warningMessage == null
+                            ) {
+                                DeliveryAddressCallout(
+                                    title = "Añade tu dirección de entrega",
+                                    subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
+                                    onClick = onAddressLabelClick,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 13.dp)
+                                        .padding(bottom = 4.dp),
+                                )
+                            }
+                        }
                         CartIconBadge(
                             itemCount = cartItemCount,
                             onClick = onCartClick,
@@ -188,10 +201,10 @@ fun HomeTabScreen(
                             .weight(1f)
                             .fillMaxWidth(),
                     ) {
-                        val restaurantsOnly = filteredPlaces.filter { !it.isService }
+                        val restaurantsOnly = filteredPlaces.filter {
+                            !it.isService && (it.shopType == "RESTAURANT" || it.shopType == null)
+                        }
                         val servicesOnly = filteredPlaces.filter { it.isService }
-                        val cardWidth = ((screenWidthDp - 56) / 2).dp
-                        val productCardWidth = ((screenWidthDp - 52) / 2.8).toInt().dp
 
                         LazyColumn(
                             state = listState,
@@ -213,53 +226,70 @@ fun HomeTabScreen(
                                     )
                                 }
                             }
-                            item(key = "featured") {
-                                Text(
-                                    text = "Destacados",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                            item(key = "categories") {
+                                HomeCategoryRow(
+                                    selected = quickCategory,
+                                    onCategorySelected = { cat ->
+                                        quickCategory = cat
+                                        if (cat == HomeQuickCategory.Offers) {
+                                            onPromotionsTabClick()
+                                        }
+                                    },
+                                    modifier = Modifier.padding(vertical = 8.dp),
                                 )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(filteredPlaces) { place ->
-                                        FeaturedPlaceCard(
-                                            place = place,
-                                            modifier = Modifier.width(cardWidth),
-                                            onClick = { onPlaceClick(place) }
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(20.dp))
                             }
-                            if (filteredProducts.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Más vendidos",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                            if (destacadosPreview.isNotEmpty()) {
+                                item(key = "featured") {
+                                    HomeSectionHeader(
+                                        title = "Destacados",
+                                        onSeeAllClick = { quickCategory = HomeQuickCategory.All },
                                     )
                                     LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        items(filteredProducts) { product ->
-                                            UniversalProductCard(
-                                                name = product.name,
-                                                imageUrl = product.imageUrl,
-                                                price = product.price,
-                                                rate = product.rate,
-                                                hasPromotion = product.hasPromotion,
-                                                discount = product.discount,
-                                                modifier = Modifier.width(productCardWidth),
-                                                onClick = { onProductClick(product.id, product.shopId) }
+                                        items(destacadosPreview, key = { it.id }) { place ->
+                                            HomeFeaturedPlaceCard(
+                                                place = place,
+                                                modifier = Modifier.width(featuredCardWidth),
+                                                onClick = { onPlaceClick(place) },
+                                            )
+                                        }
+                                        item(key = "featured_see_more") {
+                                            HomeFeaturedSeeMoreCard(
+                                                modifier = Modifier.width(featuredCardWidth),
+                                                onClick = { quickCategory = HomeQuickCategory.All },
                                             )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(20.dp))
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                            }
+                            if (bestSellersPreview.isNotEmpty()) {
+                                item(key = "best_sellers") {
+                                    HomeSectionHeader(
+                                        title = "Más vendidos",
+                                        onSeeAllClick = onPromotionsTabClick,
+                                    )
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        items(bestSellersPreview, key = { it.id }) { product ->
+                                            HomeProductCarouselCard(
+                                                product = product,
+                                                modifier = Modifier.width(productCardWidth),
+                                                onClick = { onProductClick(product.id, product.shopId) },
+                                            )
+                                        }
+                                        item(key = "best_sellers_see_more") {
+                                            HomeProductSeeMoreCard(
+                                                modifier = Modifier.width(productCardWidth),
+                                                onClick = onPromotionsTabClick,
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                             if (query.isNotBlank() && filteredPlaces.isEmpty() && filteredProducts.isEmpty()) {
@@ -274,67 +304,77 @@ fun HomeTabScreen(
                                     Spacer(modifier = Modifier.height(20.dp))
                                 }
                             }
+                            if (uiState.ads.isEmpty()) {
+                                item(key = "promo_banner") {
+                                    HomePromoBanner(
+                                        title = "Envío gratis en tu primer pedido",
+                                        subtitle = "Pide ahora y recibe tu pedido sin costo de envío",
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                            }
                             if (uiState.ads.isNotEmpty()) {
-                                item {
+                                item(key = "ads") {
                                     AdsCarousel(
                                         ads = uiState.ads,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(160.dp)
-                                            .padding(vertical = 12.dp),
-                                        onAdClick = onAdClick
+                                            .padding(vertical = 8.dp),
+                                        onAdClick = onAdClick,
                                     )
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                             if (restaurantsOnly.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Restaurantes",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                                item(key = "restaurants") {
+                                    HomeSectionHeader(
+                                        title = "Restaurantes populares",
+                                        onSeeAllClick = {
+                                            quickCategory = HomeQuickCategory.Restaurants
+                                        },
                                     )
                                     LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        items(restaurantsOnly) { place ->
-                                            FeaturedPlaceCard(
+                                        items(restaurantsOnly, key = { it.id }) { place ->
+                                            HomeFeaturedPlaceCard(
                                                 place = place,
-                                                modifier = Modifier.width(cardWidth),
-                                                onClick = { onPlaceClick(place) }
+                                                modifier = Modifier.width(featuredCardWidth),
+                                                onClick = { onPlaceClick(place) },
                                             )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(20.dp))
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                             if (servicesOnly.isNotEmpty()) {
-                                item {
-                                    Text(
-                                        text = "Servicios",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                                item(key = "services") {
+                                    HomeSectionHeader(
+                                        title = "Servicios destacados",
+                                        onSeeAllClick = {
+                                            quickCategory = HomeQuickCategory.Services
+                                        },
                                     )
                                     LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        items(servicesOnly) { place ->
-                                            FeaturedPlaceCard(
+                                        items(servicesOnly, key = { it.id }) { place ->
+                                            HomeServicePlaceRow(
                                                 place = place,
-                                                modifier = Modifier.width(cardWidth),
-                                                onClick = { onPlaceClick(place) }
+                                                onClick = { onPlaceClick(place) },
                                             )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(20.dp))
+                                    Spacer(modifier = Modifier.height(16.dp))
                                 }
                             }
                             item(key = "bottom_spacer") {
                                 Spacer(
-                                    modifier = Modifier.height(24.dp + MainTabContentBottomInset),
+                                    modifier = Modifier.height(16.dp + MainTabContentBottomInset),
                                 )
                             }
                         }
@@ -345,190 +385,15 @@ fun HomeTabScreen(
     }
 }
 
-@Composable
-private fun HomeHeader(
-    addressLabel: String?,
-    address: String?,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onAddressLabelClick: () -> Unit,
-    focusManager: FocusManager,
-    showAddAddressCallout: Boolean = false,
-) {
-    val searchHints = remember {
-        listOf(
-            "tacos",
-            "cerveza",
-            "la huerta de vega",
-            "pizza",
-            "café",
-            "restaurantes",
-        )
-    }
-    var hintIndex by remember { mutableStateOf(0) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(3500L)
-            hintIndex = (hintIndex + 1) % searchHints.size
-        }
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(HomeScreenBackground)
-            .padding(bottom = 8.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 56.dp),
-        ) {
-            Text(
-                text = addressLabel ?: "Casa",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .clickable(onClick = onAddressLabelClick),
-            )
-            Text(
-                text = address ?: "Añade tu dirección",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (address != null) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier
-                    .padding(horizontal = 20.dp)
-                    .clickable(onClick = onAddressLabelClick),
-            )
-            if (showAddAddressCallout) {
-                DeliveryAddressCallout(
-                    title = "Añade tu dirección de entrega",
-                    subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
-                    onClick = onAddressLabelClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 13.dp)
-                        .padding(top = 5.dp, bottom = 3.dp),
-                )
-            }
-        }
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .shadow(
-                    elevation = 6.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.08f),
-                    spotColor = Color.Black.copy(alpha = 0.06f),
-                ),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = HomeSearchFieldBackground),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        text = "Buscar «${searchHints[hintIndex]}»",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(28.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedContainerColor = HomeSearchFieldBackground,
-                    focusedContainerColor = HomeSearchFieldBackground,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-            )
-        }
-    }
-}
-
-@Composable
-private fun FeaturedPlaceCard(
-    place: FeaturedPlace,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = HomeScreenBackground),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(HomeScreenBackground)
-                .padding(bottom = 6.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(4f / 3f)
-                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
-                    .background(HomeScreenBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                if (place.imageUrl != null) {
-                    AsyncImage(
-                        model = place.imageUrl,
-                        contentDescription = place.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = place.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Text(
-                text = place.name,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                minLines = 1,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 6.dp, end = 6.dp)
-            )
-            Text(
-                text = place.typeLabel,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 6.dp, end = 6.dp)
-            )
-        }
-    }
+private fun filterPlacesByCategory(
+    places: List<FeaturedPlace>,
+    category: HomeQuickCategory,
+): List<FeaturedPlace> = when (category) {
+    HomeQuickCategory.All -> places
+    HomeQuickCategory.Restaurants -> places.filter { !it.isService && it.shopType != "SHOP" }
+    HomeQuickCategory.Shops -> places.filter { !it.isService && it.shopType == "SHOP" }
+    HomeQuickCategory.Services -> places.filter { it.isService }
+    HomeQuickCategory.Offers -> places
 }
 
 @Composable

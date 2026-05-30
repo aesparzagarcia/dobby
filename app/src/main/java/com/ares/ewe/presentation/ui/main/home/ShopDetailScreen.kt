@@ -1,5 +1,6 @@
 package com.ares.ewe.presentation.ui.main.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,9 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -23,11 +23,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.presentation.viewmodel.main.home.ShopDetailViewModel
@@ -38,15 +41,22 @@ fun ShopDetailScreen(
     onBack: () -> Unit,
     onProductClick: (productId: String, pickupLat: Double?, pickupLng: Double?, shopId: String) -> Unit = { _, _, _, _ -> },
     onCartClick: () -> Unit = {},
-    viewModel: ShopDetailViewModel = hiltViewModel()
+    viewModel: ShopDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val cartItemCount by viewModel.cartItemCount.collectAsState(0)
+    val filteredProducts = uiState.filteredProducts
 
     Scaffold(
+        containerColor = Color.White,
         topBar = {
             TopAppBar(
-                title = { Text(uiState.shopName.ifEmpty { "Productos" }) },
+                title = {
+                    Text(
+                        text = uiState.shopName.ifEmpty { "Productos" },
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -54,20 +64,24 @@ fun ShopDetailScreen(
                 },
                 actions = {
                     CartIconBadge(itemCount = cartItemCount, onClick = onCartClick)
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White,
+                ),
             )
-        }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(Color.White),
         ) {
             when {
                 uiState.isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -75,13 +89,13 @@ fun ShopDetailScreen(
                 uiState.errorMessage != null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = uiState.errorMessage!!,
                                 color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { viewModel.loadProducts() }) {
@@ -91,29 +105,63 @@ fun ShopDetailScreen(
                     }
                 }
                 else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(uiState.products) { product ->
-                            UniversalProductCard(
-                                name = product.name,
-                                imageUrl = product.imageUrl,
-                                price = product.price,
-                                rate = product.rate,
-                                hasPromotion = product.hasPromotion,
-                                discount = product.discount,
-                                onClick = {
-                                    onProductClick(
-                                        product.id,
-                                        viewModel.pickupLatitude,
-                                        viewModel.pickupLongitude,
-                                        viewModel.openedShopId
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ShopDetailSearchBar(
+                            query = uiState.searchQuery,
+                            onQueryChange = viewModel::onSearchQueryChange,
+                        )
+                        ShopDetailCategoryRow(
+                            selectedCategoryId = uiState.selectedCategoryId,
+                            onCategorySelected = viewModel::onCategorySelected,
+                        )
+
+                        if (filteredProducts.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = when {
+                                        uiState.searchQuery.isNotBlank() ->
+                                            "Ningún producto coincide con la búsqueda"
+                                        uiState.selectedCategoryId != null ->
+                                            "No hay productos en esta categoría"
+                                        else -> "Este restaurante aún no tiene productos"
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 24.dp),
+                                )
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentPadding = PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 24.dp,
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                items(filteredProducts, key = { it.id }) { product ->
+                                    ShopDetailProductCard(
+                                        product = product,
+                                        onClick = {
+                                            onProductClick(
+                                                product.id,
+                                                viewModel.pickupLatitude,
+                                                viewModel.pickupLongitude,
+                                                viewModel.openedShopId,
+                                            )
+                                        },
+                                        onAddClick = { viewModel.addToCart(product) },
                                     )
                                 }
-                            )
+                            }
                         }
                     }
                 }

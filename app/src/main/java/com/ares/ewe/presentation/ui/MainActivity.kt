@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
         }
         requestNotifPermissionIfNeeded()
         setContent {
-            DobbyTheme {
+            DobbyTheme(dynamicColor = false) {
                 DobbyApp(
                     pendingOrderTrackingId = pendingOrderTrackingId,
                     onPendingOrderTrackingNavigated = { pendingOrderTrackingId = null },

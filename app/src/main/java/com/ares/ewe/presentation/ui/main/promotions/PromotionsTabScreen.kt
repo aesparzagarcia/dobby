@@ -35,7 +35,7 @@ fun PromotionsTabScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
-    val productCardWidth = (screenWidthDp * 0.38f).coerceAtLeast(110.dp).coerceAtMost(150.dp)
+    val productCardWidth = (screenWidthDp.value * 0.38f).toInt().dp.coerceAtLeast(110.dp).coerceAtMost(150.dp)
 
     when {
         uiState.isLoading -> {

@@ -6,15 +6,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -23,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -31,6 +33,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+
+/** Escala del card de producto (ancho adicional desde [HomeTabScreen]). */
+private const val ProductCardScale = 0.85f
 
 @Composable
 fun UniversalProductCard(
@@ -46,118 +51,231 @@ fun UniversalProductCard(
     val validDiscount = discount.coerceIn(0, 100)
     val showPromotion = hasPromotion && validDiscount > 0
     val discountedPrice = if (showPromotion) price * (1 - validDiscount / 100.0) else price
+    val corner = (16 * ProductCardScale).dp
+    val imageHeight = (120 * ProductCardScale).dp
 
-    Box(modifier = modifier) {
-        Card(
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(corner),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                .padding(bottom = (10 * ProductCardScale).dp),
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(bottom = 6.dp),
+                    .height(imageHeight)
+                    .clip(RoundedCornerShape(topStart = corner, topEnd = corner))
+                    .background(Color(0xFFF3F4F6)),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.08f)
-                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (imageUrl != null) {
-                        AsyncImage(
-                            model = imageUrl,
-                            contentDescription = name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Text(
+                        text = name.take(1).uppercase(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (showPromotion) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = 0.dp,
+                                    topEnd = (12 * ProductCardScale).dp,
+                                    bottomEnd = (12 * ProductCardScale).dp,
+                                    bottomStart = 0.dp,
+                                ),
+                            )
+                            .background(Color(0xFFFFE34D))
+                            .padding(
+                                horizontal = (8 * ProductCardScale).dp,
+                                vertical = (4 * ProductCardScale).dp,
+                            ),
+                        horizontalArrangement = Arrangement.spacedBy((6 * ProductCardScale).dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            modifier = Modifier.padding(start = 6.dp),
-                            text = name.take(1).uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = "-$validDiscount%",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                    if (showPromotion) {
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(end = 6.dp)
-                                .clip(
-                                    RoundedCornerShape(
-                                        topStart = 0.dp,
-                                        topEnd = 12.dp,
-                                        bottomEnd = 12.dp,
-                                        bottomStart = 0.dp,
-                                    ),
-                                )
-                                .background(androidx.compose.ui.graphics.Color(0xFFFFE34D))
-                                .padding(horizontal = 6.dp, vertical = 3.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "-$validDiscount%",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = "$${String.format("%.2f", price)}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textDecoration = TextDecoration.LineThrough,
-                            )
-                        }
+                        Text(
+                            text = "$${String.format("%.2f", price)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textDecoration = TextDecoration.LineThrough,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
                     }
                 }
+            }
 
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = (10 * ProductCardScale).dp,
+                        vertical = (8 * ProductCardScale).dp,
+                    ),
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = (10 * ProductCardScale).dp,
+                        vertical = (3 * ProductCardScale).dp,
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy((6 * ProductCardScale).dp),
+            ) {
                 Text(
                     text = "$${String.format("%.2f", discountedPrice)}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 6.dp, start = 6.dp),
-                )
-
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp, start = 6.dp),
+                    modifier = Modifier.weight(1f),
                 )
-                Row(
-                    modifier = Modifier.padding(top = 4.dp, start = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterEnd,
                 ) {
                     RatingDisplay(rate = rate)
                 }
             }
         }
+    }
+}
 
+@Composable
+fun HomeProductSeeMoreCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+) {
+    val scale = ProductCardScale
+    val corner = (16 * scale).dp
+    val imageHeight = (120 * scale).dp
+    val primary = MaterialTheme.colorScheme.primary
+
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(corner),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 6.dp, y = (-6).dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .padding(4.dp),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .padding(bottom = (10 * scale).dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Agregar",
-                tint = MaterialTheme.colorScheme.onPrimary,
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(0f),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(imageHeight),
+                )
+                ProductCardFooterPlaceholder(scale = scale)
+            }
+            Row(
+                modifier = Modifier.align(Alignment.Center),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy((8 * scale).dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Apps,
+                    contentDescription = null,
+                    tint = primary,
+                    modifier = Modifier.size((20 * scale).dp),
+                )
+                Text(
+                    text = "Ver más",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = primary,
+                    modifier = Modifier.size((20 * scale).dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductCardFooterPlaceholder(scale: Float) {
+    Text(
+        text = "\u00A0",
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(0f)
+            .padding(
+                horizontal = (10 * scale).dp,
+                vertical = (8 * scale).dp,
+            ),
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(0f)
+            .padding(
+                horizontal = (10 * scale).dp,
+                vertical = (3 * scale).dp,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy((6 * scale).dp),
+    ) {
+        Text(
+            text = "\u00A0",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            RatingDisplay(rate = 0f)
         }
     }
 }

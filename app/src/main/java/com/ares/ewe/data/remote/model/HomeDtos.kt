@@ -15,6 +15,9 @@ data class FeaturedPlaceDto(
     @SerializedName("category") val category: String? = null,
     @SerializedName("kind") val kind: String,
     @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("rating_count") val ratingCount: Int = 0,
+    @SerializedName("opening_hour") val openingHour: String? = null,
+    @SerializedName("closing_hour") val closingHour: String? = null,
     @SerializedName("lat") val lat: Double? = null,
     @SerializedName("lng") val lng: Double? = null,
 )
@@ -22,9 +25,11 @@ data class FeaturedPlaceDto(
 data class BestSellerProductDto(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
+    @SerializedName("description") val description: String? = null,
     @SerializedName("imageUrl") val imageUrl: String? = null,
     @SerializedName("price") val price: Double,
     @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("rating_count") val ratingCount: Int = 0,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
@@ -33,9 +38,11 @@ data class BestSellerProductDto(
 data class PromotionProductDto(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
+    @SerializedName("description") val description: String? = null,
     @SerializedName("imageUrl") val imageUrl: String? = null,
     @SerializedName("price") val price: Double,
     @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("rating_count") val ratingCount: Int = 0,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
@@ -48,9 +55,11 @@ data class ShopProductDto(
     @SerializedName("price") val price: Double,
     @SerializedName("imageUrl") val imageUrl: String? = null,
     @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("rating_count") val ratingCount: Int = 0,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
+    @SerializedName("category") val category: String? = null,
 )
 
 data class ProductDetailDto(

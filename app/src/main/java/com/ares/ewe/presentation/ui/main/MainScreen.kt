@@ -58,6 +58,7 @@ fun HomeScreen(
                         onCartClick = onCartClick,
                         onTrackOrderClick = onTrackOrderClick,
                         onActiveOrdersClick = onActiveOrdersClick,
+                        onPromotionsTabClick = { currentTab = MainTab.Promotions },
                     )
                     MainTab.Promotions -> PromotionsTabScreen(
                         onProductClick = onProductClick

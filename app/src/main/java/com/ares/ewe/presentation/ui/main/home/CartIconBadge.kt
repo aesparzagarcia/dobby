@@ -2,7 +2,8 @@ package com.ares.ewe.presentation.ui.main.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -15,36 +16,48 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CartIconBadge(
     itemCount: Int,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    IconButton(onClick = onClick, modifier = modifier) {
-        Box {
+    // Badge sits outside IconButton — Material IconButton clips children, so an offset badge gets cut off.
+    Box(
+        modifier = modifier
+            .padding(top = 6.dp, end = 4.dp)
+            .size(48.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        IconButton(onClick = onClick, modifier = Modifier.matchParentSize()) {
             Icon(
                 imageVector = Icons.Default.ShoppingCart,
-                contentDescription = "Carrito"
+                contentDescription = "Carrito",
             )
-            if (itemCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 6.dp, y = (-6).dp)
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (itemCount > 99) "99+" else itemCount.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+        }
+        if (itemCount > 0) {
+            val label = if (itemCount > 99) "99+" else itemCount.toString()
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .defaultMinSize(minWidth = 18.dp, minHeight = 18.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = if (label.length > 1) 4.dp else 0.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
             }
         }
     }

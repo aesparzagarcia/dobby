@@ -7,7 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -22,10 +23,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 /**
- * Reserve space above [FloatingBottomNavBar] so scrollable tab content (e.g. logout on Perfil)
- * is not covered. Matches bar bottom inset (~70dp) + pill height (~80dp) + small margin.
+ * Reserve space above [FloatingBottomNavBar] so scrollable tab content is not covered.
  */
-val MainTabContentBottomInset = 160.dp
+val MainTabContentBottomInset = 96.dp
 
 @Composable
 fun FloatingBottomNavBar(
@@ -36,17 +36,18 @@ fun FloatingBottomNavBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 70.dp)
-            .clip(RoundedCornerShape(28.dp)),
-        shadowElevation = 12.dp,
+            .navigationBarsPadding()
+            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp)
+            .clip(RoundedCornerShape(22.dp)),
+        shadowElevation = 10.dp,
         tonalElevation = 3.dp,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 8.dp),
+                .padding(vertical = 6.dp, horizontal = 6.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -70,20 +71,21 @@ private fun FloatingNavItem(
     val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = tab.icon,
             contentDescription = tab.label,
-            tint = color
+            tint = color,
+            modifier = Modifier.size(22.dp),
         )
         Text(
             text = tab.label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = color
         )
     }
