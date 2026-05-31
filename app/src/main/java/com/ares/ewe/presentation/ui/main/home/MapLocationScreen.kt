@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.core.location.DeliveryServiceArea
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.viewmodel.main.home.MapLocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -71,7 +72,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 
 private const val DEFAULT_ZOOM = 15f
 private val DEFAULT_POSITION = LatLng(20.6507582, -103.7029606) // Plaza Tala fallback
-private val FloatingAddressCardColor = Color(0xFF3967FF)
+private val FloatingAddressCardColor = DobbyColors.Primary
 private val ConfirmButtonColor = Color(0xFF22C55E)
 private val PinTipToCenterOffset = (-24).dp
 private val AddressCardOffsetFromPin = (-67).dp

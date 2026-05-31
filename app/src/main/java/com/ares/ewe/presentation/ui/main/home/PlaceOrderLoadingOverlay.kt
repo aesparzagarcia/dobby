@@ -31,10 +31,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.ewe.core.theme.DobbyColors
 
-/** Paridad con iOS `PlaceOrderLoadingView` (gradiente morado, bolsa, spinner). */
-private val OrderPrimary = Color(red = 0.45f, green = 0.35f, blue = 0.75f)
-private val OrderGradientEnd = Color(red = 0.35f, green = 0.28f, blue = 0.62f)
+/** Paridad con iOS `PlaceOrderLoadingView` (gradiente brand, bolsa, spinner). */
+private val OrderPrimary = DobbyColors.Primary
+private val OrderGradientEnd = DobbyColors.Dark
 
 @Composable
 fun PlaceOrderLoadingOverlay(modifier: Modifier = Modifier) {

@@ -9,7 +9,7 @@ object DobbyScreens {
     const val AddUserInfo = "add_user_info/{phone}"
     const val Home = "home"
     const val ShopDetail = "shop/{id}/{name}/{pickupLat}/{pickupLng}"
-    const val ProductDetail = "product/{id}/{pickupLat}/{pickupLng}/{shopId}"
+    const val ProductDetail = "product/{id}/{pickupLat}/{pickupLng}/{shopId}/{shopAvailable}"
     const val Cart = "cart"
     const val ServiceDetail = "service/{id}"
     const val AdDetail = "ad/{id}"
@@ -27,8 +27,13 @@ object DobbyScreens {
     fun shopDetail(shopId: String, shopName: String, pickupLat: Double?, pickupLng: Double?) =
         "shop/${Uri.encode(shopId)}/${Uri.encode(shopName)}/${pickupLat?.toString() ?: "none"}/${pickupLng?.toString() ?: "none"}"
 
-    fun productDetail(productId: String, pickupLat: Double?, pickupLng: Double?, shopId: String?) =
-        "product/${Uri.encode(productId)}/${pickupLat?.toString() ?: "none"}/${pickupLng?.toString() ?: "none"}/${Uri.encode(shopId ?: "none")}"
+    fun productDetail(
+        productId: String,
+        pickupLat: Double?,
+        pickupLng: Double?,
+        shopId: String?,
+        shopAvailable: Boolean = true,
+    ) = "product/${Uri.encode(productId)}/${pickupLat?.toString() ?: "none"}/${pickupLng?.toString() ?: "none"}/${Uri.encode(shopId ?: "none")}/$shopAvailable"
     fun serviceDetail(serviceId: String) = "service/${Uri.encode(serviceId)}"
     fun adDetail(adId: String) = "ad/${Uri.encode(adId)}"
 }

@@ -43,12 +43,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.ActiveOrder
 
 /** Static colors; accent uses [MaterialTheme.colorScheme.primary] from composables. */
 private object OrderTrackingSectionPalette {
-    val HeaderTitle = Color(0xFF111827)
-    val CurrentLabel = Color(0xFF111827)
+    val HeaderTitle = DobbyColors.Dark
+    val CurrentLabel = DobbyColors.Dark
     val InactiveBorder = Color(0xFFD1D1D6)
     val InactiveIcon = Color(0xFF8E8E93)
     val InactiveLabel = Color(0xFF8E8E93)

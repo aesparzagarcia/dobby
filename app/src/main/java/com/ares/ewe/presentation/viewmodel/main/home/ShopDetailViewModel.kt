@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.ProductCategory
+import com.ares.ewe.presentation.ui.main.home.formatShopReopensLabel
+import com.ares.ewe.presentation.ui.main.home.isShopAvailableForOrders
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.PlacesRepository
@@ -24,9 +26,18 @@ data class ShopDetailUiState(
     val products: List<ShopProduct> = emptyList(),
     val searchQuery: String = "",
     val selectedCategoryId: String? = null,
+    val shopStatus: String? = null,
+    val openingHour: String? = null,
+    val closingHour: String? = null,
+    val isShopAvailableForOrders: Boolean = true,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 ) {
+    val showShopClosedBanner: Boolean
+        get() = !isShopAvailableForOrders
+
+    val shopReopensLabel: String?
+        get() = formatShopReopensLabel(shopStatus, openingHour)
     val filteredProducts: List<ShopProduct>
         get() {
             val query = searchQuery.trim()
@@ -65,11 +76,19 @@ class ShopDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val products = placesRepository.getShopProducts(openedShopId)
+                val page = placesRepository.getShopProducts(openedShopId)
                 _uiState.update {
                     it.copy(
                         shopName = shopName,
-                        products = products,
+                        products = page.products,
+                        isShopAvailableForOrders = isShopAvailableForOrders(
+                            shopStatus = page.shopStatus,
+                            openingHour = page.openingHour,
+                            closingHour = page.closingHour,
+                        ),
+                        shopStatus = page.shopStatus,
+                        openingHour = page.openingHour,
+                        closingHour = page.closingHour,
                         isLoading = false,
                         errorMessage = null,
                     )
@@ -94,6 +113,7 @@ class ShopDetailViewModel @Inject constructor(
     }
 
     fun addToCart(product: ShopProduct) {
+        if (!_uiState.value.isShopAvailableForOrders) return
         val validDiscount = product.discount.coerceIn(0, 100)
         val unitPrice = if (product.hasPromotion && validDiscount > 0) {
             product.price * (1 - validDiscount / 100.0)

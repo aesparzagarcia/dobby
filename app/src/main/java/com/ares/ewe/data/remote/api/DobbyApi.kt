@@ -25,7 +25,7 @@ import com.ares.ewe.data.remote.model.PromotionProductDto
 import com.ares.ewe.data.remote.model.RateProductsRequest
 import com.ares.ewe.data.remote.model.RegisterPushDeviceRequest
 import com.ares.ewe.data.remote.model.RegisterPushDeviceResponse
-import com.ares.ewe.data.remote.model.ShopProductDto
+import com.ares.ewe.data.remote.model.ShopProductsResponseDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -61,7 +61,7 @@ interface DobbyApi {
     suspend fun getPromotions(): List<PromotionProductDto>
 
     @GET("app/shops/{id}/products")
-    suspend fun getShopProducts(@Path("id") shopId: String): List<ShopProductDto>
+    suspend fun getShopProducts(@Path("id") shopId: String): ShopProductsResponseDto
 
     @GET("app/products/{id}")
     suspend fun getProduct(@Path("id") productId: String): ProductDetailDto

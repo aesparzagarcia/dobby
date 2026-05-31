@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.viewmodel.auth.register.AddUserInfoViewModel
 import kotlinx.coroutines.launch
 
@@ -130,7 +131,7 @@ fun AddUserInfoScreen(
                         .size(8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (pagerState.currentPage == index) Color(0xFF3967FF)
+                            if (pagerState.currentPage == index) DobbyColors.Primary
                             else Color(0xFFE0E0E0)
                         ),
                 )

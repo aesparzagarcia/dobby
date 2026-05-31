@@ -14,6 +14,24 @@ object DeliveryEtaEstimator {
     private const val PREP_MINUTES = 14.0
     private const val FALLBACK_LABEL = "30–45 min"
 
+    fun estimateLabelForPickup(
+        userLat: Double?,
+        userLng: Double?,
+        pickupLat: Double?,
+        pickupLng: Double?,
+    ): String {
+        if (userLat == null || userLng == null || pickupLat == null || pickupLng == null) {
+            return FALLBACK_LABEL
+        }
+        if (!userLat.isFinite() || !userLng.isFinite() || !pickupLat.isFinite() || !pickupLng.isFinite()) {
+            return FALLBACK_LABEL
+        }
+        val center = centerMinutes(userLat, userLng, pickupLat, pickupLng)
+        val low = (center * 0.82).roundToInt().coerceIn(18, 150)
+        val high = (center * 1.18).roundToInt().coerceIn(low + 5, 160)
+        return "$low\u2013$high min"
+    }
+
     fun estimateLabel(
         userLat: Double?,
         userLng: Double?,

@@ -29,8 +29,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.ewe.core.theme.DobbyColors
 
-private val CalloutBlue = Color(0xFF3967FF)
+private val CalloutBlue = DobbyColors.Primary
 
 /** ~30% less motion than the original −10dp peak. */
 private const val BobAmplitudeDp = 7f

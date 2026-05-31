@@ -48,6 +48,13 @@ data class ShopProduct(
     val category: String? = null,
 )
 
+data class ShopProductsPage(
+    val shopStatus: String,
+    val openingHour: String?,
+    val closingHour: String?,
+    val products: List<ShopProduct>,
+)
+
 data class ProductDetail(
     val id: String,
     val name: String,
@@ -55,6 +62,7 @@ data class ProductDetail(
     val price: Double,
     val imageUrls: List<String>,
     val rate: Float = 0f,
+    val ratingCount: Int = 0,
     val hasPromotion: Boolean = false,
     val discount: Int = 0,
     val shopId: String? = null,

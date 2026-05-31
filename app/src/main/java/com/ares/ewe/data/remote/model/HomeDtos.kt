@@ -62,6 +62,17 @@ data class ShopProductDto(
     @SerializedName("category") val category: String? = null,
 )
 
+data class ShopInfoDto(
+    @SerializedName("status") val status: String,
+    @SerializedName("opening_hour") val openingHour: String? = null,
+    @SerializedName("closing_hour") val closingHour: String? = null,
+)
+
+data class ShopProductsResponseDto(
+    @SerializedName("shop") val shop: ShopInfoDto,
+    @SerializedName("products") val products: List<ShopProductDto>,
+)
+
 data class ProductDetailDto(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
@@ -69,6 +80,7 @@ data class ProductDetailDto(
     @SerializedName("price") val price: Double,
     @SerializedName("imageUrls") val imageUrls: List<String>? = null,
     @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("rating_count") val ratingCount: Int = 0,
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,

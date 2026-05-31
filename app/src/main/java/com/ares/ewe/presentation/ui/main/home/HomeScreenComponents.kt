@@ -48,13 +48,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.ares.ewe.core.theme.Blue
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.core.util.serviceCategoryLabelEs
 import com.ares.ewe.domain.model.BestSellerProduct
 import com.ares.ewe.domain.model.FeaturedPlace
 
 private val HomeBg = Color.White
-private val SearchBg = Color(0xFFF2F2F7)
+private val SearchBg = DobbyColors.Light
 private val CardBorder = Color(0xFFE8E8ED)
 private val OpenGreen = Color(0xFF22C55E)
 private val ClosedGray = Color(0xFF6B7280)
@@ -632,7 +632,7 @@ fun HomePromoBanner(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        color = Blue,
+        color = DobbyColors.Primary,
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(

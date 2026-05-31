@@ -49,20 +49,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.OrderTracking
 import com.ares.ewe.domain.model.OrderTrackingDeliveryMan
 import com.ares.ewe.domain.model.OrderTrackingItem
 
 private object OrderTrackingSheetPalette {
-    val Primary = Color(red = 0.114f, green = 0.176f, blue = 0.506f, alpha = 1.0f)
-    val TitleDark = Color(0xFF111827)
-    val StatusBackground = Primary.copy(alpha = 0.14f)
+    val Primary = DobbyColors.Primary
+    val TitleDark = DobbyColors.Dark
+    val StatusBackground = DobbyColors.Light
     val StatusSubtitle = Color(0x560B1185)
     val Muted = Color(0xFF8E8E93)
-    val TotalBarBackground = Primary.copy(alpha = 0.12f)
+    val TotalBarBackground = DobbyColors.Light
     val IconTileBackground = Color(0xFFF3F4F6)
     val ProductThumbBorder = Color(0xFFE5E7EB)
-    val CheckBadgeBackground = Primary.copy(alpha = 0.2f)
+    val CheckBadgeBackground = Primary.copy(alpha = 0.18f)
 }
 
 /** All sheet layout metrics at 99% of design spec (−1%). */

@@ -23,10 +23,12 @@ import javax.inject.Inject
 
 data class ProductUiState(
     val product: ProductDetail? = null,
-    val quantity: Int = 0,
+    val quantity: Int = 1,
+    val ratingCount: Int = 0,
+    val isProductAvailable: Boolean = true,
     val isFavorite: Boolean = false,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 ) {
     /** Precio por unidad que paga el cliente (con descuento si aplica). */
     val unitPriceEffective: Double
@@ -49,9 +51,10 @@ class ProductViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val productId: String = checkNotNull(savedStateHandle.get<String>("id"))
-    private val pickupLatitude: Double? = savedStateHandle.get<String>("pickupLat").toNavPickupDouble()
-    private val pickupLongitude: Double? = savedStateHandle.get<String>("pickupLng").toNavPickupDouble()
+    val pickupLatitude: Double? = savedStateHandle.get<String>("pickupLat").toNavPickupDouble()
+    val pickupLongitude: Double? = savedStateHandle.get<String>("pickupLng").toNavPickupDouble()
     private val navShopId: String? = savedStateHandle.get<String>("shopId").toNavShopId()
+    private val shopAvailable: Boolean = savedStateHandle.get<Boolean>("shopAvailable") ?: true
 
     private val _uiState = MutableStateFlow(ProductUiState())
     val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
@@ -81,9 +84,11 @@ class ProductViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         product = product,
-                        quantity = 0,
+                        quantity = 1,
+                        ratingCount = product.ratingCount,
+                        isProductAvailable = shopAvailable,
                         isLoading = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
             } catch (e: Exception) {
@@ -102,11 +107,12 @@ class ProductViewModel @Inject constructor(
     }
 
     fun decrementQuantity() {
-        _uiState.update { it.copy(quantity = (it.quantity - 1).coerceAtLeast(0)) }
+        _uiState.update { it.copy(quantity = (it.quantity - 1).coerceAtLeast(1)) }
     }
 
     fun addToCart() {
         val product = _uiState.value.product ?: return
+        if (!_uiState.value.isProductAvailable) return
         val quantity = _uiState.value.quantity
         if (quantity <= 0) return
         val imageUrl = product.imageUrls.firstOrNull()

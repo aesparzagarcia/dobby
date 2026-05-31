@@ -6,6 +6,7 @@ import com.ares.ewe.domain.model.PlaceItem
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ServiceDetail
 import com.ares.ewe.domain.model.ShopProduct
+import com.ares.ewe.domain.model.ShopProductsPage
 
 interface PlacesRepository {
     suspend fun getPlaces(): List<PlaceItem>
@@ -14,7 +15,7 @@ interface PlacesRepository {
 
     suspend fun getPromotions(): List<BestSellerProduct>
 
-    suspend fun getShopProducts(shopId: String): List<ShopProduct>
+    suspend fun getShopProducts(shopId: String): ShopProductsPage
 
     suspend fun getProduct(productId: String): ProductDetail
 

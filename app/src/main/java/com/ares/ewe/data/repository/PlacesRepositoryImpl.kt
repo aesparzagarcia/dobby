@@ -9,6 +9,7 @@ import com.ares.ewe.domain.model.PlaceItem
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ServiceDetail
 import com.ares.ewe.domain.model.ShopProduct
+import com.ares.ewe.domain.model.ShopProductsPage
 import com.ares.ewe.domain.repository.PlacesRepository
 import com.ares.ewe.core.util.serviceCategoryLabelEs
 import com.ares.ewe.core.util.shopTypeLabelEs
@@ -121,8 +122,9 @@ class PlacesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getShopProducts(shopId: String): List<ShopProduct> {
-        return api.getShopProducts(shopId).map { p ->
+    override suspend fun getShopProducts(shopId: String): ShopProductsPage {
+        val response = api.getShopProducts(shopId)
+        val products = response.products.map { p ->
             ShopProduct(
                 id = p.id,
                 name = p.name,
@@ -137,6 +139,12 @@ class PlacesRepositoryImpl @Inject constructor(
                 category = p.category,
             )
         }
+        return ShopProductsPage(
+            shopStatus = response.shop.status,
+            openingHour = response.shop.openingHour,
+            closingHour = response.shop.closingHour,
+            products = products,
+        )
     }
 
     override suspend fun getProduct(productId: String): ProductDetail {
@@ -149,6 +157,7 @@ class PlacesRepositoryImpl @Inject constructor(
             price = dto.price,
             imageUrls = urls,
             rate = dto.rate,
+            ratingCount = dto.ratingCount,
             hasPromotion = dto.hasPromotion,
             discount = dto.discount,
             shopId = dto.shopId,

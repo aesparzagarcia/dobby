@@ -251,8 +251,10 @@ fun DobbyNavigation(
         ) {
             ShopDetailScreen(
                 onBack = { navController.popBackStack() },
-                onProductClick = { productId, pickupLat, pickupLng, shopId ->
-                    navController.navigate(DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId))
+                onProductClick = { productId, pickupLat, pickupLng, shopId, shopAvailable ->
+                    navController.navigate(
+                        DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId, shopAvailable),
+                    )
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) }
             )
@@ -264,12 +266,13 @@ fun DobbyNavigation(
                 navArgument("pickupLat") { type = NavType.StringType; defaultValue = "none" },
                 navArgument("pickupLng") { type = NavType.StringType; defaultValue = "none" },
                 navArgument("shopId") { type = NavType.StringType; defaultValue = "none" },
+                navArgument("shopAvailable") { type = NavType.BoolType; defaultValue = true },
             )
         ) {
             ProductScreen(
                 onBack = { navController.popBackStack() },
                 onAddToCartClick = { navController.navigate(DobbyScreens.Cart) },
-                onCartClick = { navController.navigate(DobbyScreens.Cart) }
+                onCartClick = { navController.navigate(DobbyScreens.Cart) },
             )
         }
         composable(DobbyScreens.Cart) {

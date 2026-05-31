@@ -9,12 +9,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColorScheme = lightColorScheme(
-    primary = Blue,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
+    primary = DobbyColors.Primary,
+    onPrimary = Color.White,
+    primaryContainer = DobbyColors.Light,
+    onPrimaryContainer = DobbyColors.Dark,
+    secondary = DobbyColors.Accent,
+    onSecondary = Color.White,
+    tertiary = DobbyColors.Warning,
+    onTertiary = DobbyColors.Dark,
     background = Color.White,
+    onBackground = DobbyColors.Dark,
     surface = Color.White,
-    surfaceVariant = Color(0xFFF2F2F7),
+    onSurface = DobbyColors.Dark,
+    surfaceVariant = DobbyColors.Light,
+    onSurfaceVariant = DobbyColors.Dark.copy(alpha = 0.72f),
 )
 
 @Composable

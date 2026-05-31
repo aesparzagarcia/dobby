@@ -39,7 +39,7 @@ import com.ares.ewe.presentation.viewmodel.main.home.ShopDetailViewModel
 @Composable
 fun ShopDetailScreen(
     onBack: () -> Unit,
-    onProductClick: (productId: String, pickupLat: Double?, pickupLng: Double?, shopId: String) -> Unit = { _, _, _, _ -> },
+    onProductClick: (productId: String, pickupLat: Double?, pickupLng: Double?, shopId: String, shopAvailable: Boolean) -> Unit = { _, _, _, _, _ -> },
     onCartClick: () -> Unit = {},
     viewModel: ShopDetailViewModel = hiltViewModel(),
 ) {
@@ -110,6 +110,12 @@ fun ShopDetailScreen(
                             query = uiState.searchQuery,
                             onQueryChange = viewModel::onSearchQueryChange,
                         )
+                        if (uiState.showShopClosedBanner) {
+                            ShopClosedBanner(
+                                reopensLabel = uiState.shopReopensLabel,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                        }
                         ShopDetailCategoryRow(
                             selectedCategoryId = uiState.selectedCategoryId,
                             onCategorySelected = viewModel::onCategorySelected,
@@ -150,12 +156,14 @@ fun ShopDetailScreen(
                                 items(filteredProducts, key = { it.id }) { product ->
                                     ShopDetailProductCard(
                                         product = product,
+                                        isProductAvailable = uiState.isShopAvailableForOrders,
                                         onClick = {
                                             onProductClick(
                                                 product.id,
                                                 viewModel.pickupLatitude,
                                                 viewModel.pickupLongitude,
                                                 viewModel.openedShopId,
+                                                uiState.isShopAvailableForOrders,
                                             )
                                         },
                                         onAddClick = { viewModel.addToCart(product) },

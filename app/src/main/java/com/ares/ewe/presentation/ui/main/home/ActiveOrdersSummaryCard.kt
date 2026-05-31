@@ -28,8 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ares.ewe.core.theme.DobbyColors
 
-private val SummaryTint = Color(red = 0.45f, green = 0.35f, blue = 0.75f)
+private val SummaryTint = DobbyColors.Primary
 
 /**
  * Home entry cuando hay 2+ pedidos activos: icono llamativo + contador.

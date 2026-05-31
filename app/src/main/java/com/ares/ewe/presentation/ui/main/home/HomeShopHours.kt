@@ -24,6 +24,28 @@ fun formatPlaceHoursRange(openingHour: String?, closingHour: String?): String? {
     return "${formatHour12(open)} - ${formatHour12(close)}"
 }
 
+/** Orders allowed when shop is ACTIVE and within opening hours (unknown hours → treat as open). */
+fun isShopAvailableForOrders(
+    shopStatus: String?,
+    openingHour: String?,
+    closingHour: String?,
+): Boolean {
+    if (shopStatus != null && shopStatus != "ACTIVE") return false
+    return isPlaceOpenNow(openingHour, closingHour) != false
+}
+
+/** e.g. "Abre hoy a las 8:00 AM" when closed outside hours; null if inactive or hours unknown. */
+fun formatShopReopensLabel(
+    shopStatus: String?,
+    openingHour: String?,
+): String? {
+    if (shopStatus != null && shopStatus != "ACTIVE") return null
+    val openRaw = openingHour?.trim().orEmpty()
+    if (openRaw.isEmpty()) return null
+    parseHour(openRaw) ?: return null
+    return "Abre hoy a las ${formatHour12(openRaw)}"
+}
+
 private fun parseHour(raw: String?): LocalTime? {
     val s = raw?.trim().orEmpty()
     if (s.isEmpty()) return null

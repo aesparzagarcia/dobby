@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ares.ewe.domain.model.Ad
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.presentation.components.DeliveryAddressCallout
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
@@ -142,7 +143,7 @@ fun HomeTabScreen(
                     uiState.warningMessage?.let { msg ->
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                containerColor = DobbyColors.Warning.copy(alpha = 0.15f),
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -154,7 +155,7 @@ fun HomeTabScreen(
                             ) {
                                 Text(
                                     text = msg,
-                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    color = DobbyColors.Dark,
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.weight(1f),
                                 )
