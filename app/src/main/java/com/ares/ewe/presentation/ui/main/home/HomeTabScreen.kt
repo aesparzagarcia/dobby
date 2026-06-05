@@ -62,7 +62,7 @@ fun HomeTabScreen(
     onPlaceClick: (FeaturedPlace) -> Unit = {},
     onAdClick: (String) -> Unit = {},
     onAddressLabelClick: () -> Unit = {},
-    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
+    onProductClick: (productId: String, shopId: String?, shopAvailable: Boolean) -> Unit = { _, _, _ -> },
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     onActiveOrdersClick: () -> Unit = {},
@@ -77,6 +77,7 @@ fun HomeTabScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadAddresses()
+        viewModel.loadActiveOrder()
     }
 
     val query = uiState.searchQuery.trim()
@@ -89,7 +90,7 @@ fun HomeTabScreen(
             it.hasPromotion && it.discount > 0
         }
         else -> uiState.bestSellerProducts
-    }
+    }.filter { isProductShopAvailableForOrders(it.shopId, uiState.featuredPlaces) }
     val filteredProducts = categoryProducts.filter {
         query.isBlank() || it.name.contains(query, ignoreCase = true)
     }
@@ -188,6 +189,16 @@ fun HomeTabScreen(
                                         .padding(bottom = 4.dp),
                                 )
                             }
+                            HomeCategoryRow(
+                                selected = quickCategory,
+                                onCategorySelected = { cat ->
+                                    quickCategory = cat
+                                    if (cat == HomeQuickCategory.Offers) {
+                                        onPromotionsTabClick()
+                                    }
+                                },
+                                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                            )
                         }
                         CartIconBadge(
                             itemCount = cartItemCount,
@@ -226,18 +237,6 @@ fun HomeTabScreen(
                                             .padding(horizontal = 16.dp, vertical = 8.dp),
                                     )
                                 }
-                            }
-                            item(key = "categories") {
-                                HomeCategoryRow(
-                                    selected = quickCategory,
-                                    onCategorySelected = { cat ->
-                                        quickCategory = cat
-                                        if (cat == HomeQuickCategory.Offers) {
-                                            onPromotionsTabClick()
-                                        }
-                                    },
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                )
                             }
                             if (destacadosPreview.isNotEmpty()) {
                                 item(key = "featured") {
@@ -280,7 +279,16 @@ fun HomeTabScreen(
                                             HomeProductCarouselCard(
                                                 product = product,
                                                 modifier = Modifier.width(productCardWidth),
-                                                onClick = { onProductClick(product.id, product.shopId) },
+                                                onClick = {
+                                                    onProductClick(
+                                                        product.id,
+                                                        product.shopId,
+                                                        isProductShopAvailableForOrders(
+                                                            product.shopId,
+                                                            uiState.featuredPlaces,
+                                                        ),
+                                                    )
+                                                },
                                             )
                                         }
                                         item(key = "best_sellers_see_more") {

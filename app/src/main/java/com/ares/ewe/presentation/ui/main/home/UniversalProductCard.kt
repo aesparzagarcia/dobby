@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ares.ewe.core.util.toDisplayImageUrl
 import coil.compose.AsyncImage
 
 /** Escala del card de producto (ancho adicional desde [HomeTabScreen]). */
@@ -48,6 +49,7 @@ fun UniversalProductCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
 ) {
+    val resolvedImageUrl = imageUrl.toDisplayImageUrl()
     val validDiscount = discount.coerceIn(0, 100)
     val showPromotion = hasPromotion && validDiscount > 0
     val discountedPrice = if (showPromotion) price * (1 - validDiscount / 100.0) else price
@@ -73,9 +75,9 @@ fun UniversalProductCard(
                     .background(Color(0xFFF3F4F6)),
                 contentAlignment = Alignment.Center,
             ) {
-                if (imageUrl != null) {
+                if (resolvedImageUrl != null) {
                     AsyncImage(
-                        model = imageUrl,
+                        model = resolvedImageUrl,
                         contentDescription = name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,

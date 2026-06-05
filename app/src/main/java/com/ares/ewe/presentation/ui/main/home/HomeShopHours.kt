@@ -1,5 +1,6 @@
 package com.ares.ewe.presentation.ui.main.home
 
+import com.ares.ewe.domain.model.FeaturedPlace
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -44,6 +45,21 @@ fun formatShopReopensLabel(
     if (openRaw.isEmpty()) return null
     parseHour(openRaw) ?: return null
     return "Abre hoy a las ${formatHour12(openRaw)}"
+}
+
+/** Home/promotions list items: match shop hours from featured places (ACTIVE shops on /home). */
+fun isProductShopAvailableForOrders(
+    shopId: String?,
+    featuredPlaces: List<FeaturedPlace>,
+): Boolean {
+    val id = shopId?.trim().orEmpty()
+    if (id.isEmpty()) return false
+    val shop = featuredPlaces.find { it.id == id && !it.isService } ?: return false
+    return isShopAvailableForOrders(
+        shopStatus = "ACTIVE",
+        openingHour = shop.openingHour,
+        closingHour = shop.closingHour,
+    )
 }
 
 private fun parseHour(raw: String?): LocalTime? {

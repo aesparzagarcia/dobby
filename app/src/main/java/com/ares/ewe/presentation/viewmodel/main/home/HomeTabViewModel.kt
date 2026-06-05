@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -69,7 +70,7 @@ class HomeTabViewModel @Inject constructor(
         loadActiveOrder()
         viewModelScope.launch {
             orderRealtimeBus.events.collect {
-                refreshActiveOrder()
+                refreshActiveOrder(clearOnFailure = false)
             }
         }
     }
@@ -89,6 +90,18 @@ class HomeTabViewModel @Inject constructor(
                     _uiState.update { it.copy(activeOrders = emptyList()) }
                 }
             }
+    }
+
+    /**
+     * Tras crear un pedido, el GET /active puede tardar un instante (o perder una carrera con Firestore).
+     * Reintenta antes de volver al home para que el tracking aparezca sin pull-to-refresh.
+     */
+    suspend fun refreshActiveOrderAfterCheckout() {
+        repeat(6) { attempt ->
+            refreshActiveOrder(clearOnFailure = false)
+            if (_uiState.value.activeOrders.isNotEmpty()) return
+            if (attempt < 5) delay(400)
+        }
     }
 
     fun loadAddresses() {

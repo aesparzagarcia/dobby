@@ -16,11 +16,13 @@ object DobbyScreens {
     const val DeliveryAddress = "delivery_address"
     const val CurrentLocationMap = "current_location_map"
     const val CurrentLocationMapWithLocation = "current_location_map/{lat}/{lng}/{address}"
-    const val OrderTracking = "order_tracking/{orderId}"
+    const val OrderTracking = "order_tracking/{orderId}/{returnToHistory}"
     const val ActiveOrders = "active_orders"
+    const val OrderHistory = "order_history"
 
     fun otp(phone: String, userExists: Boolean) = "otp/${Uri.encode(phone)}/$userExists"
-    fun orderTracking(orderId: String) = "order_tracking/${Uri.encode(orderId)}"
+    fun orderTracking(orderId: String, returnToHistory: Boolean = false) =
+        "order_tracking/${Uri.encode(orderId)}/$returnToHistory"
     fun currentLocationMapWithLocation(lat: Double, lng: Double, address: String) =
         "current_location_map/$lat/$lng/${Uri.encode(address)}"
     fun addUserInfo(phone: String) = "add_user_info/${Uri.encode(phone)}"

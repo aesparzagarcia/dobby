@@ -24,12 +24,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
+import com.ares.ewe.presentation.ui.main.home.isProductShopAvailableForOrders
 import com.ares.ewe.presentation.ui.main.home.UniversalProductCard
 import com.ares.ewe.presentation.viewmodel.main.promotions.PromotionsTabViewModel
 
 @Composable
 fun PromotionsTabScreen(
-    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
+    onProductClick: (productId: String, shopId: String?, shopAvailable: Boolean) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: PromotionsTabViewModel = hiltViewModel(),
 ) {
@@ -92,7 +93,13 @@ fun PromotionsTabScreen(
                             hasPromotion = product.hasPromotion,
                             discount = product.discount,
                             modifier = Modifier.width(productCardWidth),
-                            onClick = { onProductClick(product.id, product.shopId) },
+                            onClick = {
+                                onProductClick(
+                                    product.id,
+                                    product.shopId,
+                                    isProductShopAvailableForOrders(product.shopId, uiState.featuredPlaces),
+                                )
+                            },
                         )
                     }
                 }

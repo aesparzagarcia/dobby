@@ -31,10 +31,11 @@ fun HomeScreen(
     onPlaceClick: (FeaturedPlace) -> Unit = {},
     onAdClick: (String) -> Unit = {},
     onAddressLabelClick: () -> Unit = {},
-    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
+    onProductClick: (productId: String, shopId: String?, shopAvailable: Boolean) -> Unit = { _, _, _ -> },
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     onActiveOrdersClick: () -> Unit = {},
+    onOrderHistoryClick: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()
 ) {
     var currentTab by remember { mutableStateOf(MainTab.Home) }
@@ -66,7 +67,10 @@ fun HomeScreen(
                     MainTab.Favorites -> FavoritesTabScreen(
                         onProductClick = onProductClick
                     )
-                    MainTab.Profile -> ProfileTabScreen(onLogout = { viewModel.logout(onLogout) })
+                    MainTab.Profile -> ProfileTabScreen(
+                        onLogout = { viewModel.logout(onLogout) },
+                        onOrdersClick = onOrderHistoryClick,
+                    )
                 }
             }
             FloatingBottomNavBar(

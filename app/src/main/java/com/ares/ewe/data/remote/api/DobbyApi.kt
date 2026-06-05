@@ -3,6 +3,7 @@ package com.ares.ewe.data.remote.api
 import com.ares.ewe.data.remote.model.AddressDto
 import com.ares.ewe.data.remote.model.AdDto
 import com.ares.ewe.data.remote.model.ActiveOrderDto
+import com.ares.ewe.data.remote.model.OrderHistoryDto
 import com.ares.ewe.data.remote.model.CreateOrderRequest
 import com.ares.ewe.data.remote.model.CreateOrderResponse
 import com.ares.ewe.data.remote.model.OrderTrackingDto
@@ -86,6 +87,9 @@ interface DobbyApi {
 
     @GET("orders/active")
     suspend fun getActiveOrders(): Response<List<ActiveOrderDto>>
+
+    @GET("orders/history")
+    suspend fun getOrderHistory(): Response<List<OrderHistoryDto>>
 
     @GET("orders/{id}/tracking")
     suspend fun getOrderTracking(@Path("id") orderId: String): Response<OrderTrackingDto>

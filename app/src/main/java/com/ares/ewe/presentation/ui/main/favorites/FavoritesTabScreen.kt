@@ -28,7 +28,7 @@ import com.ares.ewe.presentation.viewmodel.main.favorites.FavoritesTabViewModel
 
 @Composable
 fun FavoritesTabScreen(
-    onProductClick: (productId: String, shopId: String?) -> Unit = { _, _ -> },
+    onProductClick: (productId: String, shopId: String?, shopAvailable: Boolean) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: FavoritesTabViewModel = hiltViewModel(),
 ) {
@@ -88,7 +88,7 @@ fun FavoritesTabScreen(
                             rate = product.rate,
                             hasPromotion = product.hasPromotion,
                             discount = product.discount,
-                            onClick = { onProductClick(product.productId, null) },
+                            onClick = { onProductClick(product.productId, null, true) },
                         )
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {

@@ -2,6 +2,8 @@ package com.ares.ewe.data.repository
 
 import com.ares.ewe.data.local.dao.FavoriteProductDao
 import com.ares.ewe.data.local.entity.FavoriteProductEntity
+import com.ares.ewe.core.util.normalizeImageUrlForStorage
+import com.ares.ewe.core.util.toDisplayImageUrl
 import com.ares.ewe.di.ApplicationScope
 import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.repository.FavoritesRepository
@@ -33,7 +35,7 @@ class FavoritesRepositoryImpl @Inject constructor(
                         productId = product.productId,
                         name = product.name,
                         price = product.price,
-                        imageUrl = product.imageUrl,
+                        imageUrl = product.imageUrl.normalizeImageUrlForStorage(),
                         rate = product.rate,
                         hasPromotion = product.hasPromotion,
                         discount = product.discount,
@@ -50,7 +52,7 @@ private fun FavoriteProductEntity.toDomain() = FavoriteProduct(
     productId = productId,
     name = name,
     price = price,
-    imageUrl = imageUrl,
+    imageUrl = imageUrl.toDisplayImageUrl(),
     rate = rate,
     hasPromotion = hasPromotion,
     discount = discount,

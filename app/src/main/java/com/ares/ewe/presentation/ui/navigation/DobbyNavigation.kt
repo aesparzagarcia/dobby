@@ -17,9 +17,13 @@ import androidx.navigation.navArgument
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.snapshotFlow
+import com.ares.ewe.di.OrderRepositoryEntryPoint
 import com.ares.ewe.di.SessionEventBusEntryPoint
 import com.ares.ewe.domain.model.FeaturedPlace
+import com.ares.ewe.push.OrderPushNavigation
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.ares.ewe.presentation.ui.auth.register.AddUserInfoScreen
 import com.ares.ewe.presentation.ui.auth.otp.OtpScreen
 import com.ares.ewe.presentation.ui.auth.phone.PhoneScreen
@@ -30,6 +34,7 @@ import com.ares.ewe.presentation.ui.main.home.AddressScreen
 import com.ares.ewe.presentation.ui.main.home.CartScreen
 import com.ares.ewe.presentation.ui.main.home.MapLocationScreen
 import com.ares.ewe.presentation.ui.main.home.OrderTrackingScreen
+import com.ares.ewe.presentation.ui.main.profile.OrderHistoryScreen
 import com.ares.ewe.presentation.ui.main.home.ProductScreen
 import com.ares.ewe.presentation.ui.main.home.ServiceDetailScreen
 import com.ares.ewe.presentation.ui.main.home.ShopDetailScreen
@@ -71,8 +76,21 @@ fun DobbyNavigation(
                     !route.startsWith("otp")
             }
             .first()
-        navController.navigate(DobbyScreens.orderTracking(orderId)) {
-            launchSingleTop = true
+        val orderRepository = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            OrderRepositoryEntryPoint::class.java,
+        ).orderRepository()
+        val openTracking = withContext(Dispatchers.IO) {
+            orderRepository.getOrderTracking(orderId).getOrNull()?.let { tracking ->
+                tracking != null && OrderPushNavigation.canOpenTracking(tracking.status)
+            } == true
+        }
+        if (openTracking) {
+            navController.navigate(DobbyScreens.orderTracking(orderId)) {
+                launchSingleTop = true
+            }
+        } else {
+            navController.popBackStack(DobbyScreens.Home, false)
         }
         onPendingOrderTrackingNavigated()
     }
@@ -174,8 +192,10 @@ fun DobbyNavigation(
                 onAddressLabelClick = {
                     navController.navigate(DobbyScreens.DeliveryAddress)
                 },
-                onProductClick = { productId, shopId ->
-                    navController.navigate(DobbyScreens.productDetail(productId, null, null, shopId))
+                onProductClick = { productId, shopId, shopAvailable ->
+                    navController.navigate(
+                        DobbyScreens.productDetail(productId, null, null, shopId, shopAvailable),
+                    )
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) },
                 onTrackOrderClick = { orderId ->
@@ -183,6 +203,17 @@ fun DobbyNavigation(
                 },
                 onActiveOrdersClick = {
                     navController.navigate(DobbyScreens.ActiveOrders)
+                },
+                onOrderHistoryClick = {
+                    navController.navigate(DobbyScreens.OrderHistory)
+                },
+            )
+        }
+        composable(DobbyScreens.OrderHistory) {
+            OrderHistoryScreen(
+                onBack = { navController.popBackStack() },
+                onOrderClick = { orderId ->
+                    navController.navigate(DobbyScreens.orderTracking(orderId, returnToHistory = true))
                 },
             )
         }
@@ -282,7 +313,7 @@ fun DobbyNavigation(
             CartScreen(
                 onBack = { navController.popBackStack() },
                 onCheckoutComplete = {
-                    homeTabViewModel.refreshActiveOrder()
+                    homeTabViewModel.refreshActiveOrderAfterCheckout()
                     navController.popBackStack(DobbyScreens.Home, inclusive = false)
                 },
             )
@@ -298,16 +329,27 @@ fun DobbyNavigation(
         }
         composable(
             route = DobbyScreens.OrderTracking,
-            arguments = listOf(navArgument("orderId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("returnToHistory") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
         ) {
+            val returnToHistory = it.arguments?.getBoolean("returnToHistory") == true
             val homeTabViewModel: HomeTabViewModel = hiltViewModel(
                 navController.getBackStackEntry(DobbyScreens.Home),
             )
             OrderTrackingScreen(
                 onBack = { navController.popBackStack() },
                 onFinish = {
-                    navController.popBackStack(DobbyScreens.Home, inclusive = false)
-                    homeTabViewModel.loadActiveOrder()
+                    if (returnToHistory) {
+                        navController.popBackStack()
+                    } else {
+                        navController.popBackStack(DobbyScreens.Home, inclusive = false)
+                        homeTabViewModel.loadActiveOrder()
+                    }
                 },
             )
         }

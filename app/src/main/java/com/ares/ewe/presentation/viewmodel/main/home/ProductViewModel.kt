@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
+import com.ares.ewe.core.util.normalizeImageUrlForStorage
 import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.repository.CartRepository
@@ -139,7 +140,7 @@ class ProductViewModel @Inject constructor(
                 productId = product.id,
                 name = product.name,
                 price = product.price,
-                imageUrl = product.imageUrls.firstOrNull(),
+                imageUrl = product.imageUrls.firstOrNull().normalizeImageUrlForStorage(),
                 rate = product.rate,
                 hasPromotion = product.hasPromotion,
                 discount = product.discount,

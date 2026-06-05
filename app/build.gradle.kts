@@ -25,7 +25,7 @@ android {
         // Local API: default 10.0.2.2 = emulator → host localhost. Physical device: set DEV_API_HOST in gradle.properties
         // (PC LAN IP) or use adb reverse tcp:3001 tcp:3001 with DEV_API_HOST=127.0.0.1. Path must end with /api/.
         val devApiHost = (project.findProperty("DEV_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
-            ?: "192.168.1.14"
+            ?: "192.168.1.17"
         val devApiPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
             ?: "3001"
         buildConfigField("String", "BASE_URL", "\"http://$devApiHost:$devApiPort/api/\"")

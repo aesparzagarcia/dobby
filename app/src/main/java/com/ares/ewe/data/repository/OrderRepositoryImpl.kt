@@ -11,6 +11,7 @@ import com.ares.ewe.domain.model.ActiveOrder
 import retrofit2.Response
 import com.ares.ewe.domain.model.ActiveOrderProductLine
 import com.ares.ewe.domain.model.CartItem
+import com.ares.ewe.domain.model.OrderHistoryItem
 import com.ares.ewe.domain.model.OrderTracking
 import com.ares.ewe.domain.model.OrderTrackingDeliveryMan
 import com.ares.ewe.domain.model.OrderTrackingItem
@@ -20,6 +21,29 @@ import javax.inject.Inject
 class OrderRepositoryImpl @Inject constructor(
     private val api: DobbyApi
 ) : OrderRepository {
+
+    override suspend fun getOrderHistory(): Result<List<OrderHistoryItem>> = runCatching {
+        val response = api.getOrderHistory()
+        when (response.code()) {
+            204 -> emptyList()
+            200 -> response.body().orEmpty().map { dto ->
+                OrderHistoryItem(
+                    id = dto.id,
+                    status = dto.status,
+                    total = dto.total,
+                    createdAt = dto.createdAt,
+                    shopName = dto.shopName,
+                    productLines = dto.items.orEmpty().map { item ->
+                        ActiveOrderProductLine(
+                            name = item.productName,
+                            quantity = item.quantity,
+                        )
+                    },
+                )
+            }
+            else -> throw Exception(response.message())
+        }
+    }
 
     override suspend fun getActiveOrders(): Result<List<ActiveOrder>> = runCatching {
         val response = api.getActiveOrders()

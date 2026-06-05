@@ -2,6 +2,7 @@ package com.ares.ewe.presentation.viewmodel.main.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.domain.repository.FavoritesRepository
 import com.ares.ewe.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,17 +20,36 @@ data class ProfileUiState(
     val phone: String? = null,
     val avatarLetter: String = "?",
     val dobbyXp: Int = 0,
+    val levelKey: String = "EXPLORADOR",
     val levelName: String = "",
     val xpInLevelProgress: Float = 0f,
     val xpToNextLabel: String? = null,
     val orderStreakDays: Int = 0,
     val totalOrdersDelivered: Int = 0,
-    val recentEvents: List<Pair<String, Int>> = emptyList(),
+    val favoritesCount: Int = 0,
+    val recentEvents: List<ProfileRecentEvent> = emptyList(),
+) {
+    val levelNumber: Int
+        get() = consumerLevelNumber(levelKey)
+
+    val badgesUnlockedCount: Int
+        get() = listOf(
+            totalOrdersDelivered >= 1,
+            totalOrdersDelivered >= 3,
+            orderStreakDays >= 1,
+        ).count { it }
+}
+
+data class ProfileRecentEvent(
+    val label: String,
+    val delta: Int,
+    val timeAgo: String,
 )
 
 @HiltViewModel
 class ProfileTabViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
+    private val favoritesRepository: FavoritesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -37,6 +57,11 @@ class ProfileTabViewModel @Inject constructor(
 
     init {
         refresh()
+        viewModelScope.launch {
+            favoritesRepository.favorites.collect { list ->
+                _uiState.update { it.copy(favoritesCount = list.size) }
+            }
+        }
     }
 
     fun refresh() {
@@ -68,13 +93,18 @@ class ProfileTabViewModel @Inject constructor(
                             phone = g.phone?.takeIf { p -> p.isNotBlank() },
                             avatarLetter = initial,
                             dobbyXp = current,
+                            levelKey = g.levelKey,
                             levelName = g.levelName,
                             xpInLevelProgress = progress,
-                            xpToNextLabel = xpToNext?.let { xp -> "$xp XP al siguiente nivel" },
+                            xpToNextLabel = xpToNext?.let { xp -> "$xp XP para el siguiente nivel" },
                             orderStreakDays = g.orderStreakDays,
                             totalOrdersDelivered = g.totalOrdersDelivered,
                             recentEvents = g.recentEvents.map { e ->
-                                reasonLabelEs(e.reason) to e.delta
+                                ProfileRecentEvent(
+                                    label = reasonLabelEs(e.reason),
+                                    delta = e.delta,
+                                    timeAgo = formatTimeAgoEs(e.createdAt),
+                                )
                             },
                         )
                     }
@@ -91,11 +121,32 @@ class ProfileTabViewModel @Inject constructor(
     }
 
     private fun reasonLabelEs(reason: String): String = when (reason) {
-        "purchase" -> "Compra"
+        "purchase" -> "Compra completada"
         "first_order" -> "Primer pedido"
         "peak_hour" -> "Hora pico"
         "order_streak" -> "Racha de pedidos"
-        "rate_delivery" -> "Valorar reparto"
+        "rate_delivery" -> "Valoraste tu entrega"
         else -> reason
+    }
+}
+
+fun consumerLevelNumber(levelKey: String): Int {
+    val order = listOf("EXPLORADOR", "FRECUENTE", "FAN", "VIP", "DOBBY_MASTER")
+    val idx = order.indexOf(levelKey.uppercase())
+    return if (idx < 0) 1 else idx + 1
+}
+
+private fun formatTimeAgoEs(iso: String): String {
+    val instant = runCatching {
+        java.time.Instant.parse(iso)
+    }.getOrNull() ?: return "Reciente"
+    val minutes = java.time.Duration.between(instant, java.time.Instant.now()).toMinutes()
+    return when {
+        minutes < 1 -> "Hace un momento"
+        minutes < 60 -> "Hace $minutes min"
+        minutes < 60 * 24 -> "Hace ${minutes / 60} h"
+        minutes < 60 * 24 * 2 -> "Hace 1 día"
+        minutes < 60 * 24 * 7 -> "Hace ${minutes / (60 * 24)} días"
+        else -> "Hace más de una semana"
     }
 }

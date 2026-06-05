@@ -2,7 +2,6 @@ package com.ares.ewe.presentation.ui.main.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,15 +9,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,16 +35,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.profile.ProfileTabViewModel
 
 @Composable
 fun ProfileTabScreen(
     onLogout: () -> Unit,
+    onOrdersClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProfileTabViewModel = hiltViewModel(),
 ) {
@@ -45,18 +56,35 @@ fun ProfileTabScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(DobbyColors.Light)
             .verticalScroll(scroll)
-            .padding(20.dp),
+            .padding(horizontal = 20.dp)
+            .padding(top = 8.dp),
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Perfil",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = DobbyColors.Dark,
+            )
+            IconButton(onClick = { /* settings — próximamente */ }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Ajustes",
+                    tint = DobbyColors.Dark,
+                )
+            }
+        }
+
         Text(
-            text = "Perfil",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "Dobby Level · XP · recompensas",
+            text = "Sigue acumulando XP y desbloquea recompensas increíbles 🎉",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color(0xFF6B7280),
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
 
@@ -65,10 +93,10 @@ fun ProfileTabScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
+                        .padding(32.dp),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = DobbyColors.Primary)
                 }
             }
             uiState.error != null -> {
@@ -83,100 +111,7 @@ fun ProfileTabScreen(
                 }
             }
             else -> {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = uiState.avatarLetter,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-                        }
-                        Column(modifier = Modifier.padding(start = 14.dp)) {
-                            Text(
-                                text = uiState.displayName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = uiState.email,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 2.dp),
-                            )
-                            uiState.phone?.let { phone ->
-                                Text(
-                                    text = formatPhoneDisplay(phone),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 2.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column {
-                                Text(
-                                    text = uiState.levelName,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    text = "${uiState.dobbyXp} XP",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                            Text(
-                                text = streakEmoji(uiState.orderStreakDays),
-                                style = MaterialTheme.typography.headlineMedium,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        LinearProgressIndicator(
-                            progress = { uiState.xpInLevelProgress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp),
-                        )
-                        uiState.xpToNextLabel?.let { label ->
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(top = 8.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+                ProfileHeroCard(uiState = uiState)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -184,102 +119,169 @@ fun ProfileTabScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    StatChip(
-                        modifier = Modifier.weight(1f),
+                    ProfileQuickStatCard(
                         title = "Racha",
-                        value = "${uiState.orderStreakDays} días",
-                    )
-                    StatChip(
+                        value = streakValueLabel(uiState.orderStreakDays),
+                        icon = Icons.Default.LocalFireDepartment,
+                        iconTint = Color(0xFFFF8A3D),
+                        iconBackground = Color(0xFFFFF7ED),
                         modifier = Modifier.weight(1f),
+                    )
+                    ProfileQuickStatCard(
                         title = "Pedidos",
-                        value = "${uiState.totalOrdersDelivered}",
+                        value = ordersValueLabel(uiState.totalOrdersDelivered),
+                        icon = Icons.Default.ShoppingBag,
+                        iconTint = DobbyColors.Primary,
+                        iconBackground = DobbyColors.Light,
+                        modifier = Modifier.weight(1f),
+                        onClick = onOrdersClick,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ProfileQuickStatCard(
+                        title = "Favoritos",
+                        value = "${uiState.favoritesCount} favoritos",
+                        icon = Icons.Default.Favorite,
+                        iconTint = Color(0xFFEF4444),
+                        iconBackground = Color(0xFFFFF1F2),
+                        modifier = Modifier.weight(1f),
+                    )
+                    ProfileQuickStatCard(
+                        title = "Insignias",
+                        value = "${uiState.badgesUnlockedCount} insignias",
+                        icon = Icons.Default.Star,
+                        iconTint = Color(0xFF8B5CF6),
+                        iconBackground = Color(0xFFF3E8FF),
+                        modifier = Modifier.weight(1f),
                     )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "Cómo ganar XP",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Completa pedidos, mantén una racha diaria, valora el reparto con 5 estrellas y más. " +
-                        "El XP por compra tiene tope para que el nivel refleje hábito y calidad, no solo gasto.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
 
-                if (uiState.recentEvents.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Actividad reciente",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    uiState.recentEvents.forEach { (label, delta) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = if (delta >= 0) "+$delta" else "$delta",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = if (delta >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            )
+                ProfileSectionHeader(title = "Misiones de hoy")
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        profileTodayMissions.forEachIndexed { index, mission ->
+                            ProfileMissionRow(mission = mission)
+                            if (index < profileTodayMissions.lastIndex) {
+                                ProfileMenuDivider()
+                            }
                         }
                     }
+                }
+
+                if (uiState.recentEvents.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ProfileSectionHeader(title = "Actividad reciente")
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                            uiState.recentEvents.forEach { event ->
+                                val (icon, tint, bg) = activityIconFor(event.label)
+                                ProfileActivityRow(
+                                    label = event.label,
+                                    delta = event.delta,
+                                    timeAgo = event.timeAgo,
+                                    icon = icon,
+                                    iconTint = tint,
+                                    iconBackground = bg,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                ProfileSectionHeader(title = "Tus insignias")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    profileBadgesFor(uiState).forEach { badge ->
+                        ProfileBadgeChip(badge = badge)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                ProfileMenuCard(modifier = Modifier.padding(top = 4.dp)) {
+                    ProfileMenuRow(
+                        title = "Métodos de pago",
+                        icon = Icons.Default.CreditCard,
+                        onClick = { },
+                    )
+                    ProfileMenuDivider()
+                    ProfileMenuRow(
+                        title = "Cupones",
+                        icon = Icons.Default.ConfirmationNumber,
+                        onClick = { },
+                    )
+                    ProfileMenuDivider()
+                    ProfileMenuRow(
+                        title = "Notificaciones",
+                        icon = Icons.Default.Notifications,
+                        onClick = { },
+                    )
+                    ProfileMenuDivider()
+                    ProfileMenuRow(
+                        title = "Ayuda y soporte",
+                        icon = Icons.Default.Help,
+                        onClick = { },
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
         Button(
             onClick = onLogout,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = MainTabContentBottomInset),
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFF2F2F7),
+                contentColor = Color(0xFFEF4444),
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
-            Text("Cerrar sesión")
+            Text(
+                text = "Cerrar sesión",
+                fontWeight = FontWeight.SemiBold,
+            )
         }
+
+        // Scrollable tail inset — bottom padding on the modifier does not extend scroll range.
+        Spacer(modifier = Modifier.height(MainTabContentBottomInset + 24.dp))
     }
 }
 
-@Composable
-private fun StatChip(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        }
-    }
+private fun streakValueLabel(days: Int): String = when (days) {
+    1 -> "1 día"
+    else -> "$days días"
 }
 
-private fun streakEmoji(days: Int): String = when {
-    days >= 7 -> "🔥"
-    days >= 3 -> "⭐"
-    else -> "🎮"
-}
-
-/** Muestra teléfono nacional de 10 dígitos como +52 XXX XXX XXXX; si no, el texto tal cual. */
-private fun formatPhoneDisplay(raw: String): String {
-    val digits = raw.filter { it.isDigit() }
-    return if (digits.length == 10) {
-        "+52 ${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}"
-    } else {
-        raw
-    }
+private fun ordersValueLabel(count: Int): String = when (count) {
+    1 -> "1 pedido"
+    else -> "$count pedidos"
 }

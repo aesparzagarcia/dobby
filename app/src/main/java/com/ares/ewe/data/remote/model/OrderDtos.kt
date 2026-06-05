@@ -16,6 +16,15 @@ data class ActiveOrderDto(
     @SerializedName("items") val items: List<ActiveOrderItemDto>? = null,
 )
 
+data class OrderHistoryDto(
+    @SerializedName("id") val id: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("total") val total: Double = 0.0,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("shop_name") val shopName: String? = null,
+    @SerializedName("items") val items: List<ActiveOrderItemDto>? = null,
+)
+
 data class CreateOrderItemRequest(
     @SerializedName("productId") val productId: String,
     @SerializedName("quantity") val quantity: Int,
