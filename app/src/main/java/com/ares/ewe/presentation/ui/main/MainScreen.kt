@@ -35,6 +35,8 @@ fun HomeScreen(
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     onActiveOrdersClick: () -> Unit = {},
+    onBestSellersClick: () -> Unit = {},
+    onFeaturedPlacesClick: () -> Unit = {},
     onOrderHistoryClick: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()
 ) {
@@ -59,6 +61,8 @@ fun HomeScreen(
                         onCartClick = onCartClick,
                         onTrackOrderClick = onTrackOrderClick,
                         onActiveOrdersClick = onActiveOrdersClick,
+                        onBestSellersClick = onBestSellersClick,
+                        onFeaturedPlacesClick = onFeaturedPlacesClick,
                         onPromotionsTabClick = { currentTab = MainTab.Promotions },
                     )
                     MainTab.Promotions -> PromotionsTabScreen(

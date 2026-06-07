@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -19,6 +21,8 @@ import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.snapshotFlow
 import com.ares.ewe.di.OrderRepositoryEntryPoint
 import com.ares.ewe.di.SessionEventBusEntryPoint
+import com.ares.ewe.di.CartRepositoryEntryPoint
+import com.ares.ewe.domain.cart.CartShopSwitchPolicy
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.push.OrderPushNavigation
 import dagger.hilt.android.EntryPointAccessors
@@ -37,7 +41,10 @@ import com.ares.ewe.presentation.ui.main.home.OrderTrackingScreen
 import com.ares.ewe.presentation.ui.main.profile.OrderHistoryScreen
 import com.ares.ewe.presentation.ui.main.home.ProductScreen
 import com.ares.ewe.presentation.ui.main.home.ServiceDetailScreen
+import com.ares.ewe.presentation.ui.main.home.BestSellersScreen
+import com.ares.ewe.presentation.ui.main.home.FeaturedPlacesScreen
 import com.ares.ewe.presentation.ui.main.home.ShopDetailScreen
+import com.ares.ewe.presentation.ui.components.ShopSwitchConfirmDialog
 import com.ares.ewe.presentation.ui.splash.SplashScreen
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 
@@ -51,6 +58,44 @@ fun DobbyNavigation(
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val cartRepository = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CartRepositoryEntryPoint::class.java,
+        ).cartRepository()
+    }
+    val cartItems by cartRepository.items.collectAsState(initial = emptyList())
+    var pendingShopPlace by remember { mutableStateOf<FeaturedPlace?>(null) }
+
+    fun navigateToShop(place: FeaturedPlace) {
+        navController.navigate(
+            DobbyScreens.shopDetail(place.id, place.name, place.latitude, place.longitude),
+        )
+    }
+
+    fun handlePlaceClick(place: FeaturedPlace) {
+        if (place.isService) {
+            navController.navigate(DobbyScreens.serviceDetail(place.id))
+            return
+        }
+        if (CartShopSwitchPolicy.needsConfirmation(cartItems, place.id)) {
+            pendingShopPlace = place
+        } else {
+            navigateToShop(place)
+        }
+    }
+
+    pendingShopPlace?.let {
+        ShopSwitchConfirmDialog(
+            onConfirm = {
+                cartRepository.clear()
+                navigateToShop(it)
+                pendingShopPlace = null
+            },
+            onDismiss = { pendingShopPlace = null },
+        )
+    }
+
     val sessionEventBus = remember(context) {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
@@ -128,7 +173,7 @@ fun DobbyNavigation(
                     navController.navigate(DobbyScreens.Home) {
                         popUpTo(DobbyScreens.Splash) { inclusive = true }
                     }
-                }
+                },
             )
         }
         composable(DobbyScreens.Phone) {
@@ -177,15 +222,7 @@ fun DobbyNavigation(
                         popUpTo(DobbyScreens.Home) { inclusive = true }
                     }
                 },
-                onPlaceClick = { place ->
-                    if (place.isService) {
-                        navController.navigate(DobbyScreens.serviceDetail(place.id))
-                    } else {
-                        navController.navigate(
-                            DobbyScreens.shopDetail(place.id, place.name, place.latitude, place.longitude)
-                        )
-                    }
-                },
+                onPlaceClick = ::handlePlaceClick,
                 onAdClick = { adId ->
                     navController.navigate(DobbyScreens.adDetail(adId))
                 },
@@ -207,6 +244,29 @@ fun DobbyNavigation(
                 onOrderHistoryClick = {
                     navController.navigate(DobbyScreens.OrderHistory)
                 },
+                onBestSellersClick = {
+                    navController.navigate(DobbyScreens.BestSellers)
+                },
+                onFeaturedPlacesClick = {
+                    navController.navigate(DobbyScreens.FeaturedPlaces)
+                },
+            )
+        }
+        composable(DobbyScreens.FeaturedPlaces) {
+            FeaturedPlacesScreen(
+                onBack = { navController.popBackStack() },
+                onPlaceClick = ::handlePlaceClick,
+            )
+        }
+        composable(DobbyScreens.BestSellers) {
+            BestSellersScreen(
+                onBack = { navController.popBackStack() },
+                onProductClick = { productId, pickupLat, pickupLng, shopId, shopAvailable ->
+                    navController.navigate(
+                        DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId, shopAvailable),
+                    )
+                },
+                onCartClick = { navController.navigate(DobbyScreens.Cart) },
             )
         }
         composable(DobbyScreens.OrderHistory) {

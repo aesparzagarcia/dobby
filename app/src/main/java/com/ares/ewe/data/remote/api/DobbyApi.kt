@@ -13,6 +13,7 @@ import com.ares.ewe.data.remote.model.CompleteRegistrationRequest
 import com.ares.ewe.data.remote.model.CreateAddressRequest
 import com.ares.ewe.data.remote.model.DeliveryPricingConfigDto
 import com.ares.ewe.data.remote.model.CompleteRegistrationResponse
+import com.ares.ewe.data.remote.model.FeaturedPlaceDto
 import com.ares.ewe.data.remote.model.HomeResponse
 import com.ares.ewe.data.remote.model.PlacesResponse
 import com.ares.ewe.data.remote.model.RequestOtpRequest
@@ -26,6 +27,7 @@ import com.ares.ewe.data.remote.model.PromotionProductDto
 import com.ares.ewe.data.remote.model.RateProductsRequest
 import com.ares.ewe.data.remote.model.RegisterPushDeviceRequest
 import com.ares.ewe.data.remote.model.RegisterPushDeviceResponse
+import com.ares.ewe.data.remote.model.ShopProductDto
 import com.ares.ewe.data.remote.model.ShopProductsResponseDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -61,6 +63,12 @@ interface DobbyApi {
     @GET("app/promotions")
     suspend fun getPromotions(): List<PromotionProductDto>
 
+    @GET("app/best-sellers")
+    suspend fun getBestSellers(): List<ShopProductDto>
+
+    @GET("app/featured-places")
+    suspend fun getFeaturedPlaces(): List<FeaturedPlaceDto>
+
     @GET("app/shops/{id}/products")
     suspend fun getShopProducts(@Path("id") shopId: String): ShopProductsResponseDto
 
@@ -75,6 +83,12 @@ interface DobbyApi {
 
     @GET("app/ads/{id}")
     suspend fun getAd(@Path("id") id: String): AdDto
+
+    @POST("app/ads/{id}/view")
+    suspend fun recordAdView(@Path("id") id: String)
+
+    @POST("app/ads/{id}/click")
+    suspend fun recordAdClick(@Path("id") id: String)
 
     @GET("addresses")
     suspend fun getAddresses(): List<AddressDto>

@@ -87,5 +87,22 @@ data class Ad(
     val whatsapp: String?,
     val email: String?,
     val facebookUrl: String?,
-    val instagramUrl: String?
+    val instagramUrl: String?,
+    /** 0 = normal … 3 = premium (más apariciones en carrusel). */
+    val priority: Int = 0,
 )
+
+data class AdCarouselSlide(
+    val key: String,
+    val ad: Ad,
+)
+
+/** Prioridad 3 → 4 slides, 0 → 1 slide; orden descendente por prioridad. */
+fun buildWeightedAdCarouselSlides(ads: List<Ad>): List<AdCarouselSlide> =
+    ads.sortedWith(compareByDescending<Ad> { it.priority }.thenByDescending { it.id })
+        .flatMap { ad ->
+            val weight = ad.priority.coerceIn(0, 3) + 1
+            (0 until weight).map { index ->
+                AdCarouselSlide(key = "${ad.id}-$index", ad = ad)
+            }
+        }

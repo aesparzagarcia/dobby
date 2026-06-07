@@ -62,32 +62,34 @@ class PlacesRepositoryImpl @Inject constructor(
             place.id to Pair(lat, lng)
         }.toMap()
 
+    private fun mapFeaturedPlace(p: com.ares.ewe.data.remote.model.FeaturedPlaceDto): FeaturedPlace {
+        val isService = p.kind == "service"
+        val shopType = if (isService) null else p.type
+        val serviceCategory = if (isService) p.category else null
+        val typeLabel = when {
+            isService -> serviceCategoryLabelEs(p.category) ?: "Servicio"
+            else -> shopTypeLabelEs(p.type)
+        }
+        return FeaturedPlace(
+            id = p.id,
+            name = p.name,
+            imageUrl = p.logoUrl?.toFullImageUrl(),
+            typeLabel = typeLabel,
+            isService = isService,
+            shopType = shopType,
+            serviceCategory = serviceCategory,
+            rate = p.rate,
+            ratingCount = p.ratingCount,
+            openingHour = p.openingHour,
+            closingHour = p.closingHour,
+            latitude = p.lat,
+            longitude = p.lng,
+        )
+    }
+
     override suspend fun getHome(): HomeData {
         val response = api.getHome()
-        val featuredPlaces = response.featuredPlaces.map { p ->
-            val isService = p.kind == "service"
-            val shopType = if (isService) null else p.type
-            val serviceCategory = if (isService) p.category else null
-            val typeLabel = when {
-                isService -> serviceCategoryLabelEs(p.category) ?: "Servicio"
-                else -> shopTypeLabelEs(p.type)
-            }
-            FeaturedPlace(
-                id = p.id,
-                name = p.name,
-                imageUrl = p.logoUrl?.toFullImageUrl(),
-                typeLabel = typeLabel,
-                isService = isService,
-                shopType = shopType,
-                serviceCategory = serviceCategory,
-                rate = p.rate,
-                ratingCount = p.ratingCount,
-                openingHour = p.openingHour,
-                closingHour = p.closingHour,
-                latitude = p.lat,
-                longitude = p.lng,
-            )
-        }
+        val featuredPlaces = response.featuredPlaces.map(::mapFeaturedPlace)
         val bestSellerProducts = response.bestSellerProducts.map { p ->
             BestSellerProduct(
                 id = p.id,
@@ -120,6 +122,28 @@ class PlacesRepositoryImpl @Inject constructor(
                 shopId = p.shopId,
             )
         }
+    }
+
+    override suspend fun getBestSellers(): List<ShopProduct> {
+        return api.getBestSellers().map { p ->
+            ShopProduct(
+                id = p.id,
+                name = p.name,
+                description = p.description,
+                price = p.price,
+                imageUrl = p.imageUrl?.toFullImageUrl(),
+                rate = p.rate,
+                ratingCount = p.ratingCount,
+                hasPromotion = p.hasPromotion,
+                discount = p.discount,
+                shopId = p.shopId,
+                category = p.category,
+            )
+        }
+    }
+
+    override suspend fun getFeaturedPlaces(): List<FeaturedPlace> {
+        return api.getFeaturedPlaces().map(::mapFeaturedPlace)
     }
 
     override suspend fun getShopProducts(shopId: String): ShopProductsPage {

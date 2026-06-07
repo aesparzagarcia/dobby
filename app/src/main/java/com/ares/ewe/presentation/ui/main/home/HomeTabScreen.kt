@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.ares.ewe.domain.model.Ad
+import com.ares.ewe.domain.model.AdCarouselSlide
+import com.ares.ewe.domain.model.buildWeightedAdCarouselSlides
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.presentation.components.DeliveryAddressCallout
@@ -66,6 +68,8 @@ fun HomeTabScreen(
     onCartClick: () -> Unit = {},
     onTrackOrderClick: (String) -> Unit = {},
     onActiveOrdersClick: () -> Unit = {},
+    onBestSellersClick: () -> Unit = {},
+    onFeaturedPlacesClick: () -> Unit = {},
     onPromotionsTabClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeTabViewModel = hiltViewModel()
@@ -75,9 +79,10 @@ fun HomeTabScreen(
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     var quickCategory by remember { mutableStateOf(HomeQuickCategory.All) }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadAddresses()
-        viewModel.loadActiveOrder()
+    LaunchedEffect(uiState.addressFetchCompleted) {
+        if (!uiState.addressFetchCompleted) {
+            viewModel.loadAddresses()
+        }
     }
 
     val query = uiState.searchQuery.trim()
@@ -90,7 +95,7 @@ fun HomeTabScreen(
             it.hasPromotion && it.discount > 0
         }
         else -> uiState.bestSellerProducts
-    }.filter { isProductShopAvailableForOrders(it.shopId, uiState.featuredPlaces) }
+    }
     val filteredProducts = categoryProducts.filter {
         query.isBlank() || it.name.contains(query, ignoreCase = true)
     }
@@ -242,7 +247,7 @@ fun HomeTabScreen(
                                 item(key = "featured") {
                                     HomeSectionHeader(
                                         title = "Destacados",
-                                        onSeeAllClick = { quickCategory = HomeQuickCategory.All },
+                                        onSeeAllClick = onFeaturedPlacesClick,
                                     )
                                     LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -258,7 +263,7 @@ fun HomeTabScreen(
                                         item(key = "featured_see_more") {
                                             HomeFeaturedSeeMoreCard(
                                                 modifier = Modifier.width(featuredCardWidth),
-                                                onClick = { quickCategory = HomeQuickCategory.All },
+                                                onClick = onFeaturedPlacesClick,
                                             )
                                         }
                                     }
@@ -269,7 +274,7 @@ fun HomeTabScreen(
                                 item(key = "best_sellers") {
                                     HomeSectionHeader(
                                         title = "Más vendidos",
-                                        onSeeAllClick = onPromotionsTabClick,
+                                        onSeeAllClick = onBestSellersClick,
                                     )
                                     LazyRow(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -294,7 +299,7 @@ fun HomeTabScreen(
                                         item(key = "best_sellers_see_more") {
                                             HomeProductSeeMoreCard(
                                                 modifier = Modifier.width(productCardWidth),
-                                                onClick = onPromotionsTabClick,
+                                                onClick = onBestSellersClick,
                                             )
                                         }
                                     }
@@ -326,12 +331,16 @@ fun HomeTabScreen(
                             if (uiState.ads.isNotEmpty()) {
                                 item(key = "ads") {
                                     AdsCarousel(
-                                        ads = uiState.ads,
+                                        slides = buildWeightedAdCarouselSlides(uiState.ads),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(160.dp)
                                             .padding(vertical = 8.dp),
-                                        onAdClick = onAdClick,
+                                        onAdVisible = { adId -> viewModel.recordAdView(adId) },
+                                        onAdClick = { adId ->
+                                            viewModel.recordAdClick(adId)
+                                            onAdClick(adId)
+                                        },
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                 }
@@ -394,29 +403,25 @@ fun HomeTabScreen(
     }
 }
 
-private fun filterPlacesByCategory(
-    places: List<FeaturedPlace>,
-    category: HomeQuickCategory,
-): List<FeaturedPlace> = when (category) {
-    HomeQuickCategory.All -> places
-    HomeQuickCategory.Restaurants -> places.filter { !it.isService && it.shopType != "SHOP" }
-    HomeQuickCategory.Shops -> places.filter { !it.isService && it.shopType == "SHOP" }
-    HomeQuickCategory.Services -> places.filter { it.isService }
-    HomeQuickCategory.Offers -> places
-}
-
 @Composable
 private fun AdsCarousel(
-    ads: List<Ad>,
+    slides: List<AdCarouselSlide>,
     modifier: Modifier = Modifier,
+    onAdVisible: (String) -> Unit = {},
     onAdClick: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(ads.size) {
-        if (ads.size <= 1) return@LaunchedEffect
+    LaunchedEffect(listState.firstVisibleItemIndex, slides) {
+        val index = listState.firstVisibleItemIndex
+        if (index in slides.indices) {
+            onAdVisible(slides[index].ad.id)
+        }
+    }
+    LaunchedEffect(slides.size) {
+        if (slides.size <= 1) return@LaunchedEffect
         while (true) {
             delay(2000L)
-            val next = (listState.firstVisibleItemIndex + 1) % ads.size
+            val next = (listState.firstVisibleItemIndex + 1) % slides.size
             listState.animateScrollToItem(next)
         }
     }
@@ -427,7 +432,8 @@ private fun AdsCarousel(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(ads) { ad ->
+            items(slides, key = { it.key }) { slide ->
+                val ad = slide.ad
                 Card(
                     modifier = Modifier
                         .width(itemWidth)

@@ -189,15 +189,19 @@ fun HomeCategoryRow(
     selected: HomeQuickCategory,
     onCategorySelected: (HomeQuickCategory) -> Unit,
     modifier: Modifier = Modifier,
+    includeOffers: Boolean = true,
+    scale: Float = HomeCategoryRowScale,
 ) {
-    val items = listOf(
-        HomeCategoryItem(HomeQuickCategory.Restaurants, "Restaurantes", Icons.Default.Restaurant, Color(0xFFEEF2FF)),
-        HomeCategoryItem(HomeQuickCategory.Shops, "Tiendas", Icons.Default.ShoppingBag, Color(0xFFECFDF5)),
-        HomeCategoryItem(HomeQuickCategory.Services, "Servicios", Icons.Default.Handyman, Color(0xFFEFF6FF)),
-        HomeCategoryItem(HomeQuickCategory.Offers, "Ofertas", Icons.Default.LocalOffer, Color(0xFFFFF7ED)),
-        HomeCategoryItem(HomeQuickCategory.All, "Ver todos", Icons.Default.Apps, Color(0xFFF5F3FF)),
-    )
-    val s = HomeCategoryRowScale
+    val items = buildList {
+        add(HomeCategoryItem(HomeQuickCategory.Restaurants, "Restaurantes", Icons.Default.Restaurant, Color(0xFFEEF2FF)))
+        add(HomeCategoryItem(HomeQuickCategory.Shops, "Tiendas", Icons.Default.ShoppingBag, Color(0xFFECFDF5)))
+        add(HomeCategoryItem(HomeQuickCategory.Services, "Servicios", Icons.Default.Handyman, Color(0xFFEFF6FF)))
+        if (includeOffers) {
+            add(HomeCategoryItem(HomeQuickCategory.Offers, "Ofertas", Icons.Default.LocalOffer, Color(0xFFFFF7ED)))
+        }
+        add(HomeCategoryItem(HomeQuickCategory.All, "Ver todos", Icons.Default.Apps, Color(0xFFF5F3FF)))
+    }
+    val s = scale
     val itemWidth = (72 * s).dp
     val iconBoxSize = (56 * s).dp
     val iconBoxCorner = (16 * s).dp
@@ -416,23 +420,26 @@ fun HomeFeaturedPlaceCard(
     place: FeaturedPlace,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
+    cardScale: Float = FeaturedPlaceCardScale,
 ) {
     val isOpen = isPlaceOpenNow(place.openingHour, place.closingHour)
     val hoursLabel = formatPlaceHoursRange(place.openingHour, place.closingHour)
     val subtitle = placeSubtitle(place)
-    val corner = (12 * FeaturedPlaceCardScale).dp
-    val imageAspect = 1.85f / FeaturedPlaceCardScale
+    val corner = (16 * cardScale).dp.coerceAtLeast(12.dp)
+    val imageAspect = 1.65f / cardScale.coerceAtLeast(0.8f)
 
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(corner),
         colors = CardDefaults.cardColors(containerColor = HomeBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (cardScale >= 1f) 2.dp else 4.dp,
+        ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = (6 * FeaturedPlaceCardScale).dp),
+                .padding(bottom = (8 * cardScale).dp),
         ) {
             Box(
                 modifier = Modifier
@@ -459,47 +466,47 @@ fun HomeFeaturedPlaceCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding((6 * FeaturedPlaceCardScale).dp),
+                        .padding((8 * cardScale).dp),
                 ) {
                     when (isOpen) {
-                        true -> StatusPill(text = "Abierto", color = OpenGreen, scale = FeaturedPlaceCardScale)
-                        false -> StatusPill(text = "Cerrado", color = ClosedGray, scale = FeaturedPlaceCardScale)
+                        true -> StatusPill(text = "Abierto", color = OpenGreen, scale = cardScale)
+                        false -> StatusPill(text = "Cerrado", color = ClosedGray, scale = cardScale)
                         null -> {}
                     }
                 }
             }
             Text(
                 text = place.name,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = (8 * FeaturedPlaceCardScale).dp,
-                        vertical = (5 * FeaturedPlaceCardScale).dp,
+                        horizontal = (10 * cardScale).dp,
+                        vertical = (6 * cardScale).dp,
                     ),
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MutedText,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = (8 * FeaturedPlaceCardScale).dp),
+                    .padding(horizontal = (10 * cardScale).dp),
             )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = (8 * FeaturedPlaceCardScale).dp,
-                        vertical = (3 * FeaturedPlaceCardScale).dp,
+                        horizontal = (10 * cardScale).dp,
+                        vertical = (4 * cardScale).dp,
                     ),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy((6 * FeaturedPlaceCardScale).dp),
+                horizontalArrangement = Arrangement.spacedBy((6 * cardScale).dp),
             ) {
                 RatingDisplay(
                     rate = place.rate,
@@ -511,13 +518,13 @@ fun HomeFeaturedPlaceCard(
                             .weight(1f)
                             .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy((3 * FeaturedPlaceCardScale).dp),
+                        horizontalArrangement = Arrangement.spacedBy((4 * cardScale).dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccessTime,
                             contentDescription = null,
                             tint = MutedText,
-                            modifier = Modifier.size((12 * FeaturedPlaceCardScale).dp),
+                            modifier = Modifier.size((13 * cardScale).dp),
                         )
                         Text(
                             text = hoursLabel,
@@ -675,4 +682,15 @@ private fun placeSubtitle(place: FeaturedPlace): String {
         return if (cat != null) "Servicio • $cat" else place.typeLabel
     }
     return place.typeLabel
+}
+
+fun filterPlacesByCategory(
+    places: List<FeaturedPlace>,
+    category: HomeQuickCategory,
+): List<FeaturedPlace> = when (category) {
+    HomeQuickCategory.All -> places
+    HomeQuickCategory.Restaurants -> places.filter { !it.isService && it.shopType != "SHOP" }
+    HomeQuickCategory.Shops -> places.filter { !it.isService && it.shopType == "SHOP" }
+    HomeQuickCategory.Services -> places.filter { it.isService }
+    HomeQuickCategory.Offers -> places
 }

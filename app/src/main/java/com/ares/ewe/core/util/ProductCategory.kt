@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 object ProductCategory {
     const val BEBIDAS = "bebidas"
+    const val ALCOHOL = "alcohol"
     const val POSTRES = "postres"
     const val COMIDAS = "comidas"
     const val SNACKS = "snacks"
@@ -27,6 +28,7 @@ object ProductCategory {
     val filterChips: List<Chip> = listOf(
         Chip(null, "Todos", Icons.Default.Apps),
         Chip(BEBIDAS, "Bebidas", Icons.Default.LocalBar),
+        Chip(ALCOHOL, "Alcohol", Icons.Default.LocalBar),
         Chip(COMIDAS, "Comidas", Icons.Default.Restaurant),
         Chip(POSTRES, "Postres", Icons.Default.Cake),
         Chip(OTROS, "Otros", Icons.Default.MoreHoriz),
@@ -35,7 +37,7 @@ object ProductCategory {
     fun normalize(raw: String?): String {
         val slug = raw?.trim()?.lowercase().orEmpty()
         return when (slug) {
-            BEBIDAS, POSTRES, COMIDAS, SNACKS, MISCELANEOS -> slug
+            BEBIDAS, ALCOHOL, POSTRES, COMIDAS, SNACKS, MISCELANEOS -> slug
             else -> DEFAULT
         }
     }

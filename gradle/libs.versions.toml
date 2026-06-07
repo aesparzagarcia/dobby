@@ -21,6 +21,7 @@ kotlinxCoroutinesPlayServices = "1.8.0"
 roomRuntime = "2.6.1"
 datastore = "1.1.1"
 coil = "2.5.0"
+lottie = "6.6.2"
 play-services-maps = "19.0.0"
 play-services-location = "21.3.0"
 maps-compose = "4.3.3"
@@ -65,7 +66,7 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
-
+lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "play-services-maps" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }

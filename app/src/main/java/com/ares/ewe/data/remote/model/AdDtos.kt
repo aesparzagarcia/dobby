@@ -12,5 +12,6 @@ data class AdDto(
     @SerializedName("whatsapp") val whatsapp: String? = null,
     @SerializedName("email") val email: String? = null,
     @SerializedName("facebookUrl") val facebookUrl: String? = null,
-    @SerializedName("instagramUrl") val instagramUrl: String? = null
+    @SerializedName("instagramUrl") val instagramUrl: String? = null,
+    @SerializedName("priority") val priority: Int? = null,
 )

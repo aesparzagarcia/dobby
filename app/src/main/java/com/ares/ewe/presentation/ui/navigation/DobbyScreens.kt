@@ -8,6 +8,8 @@ object DobbyScreens {
     const val Otp = "otp/{phone}/{userExists}"
     const val AddUserInfo = "add_user_info/{phone}"
     const val Home = "home"
+    const val FeaturedPlaces = "featured_places"
+    const val BestSellers = "best_sellers"
     const val ShopDetail = "shop/{id}/{name}/{pickupLat}/{pickupLng}"
     const val ProductDetail = "product/{id}/{pickupLat}/{pickupLng}/{shopId}/{shopAvailable}"
     const val Cart = "cart"
