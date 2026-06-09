@@ -44,16 +44,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.ewe.core.theme.DobbyColors
+import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.domain.model.ActiveOrder
 
-/** Static colors; accent uses [MaterialTheme.colorScheme.primary] from composables. */
+/** Escala pura aplicada al tracking en home. */
 private object OrderTrackingSectionPalette {
-    val HeaderTitle = DobbyColors.Dark
-    val CurrentLabel = DobbyColors.Dark
-    val InactiveBorder = Color(0xFFD1D1D6)
-    val InactiveIcon = Color(0xFF8E8E93)
-    val InactiveLabel = Color(0xFF8E8E93)
-    val OnPrimary = Color.White
+    val HeaderTitle = DobbyColors.TextPrimary
+    val CurrentLabel = DobbyColors.TextPrimary
+    val InactiveBorder = DobbyPureScale.Mist
+    val InactiveIcon = DobbyColors.TextSecondary
+    val InactiveLabel = DobbyColors.TextSecondary
+    val OnPrimary = DobbyColors.CardSurface
 }
 
 private data class TrackingStage(

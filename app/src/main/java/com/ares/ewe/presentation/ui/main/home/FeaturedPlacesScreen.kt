@@ -88,7 +88,8 @@ fun FeaturedPlacesScreen(
                         selected = uiState.selectedCategory,
                         onCategorySelected = viewModel::onCategorySelected,
                         includeOffers = false,
-                        scale = 1f,
+                        scale = 0.9f,
+                        spreadToEdges = true,
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))

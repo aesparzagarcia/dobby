@@ -291,8 +291,14 @@ fun DobbyNavigation(
             )
         }
         composable(DobbyScreens.DeliveryAddress) {
+            val homeTabViewModel: HomeTabViewModel = hiltViewModel(
+                navController.getBackStackEntry(DobbyScreens.Home),
+            )
             AddressScreen(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    homeTabViewModel.loadAddresses()
+                    navController.popBackStack()
+                },
                 onCurrentLocationClick = { navController.navigate(DobbyScreens.CurrentLocationMap) },
                 onNavigateToMapWithLocation = { lat, lng, address ->
                     navController.navigate(DobbyScreens.currentLocationMapWithLocation(lat, lng, address))
@@ -300,9 +306,13 @@ fun DobbyNavigation(
             )
         }
         composable(DobbyScreens.CurrentLocationMap) {
+            val homeTabViewModel: HomeTabViewModel = hiltViewModel(
+                navController.getBackStackEntry(DobbyScreens.Home),
+            )
             MapLocationScreen(
                 onBack = { navController.popBackStack() },
                 onSaveSuccess = {
+                    homeTabViewModel.loadAddresses()
                     navController.popBackStack(DobbyScreens.Home, false)
                 }
             )
@@ -315,9 +325,13 @@ fun DobbyNavigation(
                 navArgument("address") { type = NavType.StringType; defaultValue = "" }
             )
         ) {
+            val homeTabViewModel: HomeTabViewModel = hiltViewModel(
+                navController.getBackStackEntry(DobbyScreens.Home),
+            )
             MapLocationScreen(
                 onBack = { navController.popBackStack() },
                 onSaveSuccess = {
+                    homeTabViewModel.loadAddresses()
                     navController.popBackStack(DobbyScreens.Home, false)
                 }
             )

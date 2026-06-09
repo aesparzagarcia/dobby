@@ -48,8 +48,8 @@ import com.ares.ewe.R
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.viewmodel.main.profile.ProfileUiState
 
-private val ProfileMuted = Color(0xFF8E8E93)
-private val ProfileCardSurface = Color.White
+private val ProfileMuted = DobbyColors.TextSecondary
+private val ProfileCardSurface = DobbyColors.CardSurface
 private val ProfileMenuDivider = Color(0xFFE8E8ED)
 
 data class ProfileMission(

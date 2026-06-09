@@ -51,10 +51,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.core.theme.DobbyPureScale
 import kotlinx.coroutines.delay
 
-/** Brand green aligned with the reference UI (~#2ECC71). */
-private val BrandGreen = Color(0xFF2ECC71)
 private val SubtitleBlack = Color(0xFF111111)
 private val BackButtonSurface = Color(0xFFECECEC)
 private val OutlinedButtonBorder = Color(0xFFD9D9D9)
@@ -196,7 +195,7 @@ fun PhoneScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = BrandGreen)
+                CircularProgressIndicator(color = DobbyPureScale.Onyx)
             }
         } else {
             val send: () -> Unit = {
@@ -212,7 +211,7 @@ fun PhoneScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(27.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandGreen,
+                    containerColor = DobbyPureScale.Onyx,
                     contentColor = Color.White,
                 ),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
@@ -242,21 +241,21 @@ fun PhoneScreen(
                 border = BorderStroke(1.dp, OutlinedButtonBorder),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
-                    contentColor = BrandGreen,
+                    contentColor = DobbyPureScale.Onyx,
                 ),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.Chat,
                     contentDescription = null,
                     modifier = Modifier.size(22.dp),
-                    tint = BrandGreen,
+                    tint = DobbyPureScale.Onyx,
                 )
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(
                     text = "Recibir código por WhatsApp",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
-                        color = BrandGreen,
+                        color = DobbyPureScale.Onyx,
                     ),
                     textAlign = TextAlign.Center,
                 )

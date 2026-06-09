@@ -84,9 +84,6 @@ interface DobbyApi {
     @GET("app/ads/{id}")
     suspend fun getAd(@Path("id") id: String): AdDto
 
-    @POST("app/ads/{id}/view")
-    suspend fun recordAdView(@Path("id") id: String)
-
     @POST("app/ads/{id}/click")
     suspend fun recordAdClick(@Path("id") id: String)
 

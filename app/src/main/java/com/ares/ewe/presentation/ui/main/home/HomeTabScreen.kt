@@ -48,13 +48,14 @@ import com.ares.ewe.domain.model.Ad
 import com.ares.ewe.domain.model.AdCarouselSlide
 import com.ares.ewe.domain.model.buildWeightedAdCarouselSlides
 import com.ares.ewe.core.theme.DobbyColors
+import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.presentation.components.DeliveryAddressCallout
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
 import kotlinx.coroutines.delay
 
-private val HomeScreenBackground = Color.White
+private val HomeScreenBackground = DobbyPureScale.Pure
 private const val DESTACADOS_PREVIEW_LIMIT = 4
 private const val BEST_SELLERS_PREVIEW_LIMIT = 4
 
@@ -107,7 +108,7 @@ fun HomeTabScreen(
     // Ancho del producto: 10% menos que restaurante + 15% más compacto
     val productCardWidth = (featuredCardWidthPx * 0.9f * 0.85f).toInt().dp
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().background(HomeScreenBackground)) {
         when {
             uiState.errorMessage != null -> {
                 Box(
@@ -179,21 +180,23 @@ fun HomeTabScreen(
                                 searchQuery = uiState.searchQuery,
                                 onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
                                 onAddressClick = onAddressLabelClick,
+                                addressCallout = {
+                                    if (uiState.addressFetchCompleted &&
+                                        uiState.needsDeliveryAddressCallout &&
+                                        uiState.warningMessage == null
+                                    ) {
+                                        DeliveryAddressCallout(
+                                            title = "Añade tu dirección de entrega",
+                                            subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
+                                            onClick = onAddressLabelClick,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 13.dp)
+                                                .padding(top = 0.dp, bottom = 4.dp),
+                                        )
+                                    }
+                                },
                             )
-                            if (uiState.addressFetchCompleted &&
-                                uiState.needsDeliveryAddressCallout &&
-                                uiState.warningMessage == null
-                            ) {
-                                DeliveryAddressCallout(
-                                    title = "Añade tu dirección de entrega",
-                                    subtitle = "Toca aquí para agregar una dirección y descubrir qué restaurantes pueden entregarte",
-                                    onClick = onAddressLabelClick,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 13.dp)
-                                        .padding(bottom = 4.dp),
-                                )
-                            }
                             HomeCategoryRow(
                                 selected = quickCategory,
                                 onCategorySelected = { cat ->
@@ -250,6 +253,9 @@ fun HomeTabScreen(
                                         onSeeAllClick = onFeaturedPlacesClick,
                                     )
                                     LazyRow(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(DobbyPureScale.Pure),
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
@@ -277,6 +283,9 @@ fun HomeTabScreen(
                                         onSeeAllClick = onBestSellersClick,
                                     )
                                     LazyRow(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(DobbyPureScale.Pure),
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     ) {
@@ -336,7 +345,6 @@ fun HomeTabScreen(
                                             .fillMaxWidth()
                                             .height(160.dp)
                                             .padding(vertical = 8.dp),
-                                        onAdVisible = { adId -> viewModel.recordAdView(adId) },
                                         onAdClick = { adId ->
                                             viewModel.recordAdClick(adId)
                                             onAdClick(adId)
@@ -354,6 +362,9 @@ fun HomeTabScreen(
                                         },
                                     )
                                     LazyRow(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(DobbyPureScale.Pure),
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
@@ -377,6 +388,9 @@ fun HomeTabScreen(
                                         },
                                     )
                                     LazyRow(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(DobbyPureScale.Pure),
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
@@ -407,16 +421,9 @@ fun HomeTabScreen(
 private fun AdsCarousel(
     slides: List<AdCarouselSlide>,
     modifier: Modifier = Modifier,
-    onAdVisible: (String) -> Unit = {},
     onAdClick: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(listState.firstVisibleItemIndex, slides) {
-        val index = listState.firstVisibleItemIndex
-        if (index in slides.indices) {
-            onAdVisible(slides[index].ad.id)
-        }
-    }
     LaunchedEffect(slides.size) {
         if (slides.size <= 1) return@LaunchedEffect
         while (true) {

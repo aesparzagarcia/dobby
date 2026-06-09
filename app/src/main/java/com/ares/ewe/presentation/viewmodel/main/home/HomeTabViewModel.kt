@@ -234,12 +234,6 @@ class HomeTabViewModel @Inject constructor(
         }
     }
 
-    fun recordAdView(adId: String) {
-        viewModelScope.launch {
-            runCatching { adsRepository.recordAdView(adId) }
-        }
-    }
-
     fun recordAdClick(adId: String) {
         viewModelScope.launch {
             runCatching { adsRepository.recordAdClick(adId) }

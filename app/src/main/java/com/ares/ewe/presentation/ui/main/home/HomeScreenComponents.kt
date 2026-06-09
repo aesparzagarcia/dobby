@@ -49,16 +49,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ares.ewe.core.theme.DobbyColors
+import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.core.util.serviceCategoryLabelEs
 import com.ares.ewe.domain.model.BestSellerProduct
 import com.ares.ewe.domain.model.FeaturedPlace
 
-private val HomeBg = Color.White
-private val SearchBg = DobbyColors.Light
+private val HomeBg = DobbyPureScale.Pure
+private val SearchBg = DobbyColors.SurfaceMuted
 private val CardBorder = Color(0xFFE8E8ED)
 private val OpenGreen = Color(0xFF22C55E)
 private val ClosedGray = Color(0xFF6B7280)
-private val MutedText = Color(0xFF8E8E93)
+private val MutedText = DobbyColors.TextSecondary
 
 enum class HomeQuickCategory {
     All,
@@ -72,7 +73,6 @@ private data class HomeCategoryItem(
     val category: HomeQuickCategory,
     val label: String,
     val icon: ImageVector,
-    val backgroundColor: Color,
 )
 
 private const val HomeCategoryRowScale = 0.9f
@@ -85,6 +85,7 @@ fun HomeAddressSearchHeader(
     onSearchQueryChange: (String) -> Unit,
     onAddressClick: () -> Unit,
     modifier: Modifier = Modifier,
+    addressCallout: @Composable () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -130,6 +131,8 @@ fun HomeAddressSearchHeader(
                 )
             }
         }
+
+        addressCallout()
 
         Surface(
             modifier = Modifier
@@ -185,77 +188,118 @@ fun HomeAddressSearchHeader(
 }
 
 @Composable
+private fun HomeCategoryItemColumn(
+    item: HomeCategoryItem,
+    isSelected: Boolean,
+    scale: Float,
+    onClick: () -> Unit,
+) {
+    val s = scale
+    val itemWidth = (72 * s).dp
+    val iconBoxSize = (56 * s).dp
+    val iconBoxCorner = (16 * s).dp
+    val iconSize = (26 * s).dp
+    val labelGap = (6 * s).dp
+    val boxBackground = if (isSelected) DobbyPureScale.Pure else DobbyPureScale.Onyx
+    val iconTint = if (isSelected) DobbyPureScale.Onyx else DobbyPureScale.Pure
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(itemWidth)
+            .clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(iconBoxSize)
+                .clip(RoundedCornerShape(iconBoxCorner))
+                .background(boxBackground)
+                .then(
+                    if (isSelected) {
+                        Modifier.border(
+                            (2 * s).dp,
+                            DobbyPureScale.Onyx,
+                            RoundedCornerShape(iconBoxCorner),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                tint = iconTint,
+                modifier = Modifier.size(iconSize),
+            )
+        }
+        Spacer(modifier = Modifier.height(labelGap))
+        Text(
+            text = item.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) DobbyPureScale.Onyx else DobbyColors.TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
 fun HomeCategoryRow(
     selected: HomeQuickCategory,
     onCategorySelected: (HomeQuickCategory) -> Unit,
     modifier: Modifier = Modifier,
     includeOffers: Boolean = true,
     scale: Float = HomeCategoryRowScale,
+    spreadToEdges: Boolean = false,
 ) {
     val items = buildList {
-        add(HomeCategoryItem(HomeQuickCategory.Restaurants, "Restaurantes", Icons.Default.Restaurant, Color(0xFFEEF2FF)))
-        add(HomeCategoryItem(HomeQuickCategory.Shops, "Tiendas", Icons.Default.ShoppingBag, Color(0xFFECFDF5)))
-        add(HomeCategoryItem(HomeQuickCategory.Services, "Servicios", Icons.Default.Handyman, Color(0xFFEFF6FF)))
+        add(HomeCategoryItem(HomeQuickCategory.Restaurants, "Restaurantes", Icons.Default.Restaurant))
+        add(HomeCategoryItem(HomeQuickCategory.Shops, "Tiendas", Icons.Default.ShoppingBag))
+        add(HomeCategoryItem(HomeQuickCategory.Services, "Servicios", Icons.Default.Handyman))
         if (includeOffers) {
-            add(HomeCategoryItem(HomeQuickCategory.Offers, "Ofertas", Icons.Default.LocalOffer, Color(0xFFFFF7ED)))
+            add(HomeCategoryItem(HomeQuickCategory.Offers, "Ofertas", Icons.Default.LocalOffer))
         }
-        add(HomeCategoryItem(HomeQuickCategory.All, "Ver todos", Icons.Default.Apps, Color(0xFFF5F3FF)))
+        add(HomeCategoryItem(HomeQuickCategory.All, "Ver todos", Icons.Default.Apps))
     }
     val s = scale
-    val itemWidth = (72 * s).dp
-    val iconBoxSize = (56 * s).dp
-    val iconBoxCorner = (16 * s).dp
-    val iconSize = (26 * s).dp
     val rowPaddingH = (16 * s).dp
     val rowSpacing = (12 * s).dp
-    val labelGap = (6 * s).dp
+    val rowModifier = modifier
+        .fillMaxWidth()
+        .background(DobbyPureScale.Pure)
 
-    androidx.compose.foundation.lazy.LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = rowPaddingH),
-        horizontalArrangement = Arrangement.spacedBy(rowSpacing),
-    ) {
-        items(items.size) { index ->
-            val item = items[index]
-            val isSelected = selected == item.category
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .width(itemWidth)
-                    .clickable { onCategorySelected(item.category) },
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(iconBoxSize)
-                        .clip(RoundedCornerShape(iconBoxCorner))
-                        .background(item.backgroundColor)
-                        .then(
-                            if (isSelected) {
-                                Modifier.border(
-                                    (2 * s).dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    RoundedCornerShape(iconBoxCorner),
-                                )
-                            } else {
-                                Modifier
-                            },
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.label,
-                        tint = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFF4B5563),
-                        modifier = Modifier.size(iconSize),
-                    )
-                }
-                Spacer(modifier = Modifier.height(labelGap))
-                Text(
-                    text = item.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+    if (spreadToEdges) {
+        Row(
+            modifier = rowModifier
+                .padding(horizontal = rowPaddingH)
+                .padding(vertical = (6 * s).dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            items.forEach { item ->
+                HomeCategoryItemColumn(
+                    item = item,
+                    isSelected = selected == item.category,
+                    scale = s,
+                    onClick = { onCategorySelected(item.category) },
+                )
+            }
+        }
+    } else {
+        androidx.compose.foundation.lazy.LazyRow(
+            modifier = rowModifier,
+            contentPadding = PaddingValues(horizontal = rowPaddingH),
+            horizontalArrangement = Arrangement.spacedBy(rowSpacing),
+        ) {
+            items(items.size) { index ->
+                val item = items[index]
+                HomeCategoryItemColumn(
+                    item = item,
+                    isSelected = selected == item.category,
+                    scale = s,
+                    onClick = { onCategorySelected(item.category) },
                 )
             }
         }
@@ -271,6 +315,7 @@ fun HomeSectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .background(DobbyPureScale.Pure)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -287,26 +332,32 @@ fun HomeSectionHeader(
 /** Escala visual del card de restaurante/tienda (ancho se aplica desde [HomeTabScreen]). */
 private const val FeaturedPlaceCardScale = 0.8f
 
+private fun featuredPlaceCardCorner(cardScale: Float) = (16 * cardScale).dp.coerceAtLeast(12.dp)
+
+private fun featuredPlaceImageAspect(cardScale: Float) = 1.65f / cardScale.coerceAtLeast(0.8f)
+
 @Composable
 fun HomeFeaturedSeeMoreCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
+    cardScale: Float = FeaturedPlaceCardScale,
 ) {
-    val scale = FeaturedPlaceCardScale
-    val corner = (12 * scale).dp
-    val imageAspect = 1.85f / scale
+    val corner = featuredPlaceCardCorner(cardScale)
+    val imageAspect = featuredPlaceImageAspect(cardScale)
     val primary = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(corner),
         colors = CardDefaults.cardColors(containerColor = HomeBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (cardScale >= 1f) 2.dp else 4.dp,
+        ),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = (6 * scale).dp),
+                .padding(bottom = (8 * cardScale).dp),
         ) {
             Column(
                 modifier = Modifier
@@ -318,18 +369,18 @@ fun HomeFeaturedSeeMoreCard(
                         .fillMaxWidth()
                         .aspectRatio(imageAspect),
                 )
-                FeaturedPlaceCardFooterPlaceholder(scale = scale)
+                FeaturedPlaceCardFooterPlaceholder(scale = cardScale)
             }
             Row(
                 modifier = Modifier.align(Alignment.Center),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy((8 * scale).dp),
+                horizontalArrangement = Arrangement.spacedBy((8 * cardScale).dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Apps,
                     contentDescription = null,
                     tint = primary,
-                    modifier = Modifier.size((20 * scale).dp),
+                    modifier = Modifier.size((20 * cardScale).dp),
                 )
                 Text(
                     text = "Ver más",
@@ -343,7 +394,7 @@ fun HomeFeaturedSeeMoreCard(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
                     tint = primary,
-                    modifier = Modifier.size((20 * scale).dp),
+                    modifier = Modifier.size((20 * cardScale).dp),
                 )
             }
         }
@@ -354,7 +405,7 @@ fun HomeFeaturedSeeMoreCard(
 private fun FeaturedPlaceCardFooterPlaceholder(scale: Float) {
     Text(
         text = "\u00A0",
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
@@ -362,28 +413,28 @@ private fun FeaturedPlaceCardFooterPlaceholder(scale: Float) {
             .fillMaxWidth()
             .alpha(0f)
             .padding(
-                horizontal = (8 * scale).dp,
-                vertical = (5 * scale).dp,
+                horizontal = (10 * scale).dp,
+                vertical = (6 * scale).dp,
             ),
     )
     Text(
         text = "\u00A0",
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.bodySmall,
         color = MutedText,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
             .fillMaxWidth()
             .alpha(0f)
-            .padding(horizontal = (8 * scale).dp),
+            .padding(horizontal = (10 * scale).dp),
     )
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(0f)
             .padding(
-                horizontal = (8 * scale).dp,
-                vertical = (3 * scale).dp,
+                horizontal = (10 * scale).dp,
+                vertical = (4 * scale).dp,
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy((6 * scale).dp),
@@ -395,13 +446,13 @@ private fun FeaturedPlaceCardFooterPlaceholder(scale: Float) {
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy((3 * scale).dp),
+            horizontalArrangement = Arrangement.spacedBy((4 * scale).dp),
         ) {
             Icon(
                 imageVector = Icons.Default.AccessTime,
                 contentDescription = null,
                 tint = MutedText,
-                modifier = Modifier.size((12 * scale).dp),
+                modifier = Modifier.size((13 * scale).dp),
             )
             Text(
                 text = "\u00A0",
@@ -409,7 +460,7 @@ private fun FeaturedPlaceCardFooterPlaceholder(scale: Float) {
                 color = MutedText,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f, fill = true),
             )
         }
     }
@@ -425,8 +476,8 @@ fun HomeFeaturedPlaceCard(
     val isOpen = isPlaceOpenNow(place.openingHour, place.closingHour)
     val hoursLabel = formatPlaceHoursRange(place.openingHour, place.closingHour)
     val subtitle = placeSubtitle(place)
-    val corner = (16 * cardScale).dp.coerceAtLeast(12.dp)
-    val imageAspect = 1.65f / cardScale.coerceAtLeast(0.8f)
+    val corner = featuredPlaceCardCorner(cardScale)
+    val imageAspect = featuredPlaceImageAspect(cardScale)
 
     Card(
         modifier = modifier.clickable(onClick = onClick),

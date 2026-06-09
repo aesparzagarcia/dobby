@@ -5,27 +5,40 @@ import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Apartment
+import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,13 +59,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +76,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.core.location.DeliveryServiceArea
 import com.ares.ewe.core.theme.DobbyColors
+import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.presentation.viewmodel.main.home.MapLocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -73,16 +88,31 @@ import com.google.maps.android.compose.rememberCameraPositionState
 private const val DEFAULT_ZOOM = 15f
 private val DEFAULT_POSITION = LatLng(20.6507582, -103.7029606) // Plaza Tala fallback
 private val FloatingAddressCardColor = DobbyColors.Primary
-private val ConfirmButtonColor = Color(0xFF22C55E)
 private val PinTipToCenterOffset = (-24).dp
 private val AddressCardOffsetFromPin = (-67).dp
 
-private val ADDRESS_LABEL_OPTIONS = listOf(
-    "Casa",
-    "Apartamento",
-    "Trabajo",
-    "Novia",
-    "Fiesta"
+private val SaveSheetAccent = DobbyPureScale.Onyx
+private val SaveSheetSubtitle = Color(0xFF737373)
+private val SaveSheetFieldBorder = Color(0xFFE0E0E5)
+private val SaveSheetChipSelectedBg = Color(0xFFF5F5F7)
+private val SaveSheetChipBorder = Color(0xFFE5E5EA)
+
+private data class AddressLabelOption(
+    val label: String,
+    val icon: ImageVector,
+)
+
+/** Grid order matches redesigned bottom sheet. */
+private val ADDRESS_LABEL_GRID = listOf(
+    listOf(
+        AddressLabelOption("Casa", Icons.Default.Home),
+        AddressLabelOption("Novia", Icons.Default.Favorite),
+        AddressLabelOption("Apartamento", Icons.Default.Apartment),
+    ),
+    listOf(
+        AddressLabelOption("Fiesta", Icons.Default.Celebration),
+        AddressLabelOption("Trabajo", Icons.Default.Work),
+    ),
 )
 
 private fun String.toAddressCardPreview(): String {
@@ -178,132 +208,32 @@ fun MapLocationScreen(
     // Address label + description bottom sheet before saving
     if (uiState.showDescriptionDialog) {
         var descriptionText by remember { mutableStateOf("") }
-        var selectedLabel by remember { mutableStateOf(ADDRESS_LABEL_OPTIONS.first()) }
+        var selectedLabel by remember { mutableStateOf("Casa") }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         LaunchedEffect(Unit) { sheetState.expand() }
         ModalBottomSheet(
             onDismissRequest = viewModel::onDismissDescriptionDialog,
-            sheetState = sheetState
+            sheetState = sheetState,
+            containerColor = Color.White,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 32.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Text(
-                    text = "Guardar dirección",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 20.dp)
-                )
-
-                // Description section
-                Text(
-                    text = "Descripción",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = descriptionText,
-                    onValueChange = { descriptionText = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp),
-                    placeholder = { Text("ej. Casa verde, piso 2") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary
+            SaveAddressBottomSheetContent(
+                descriptionText = descriptionText,
+                onDescriptionChange = { descriptionText = it },
+                selectedLabel = selectedLabel,
+                onLabelSelected = { selectedLabel = it },
+                isSaving = false,
+                onCancel = viewModel::onDismissDescriptionDialog,
+                onSave = {
+                    val center = cameraPositionState.position.target
+                    viewModel.saveAddressWithDescription(
+                        label = selectedLabel,
+                        description = descriptionText.ifBlank { null },
+                        latLng = center,
+                        addressText = uiState.editableAddress,
                     )
-                )
-
-                // Label section (5 options in 2 columns)
-                Text(
-                    text = "Etiqueta",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ADDRESS_LABEL_OPTIONS.take(3).forEach { option ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedLabel = option }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedLabel == option,
-                                    onClick = { selectedLabel = option }
-                                )
-                                Text(
-                                    text = option,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ADDRESS_LABEL_OPTIONS.drop(3).forEach { option ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedLabel = option }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedLabel == option,
-                                    onClick = { selectedLabel = option }
-                                )
-                                Text(
-                                    text = option,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(start = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = viewModel::onDismissDescriptionDialog) {
-                        Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
-                    }
-                    TextButton(
-                        onClick = {
-                            val center = cameraPositionState.position.target
-                            viewModel.saveAddressWithDescription(
-                                label = selectedLabel,
-                                description = descriptionText.ifBlank { null },
-                                latLng = center,
-                                addressText = uiState.editableAddress
-                            )
-                        }
-                    ) {
-                        Text("Guardar", color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
+                },
+            )
         }
-
     }
 
     if (showFarAddressWarningBeforeSheet) {
@@ -462,21 +392,21 @@ fun MapLocationScreen(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 20.dp)
-                    .height(64.dp),
-                shape = RoundedCornerShape(32.dp),
+                    .height(54.dp),
+                shape = RoundedCornerShape(27.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = ConfirmButtonColor,
+                    containerColor = DobbyPureScale.Onyx,
                     contentColor = Color.White,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                 enabled = confirmEnabled
             ) {
                 Text(
                     confirmLabel,
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = MaterialTheme.typography.titleMedium.fontSize * 1.1f
                     )
                 )
             }
@@ -490,6 +420,217 @@ fun MapLocationScreen(
                         .align(Alignment.BottomCenter)
                         .padding(horizontal = 24.dp)
                         .padding(bottom = 72.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaveAddressBottomSheetContent(
+    descriptionText: String,
+    onDescriptionChange: (String) -> Unit,
+    selectedLabel: String,
+    onLabelSelected: (String) -> Unit,
+    isSaving: Boolean,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 32.dp)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Text(
+            text = "Guardar dirección",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = SaveSheetAccent,
+            modifier = Modifier.padding(bottom = 10.dp),
+        )
+
+        Text(
+            text = "Descripción",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = SaveSheetAccent,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, SaveSheetFieldBorder, RoundedCornerShape(12.dp))
+                .background(Color.White)
+                .padding(horizontal = 14.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = SaveSheetAccent,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            OutlinedTextField(
+                value = descriptionText,
+                onValueChange = onDescriptionChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("ej. Casa verde, piso 2", color = SaveSheetSubtitle) },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                ),
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Etiqueta",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = SaveSheetAccent,
+            modifier = Modifier.padding(bottom = 10.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            ADDRESS_LABEL_GRID.forEach { column ->
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    column.forEach { option ->
+                        AddressLabelChip(
+                            option = option,
+                            selected = selectedLabel == option.label,
+                            onClick = { onLabelSelected(option.label) },
+                        )
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedButton(
+                onClick = onCancel,
+                enabled = !isSaving,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, SaveSheetAccent),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = SaveSheetAccent,
+                ),
+            ) {
+                Text("Cancelar", fontWeight = FontWeight.SemiBold)
+            }
+            Button(
+                onClick = onSave,
+                enabled = !isSaving,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SaveSheetAccent,
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Guardando…", fontWeight = FontWeight.SemiBold)
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Save,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Guardar", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddressLabelChip(
+    option: AddressLabelOption,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(12.dp)
+    val borderColor = if (selected) SaveSheetAccent else SaveSheetChipBorder
+    val borderWidth = if (selected) 2.dp else 1.dp
+    val background = if (selected) SaveSheetChipSelectedBg else Color.White
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(background)
+            .border(borderWidth, borderColor, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = option.icon,
+            contentDescription = null,
+            tint = SaveSheetAccent,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = option.label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = SaveSheetAccent,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+        )
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .then(
+                    if (selected) {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(SaveSheetAccent)
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .border(1.5.dp, SaveSheetChipBorder, CircleShape)
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp),
                 )
             }
         }

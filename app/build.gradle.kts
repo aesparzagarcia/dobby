@@ -25,10 +25,11 @@ android {
         // Local API: default 10.0.2.2 = emulator → host localhost. Physical device: set DEV_API_HOST in gradle.properties
         // (PC LAN IP) or use adb reverse tcp:3001 tcp:3001 with DEV_API_HOST=127.0.0.1. Path must end with /api/.
         val devApiHost = (project.findProperty("DEV_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
-            ?: "192.168.1.13"
-        val devApiPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
-            ?: "3001"
-        buildConfigField("String", "BASE_URL", "\"http://$devApiHost:$devApiPort/api/\"")
+            ?: "https://dobby-api-31lf.onrender.com"
+        /*val devApiPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
+            ?: "3001"*/
+        //buildConfigField("String", "BASE_URL", "\"http://$devApiHost:$devApiPort/api/\"")
+        buildConfigField("String", "BASE_URL", "\"$devApiHost/api/\"")
         // Replace with your Google Places API key (enable Places API in Cloud Console)
         buildConfigField("String", "PLACES_API_KEY", "\"${project.findProperty("PLACES_API_KEY") ?: ""}\"")
         // SHA-1 of your signing key (no colons), for Android app restriction. Get with: keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
@@ -95,7 +96,6 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.coil.compose)
-    implementation(libs.lottie.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

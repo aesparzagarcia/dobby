@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.presentation.components.FloatingBottomNavBar
 import com.ares.ewe.presentation.components.MainTab
@@ -42,7 +43,7 @@ fun HomeScreen(
 ) {
     var currentTab by remember { mutableStateOf(MainTab.Home) }
     Surface(
-        color = Color.White,
+        color = DobbyColors.CardSurface,
         modifier = Modifier
             .fillMaxSize()
     ) {

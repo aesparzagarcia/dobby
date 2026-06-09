@@ -42,10 +42,6 @@ class AdsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun recordAdView(id: String) {
-        runCatching { api.recordAdView(id) }
-    }
-
     override suspend fun recordAdClick(id: String) {
         runCatching { api.recordAdClick(id) }
     }

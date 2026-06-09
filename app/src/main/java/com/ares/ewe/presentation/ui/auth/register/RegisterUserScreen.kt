@@ -244,7 +244,7 @@ fun AddUserInfoScreen(
                             .height(54.dp),
                         shape = RoundedCornerShape(27.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = BrandGreen,
+                            containerColor = Color.Black,
                             contentColor = Color.White,
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),

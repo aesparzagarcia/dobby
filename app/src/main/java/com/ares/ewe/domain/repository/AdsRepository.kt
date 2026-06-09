@@ -5,6 +5,5 @@ import com.ares.ewe.domain.model.Ad
 interface AdsRepository {
     suspend fun getAds(): List<Ad>
     suspend fun getAd(id: String): Ad?
-    suspend fun recordAdView(id: String)
     suspend fun recordAdClick(id: String)
 }

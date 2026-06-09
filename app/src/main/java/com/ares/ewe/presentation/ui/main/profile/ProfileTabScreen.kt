@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Help
@@ -33,9 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,12 +52,6 @@ fun ProfileTabScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scroll = rememberScrollState()
-    var showCouponsLottiePreview by remember { mutableStateOf(false) }
-
-    if (showCouponsLottiePreview) {
-        CouponsLottiePreviewScreen(onBack = { showCouponsLottiePreview = false })
-        return
-    }
 
     Column(
         modifier = modifier
@@ -240,12 +231,6 @@ fun ProfileTabScreen(
                         title = "Métodos de pago",
                         icon = Icons.Default.CreditCard,
                         onClick = { },
-                    )
-                    ProfileMenuDivider()
-                    ProfileMenuRow(
-                        title = "Cupones",
-                        icon = Icons.Default.ConfirmationNumber,
-                        onClick = { showCouponsLottiePreview = true },
                     )
                     ProfileMenuDivider()
                     ProfileMenuRow(
