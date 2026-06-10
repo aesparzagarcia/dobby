@@ -45,7 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.core.util.ProductCategory
 import com.ares.ewe.domain.model.ShopProduct
 
@@ -321,21 +321,19 @@ fun ShopDetailProductCard(
                     .background(Color(0xFFF3F4F6))
                     .clickable(onClick = onClick),
             ) {
-                if (product.imageUrl != null) {
-                    AsyncImage(
-                        model = product.imageUrl,
-                        contentDescription = product.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text = product.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
+                LoadingAsyncImage(
+                    model = product.imageUrl,
+                    contentDescription = product.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = {
+                        Text(
+                            text = product.name.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
             }
 
             Column(

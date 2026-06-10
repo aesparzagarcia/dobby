@@ -38,7 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.presentation.viewmodel.main.home.AdDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,20 +108,19 @@ fun AdDetailScreen(
                             .background(MaterialTheme.colorScheme.surface),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (ad.imageUrl != null) {
-                            AsyncImage(
-                                model = ad.imageUrl,
-                                contentDescription = ad.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = ad.name.take(1).uppercase(),
-                                style = MaterialTheme.typography.displayMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        LoadingAsyncImage(
+                            model = ad.imageUrl,
+                            contentDescription = ad.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            error = {
+                                Text(
+                                    text = ad.name.take(1).uppercase(),
+                                    style = MaterialTheme.typography.displayMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                        )
                     }
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(

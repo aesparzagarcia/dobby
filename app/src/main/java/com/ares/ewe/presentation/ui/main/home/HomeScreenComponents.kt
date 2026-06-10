@@ -47,7 +47,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.core.util.serviceCategoryLabelEs
@@ -473,7 +473,7 @@ fun HomeFeaturedPlaceCard(
     onClick: () -> Unit = {},
     cardScale: Float = FeaturedPlaceCardScale,
 ) {
-    val isOpen = isPlaceOpenNow(place.openingHour, place.closingHour)
+    val isOpen = rememberIsPlaceOpenNow(place.openingHour, place.closingHour)
     val hoursLabel = formatPlaceHoursRange(place.openingHour, place.closingHour)
     val subtitle = placeSubtitle(place)
     val corner = featuredPlaceCardCorner(cardScale)
@@ -499,21 +499,19 @@ fun HomeFeaturedPlaceCard(
                     .clip(RoundedCornerShape(topStart = corner, topEnd = corner))
                     .background(Color(0xFFF3F4F6)),
             ) {
-                if (place.imageUrl != null) {
-                    AsyncImage(
-                        model = place.imageUrl,
-                        contentDescription = place.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text = place.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
+                LoadingAsyncImage(
+                    model = place.imageUrl,
+                    contentDescription = place.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = {
+                        Text(
+                            text = place.name.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -622,20 +620,19 @@ fun HomeServicePlaceRow(
                     .background(Color(0xFFF3F4F6)),
                 contentAlignment = Alignment.Center,
             ) {
-                if (place.imageUrl != null) {
-                    AsyncImage(
-                        model = place.imageUrl,
-                        contentDescription = place.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text = place.name.take(1).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+                LoadingAsyncImage(
+                    model = place.imageUrl,
+                    contentDescription = place.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = {
+                        Text(
+                            text = place.name.take(1).uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(

@@ -56,7 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.domain.model.ProductDetail
 import java.util.Locale
 
@@ -103,20 +103,19 @@ fun ProductDetailHero(
                         .background(Color(0xFFF3F4F6)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (url != null) {
-                        AsyncImage(
-                            model = url,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Text(
-                            text = "?",
-                            style = MaterialTheme.typography.displayMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    LoadingAsyncImage(
+                        model = url,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        error = {
+                            Text(
+                                text = "?",
+                                style = MaterialTheme.typography.displayMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                    )
                 }
             }
         }

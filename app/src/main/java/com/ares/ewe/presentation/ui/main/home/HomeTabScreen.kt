@@ -43,7 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.domain.model.Ad
 import com.ares.ewe.domain.model.AdCarouselSlide
 import com.ares.ewe.domain.model.buildWeightedAdCarouselSlides
@@ -457,20 +457,19 @@ private fun AdsCarousel(
                             .clip(RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (ad.imageUrl != null) {
-                            AsyncImage(
-                                model = ad.imageUrl,
-                                contentDescription = ad.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = ad.name.take(1).uppercase(),
-                                style = MaterialTheme.typography.displaySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        LoadingAsyncImage(
+                            model = ad.imageUrl,
+                            contentDescription = ad.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            error = {
+                                Text(
+                                    text = ad.name.take(1).uppercase(),
+                                    style = MaterialTheme.typography.displaySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                        )
                     }
                 }
             }

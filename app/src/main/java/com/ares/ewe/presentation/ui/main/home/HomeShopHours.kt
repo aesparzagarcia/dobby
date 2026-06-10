@@ -1,9 +1,51 @@
 package com.ares.ewe.presentation.ui.main.home
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.ares.ewe.domain.model.FeaturedPlace
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.delay
+
+/**
+ * Recomputes open/closed when the app resumes or every minute.
+ * Without this, [isPlaceOpenNow] is frozen at first composition (e.g. "Cerrado" after unlocking the phone the next day).
+ */
+@Composable
+fun rememberIsPlaceOpenNow(openingHour: String?, closingHour: String?): Boolean? {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var refreshKey by remember { mutableIntStateOf(0) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                refreshKey++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(refreshKey) {
+        while (true) {
+            delay(60_000L)
+            refreshKey++
+        }
+    }
+
+    return remember(openingHour, closingHour, refreshKey) {
+        isPlaceOpenNow(openingHour, closingHour)
+    }
+}
 
 /** Whether the place is open now; `null` if hours are unknown. */
 fun isPlaceOpenNow(openingHour: String?, closingHour: String?): Boolean? {

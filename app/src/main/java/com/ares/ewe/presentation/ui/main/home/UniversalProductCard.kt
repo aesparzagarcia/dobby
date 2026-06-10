@@ -33,7 +33,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.core.util.toDisplayImageUrl
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 
 /** Escala del card de producto (ancho adicional desde [HomeTabScreen]). */
 private const val ProductCardScale = 0.85f
@@ -75,20 +75,19 @@ fun UniversalProductCard(
                     .background(Color(0xFFF3F4F6)),
                 contentAlignment = Alignment.Center,
             ) {
-                if (resolvedImageUrl != null) {
-                    AsyncImage(
-                        model = resolvedImageUrl,
-                        contentDescription = name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text = name.take(1).uppercase(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                LoadingAsyncImage(
+                    model = resolvedImageUrl,
+                    contentDescription = name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = {
+                        Text(
+                            text = name.take(1).uppercase(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
                 if (showPromotion) {
                     Row(
                         modifier = Modifier

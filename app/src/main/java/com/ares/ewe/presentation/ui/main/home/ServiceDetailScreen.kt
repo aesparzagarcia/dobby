@@ -37,7 +37,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.presentation.viewmodel.main.home.ServiceDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,20 +113,19 @@ fun ServiceDetailScreen(
                                 .background(MaterialTheme.colorScheme.surface),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (service.imageUrl != null) {
-                                AsyncImage(
-                                    model = service.imageUrl,
-                                    contentDescription = service.name,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Text(
-                                    text = service.name.take(1).uppercase(),
-                                    style = MaterialTheme.typography.displaySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            LoadingAsyncImage(
+                                model = service.imageUrl,
+                                contentDescription = service.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                error = {
+                                    Text(
+                                        text = service.name.take(1).uppercase(),
+                                        style = MaterialTheme.typography.displaySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                            )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         RatingDisplay(rate = service.rate)

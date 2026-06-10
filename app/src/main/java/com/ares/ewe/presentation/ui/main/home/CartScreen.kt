@@ -50,7 +50,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.core.pricing.OrderPricing
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.presentation.viewmodel.main.home.CartViewModel
@@ -385,14 +385,12 @@ private fun CartItemRow(
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surface)
             ) {
-                if (item.imageUrl != null) {
-                    AsyncImage(
-                        model = item.imageUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                LoadingAsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

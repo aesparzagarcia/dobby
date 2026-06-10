@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.BuildConfig
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.OrderTracking
@@ -349,23 +349,22 @@ private fun OrderTrackingProductRow(item: OrderTrackingItem) {
                 .background(Color.White),
             contentAlignment = Alignment.Center,
         ) {
-            if (!item.imageUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = item.imageUrl,
-                    contentDescription = item.productName,
-                    modifier = Modifier
-                        .size(OrderTrackingSheetDim.thumb)
-                        .clip(RoundedCornerShape(OrderTrackingSheetDim.radiusSm)),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Inventory2,
-                    contentDescription = null,
-                    tint = OrderTrackingSheetPalette.Muted,
-                    modifier = Modifier.size(OrderTrackingSheetDim.iconLg),
-                )
-            }
+            LoadingAsyncImage(
+                model = item.imageUrl,
+                contentDescription = item.productName,
+                modifier = Modifier
+                    .size(OrderTrackingSheetDim.thumb)
+                    .clip(RoundedCornerShape(OrderTrackingSheetDim.radiusSm)),
+                contentScale = ContentScale.Crop,
+                error = {
+                    Icon(
+                        imageVector = Icons.Default.Inventory2,
+                        contentDescription = null,
+                        tint = OrderTrackingSheetPalette.Muted,
+                        modifier = Modifier.size(OrderTrackingSheetDim.iconLg),
+                    )
+                },
+            )
         }
         Text(
             text = "${item.productName} x${item.quantity}",
@@ -511,18 +510,19 @@ private fun CourierAssignedCard(dm: OrderTrackingDeliveryMan) {
             .padding(OrderTrackingSheetDim.padH),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (!dm.profilePhotoUrl.isNullOrBlank()) {
-            val imageUrl = dm.profilePhotoUrl.let { url ->
-                if (url.startsWith("http")) url
-                else BuildConfig.BASE_URL.substringBefore("api/").dropLast(1) + url
-            }
-            AsyncImage(
-                model = imageUrl,
+        val courierImageUrl = dm.profilePhotoUrl?.let { url ->
+            if (url.startsWith("http")) url
+            else BuildConfig.BASE_URL.substringBefore("api/").dropLast(1) + url
+        }
+        if (!courierImageUrl.isNullOrBlank()) {
+            LoadingAsyncImage(
+                model = courierImageUrl,
                 contentDescription = dm.name,
                 modifier = Modifier
                     .size(OrderTrackingSheetDim.avatar)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
+                placeholderBackground = Color.White,
             )
         } else {
             Box(
