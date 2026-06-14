@@ -21,14 +21,16 @@ data class VerifyOtpResponse(
     @SerializedName("token") val token: String? = null,
     @SerializedName("refreshToken") val refreshToken: String? = null,
     @SerializedName("user") val user: UserDto? = null,
-    @SerializedName("requires_registration") val requiresRegistration: Boolean = false
+    @SerializedName("requires_registration") val requiresRegistration: Boolean = false,
+    @SerializedName("registration_token") val registrationToken: String? = null
 )
 
 data class CompleteRegistrationRequest(
     @SerializedName("phone") val phone: String,
     @SerializedName("name") val name: String,
     @SerializedName("last_name") val lastName: String,
-    @SerializedName("email") val email: String
+    @SerializedName("email") val email: String,
+    @SerializedName("registration_token") val registrationToken: String
 )
 
 data class CompleteRegistrationResponse(

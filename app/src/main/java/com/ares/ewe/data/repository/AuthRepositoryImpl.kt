@@ -30,6 +30,10 @@ class AuthRepositoryImpl @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
 ) : AuthRepository {
 
+    /** Set after OTP verify when the user must complete registration; consumed on submit. */
+    @Volatile
+    private var pendingRegistrationToken: String? = null
+
     override val isLoggedIn: Flow<Boolean> = sessionManager.isLoggedIn
 
     override suspend fun requestOtp(phone: String): AuthResult<OtpRequestResult> {
@@ -45,6 +49,11 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val response = api.verifyOtp(VerifyOtpRequest(phone = phone, code = code))
             if (response.requiresRegistration) {
+                val regToken = response.registrationToken?.trim().orEmpty()
+                if (regToken.isEmpty()) {
+                    return AuthResult.Error("Respuesta de verificación inválida")
+                }
+                pendingRegistrationToken = regToken
                 AuthResult.Success(VerifyOtpOutcome.RequiresRegistration)
             } else {
                 val access = response.token
@@ -69,12 +78,18 @@ class AuthRepositoryImpl @Inject constructor(
         email: String
     ): AuthResult<Unit> {
         return try {
+            val regToken = pendingRegistrationToken?.trim().orEmpty()
+            if (regToken.isEmpty()) {
+                return AuthResult.Error("Debes verificar tu teléfono con el código OTP primero")
+            }
+            pendingRegistrationToken = null
             val response = api.completeRegistration(
                 CompleteRegistrationRequest(
                     phone = phone,
                     name = name,
                     lastName = lastName,
-                    email = email
+                    email = email,
+                    registrationToken = regToken
                 )
             )
             val refresh = response.refreshToken
