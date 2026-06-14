@@ -12,6 +12,7 @@ data class CartInfo(
     val price: Double,
     val quantity: Int,
     val imageUrl: String? = null,
+    val description: String? = null,
     /** Precio de lista (sin descuento); 0 si no hay promo guardada. */
     val listPrice: Double = 0.0,
     val hasPromotion: Boolean = false,

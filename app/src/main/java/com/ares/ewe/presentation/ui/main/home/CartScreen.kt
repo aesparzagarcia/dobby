@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -24,8 +24,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +53,9 @@ import com.ares.ewe.core.pricing.OrderPricing
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.presentation.viewmodel.main.home.CartViewModel
 
+private val CartScreenBackground = Color(0xFFF7F5FA)
+private val CartListBackground = Color.White
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
@@ -77,6 +78,7 @@ fun CartScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
+        containerColor = CartScreenBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Carrito") },
@@ -110,25 +112,30 @@ fun CartScreen(
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .fillMaxWidth()
+                        .background(CartListBackground),
+                    contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
-                    items(uiState.items, key = { it.productId }) { item ->
+                    itemsIndexed(uiState.items, key = { _, item -> item.productId }) { index, item ->
                         CartItemRow(
                             item = item,
-                            onRemove = { viewModel.removeItem(item.productId) }
+                            onRemove = { viewModel.removeItem(item.productId) },
                         )
-                    }
-                    item {
-                        CartDetailsSection(
-                            addressText = uiState.addressText,
-                            addressDetails = uiState.addressDetails,
-                            estimatedDeliveryTime = uiState.estimatedDeliveryTime,
-                            paymentMethod = uiState.paymentMethod
-                        )
+                        if (index < uiState.items.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 84.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                        }
                     }
                 }
+                CartDetailsSection(
+                    addressLabel = uiState.addressLabel,
+                    addressText = uiState.addressText,
+                    addressDetails = uiState.addressDetails,
+                    estimatedDeliveryTime = uiState.estimatedDeliveryTime,
+                    paymentMethod = uiState.paymentMethod,
+                )
                 if (uiState.placeOrderError != null) {
                     Text(
                         text = uiState.placeOrderError!!,
@@ -140,8 +147,9 @@ fun CartScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(16.dp)
+                        .background(CartListBackground)
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 16.dp)
                 ) {
                     CartPricingFooter(pricing = uiState.pricing, grandTotal = uiState.grandTotal)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -158,7 +166,7 @@ fun CartScreen(
                             uiState.items.isNotEmpty() &&
                             !uiState.isPlacingOrder,
                     ) {
-                        Text("Pagar $${String.format("%.2f", uiState.grandTotal)}")
+                        Text("Pagar $${String.format(Locale.US, "%.2f", uiState.grandTotal)}")
                     }
                 }
             }
@@ -201,7 +209,7 @@ private fun CartPricingFooter(
         Spacer(modifier = Modifier.height(8.dp))
     } else {
         PricingLine(label = "Subtotal productos", amount = pricing.productsSubtotal)
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         PricingLine(
             label = "Envío",
             amount = pricing.delivery.finalDeliveryFee,
@@ -218,9 +226,9 @@ private fun CartPricingFooter(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -279,6 +287,7 @@ private fun money(value: Double): String =
 
 @Composable
 private fun CartDetailsSection(
+    addressLabel: String,
     addressText: String,
     addressDetails: String?,
     estimatedDeliveryTime: String,
@@ -288,15 +297,15 @@ private fun CartDetailsSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 8.dp)
+            .background(CartListBackground)
     ) {
         DetailBlock(
-            title = "Domicilio",
+            title = addressLabel.ifBlank { "Casa" },
             icon = Icons.Default.LocationOn,
             content = addressText.ifBlank { "Añade una dirección de entrega" }
         )
         HorizontalDivider(
-            modifier = Modifier.padding(vertical = 12.dp),
+            modifier = Modifier.padding(start = 16.dp),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
         )
         if (!addressDetails.isNullOrBlank()) {
@@ -306,7 +315,7 @@ private fun CartDetailsSection(
                 content = addressDetails
             )
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = 12.dp),
+                modifier = Modifier.padding(start = 16.dp),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
             )
         }
@@ -316,7 +325,7 @@ private fun CartDetailsSection(
             content = estimatedDeliveryTime
         )
         HorizontalDivider(
-            modifier = Modifier.padding(vertical = 12.dp),
+            modifier = Modifier.padding(start = 16.dp),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
         )
         DetailBlock(
@@ -334,22 +343,26 @@ private fun DetailBlock(
     content: String,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 7.dp)
+    ) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -365,83 +378,78 @@ private fun DetailBlock(
 private fun CartItemRow(
     item: CartItem,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                LoadingAsyncImage(
-                    model = item.imageUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (item.hasDiscount) {
-                    val d = item.discount.coerceIn(0, 100)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(top = 4.dp)
+            LoadingAsyncImage(
+                model = item.imageUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${item.quantity} × $${String.format(Locale.US, "%.2f", item.chargedUnitPrice)} = $${String.format(Locale.US, "%.2f", item.lineTotal)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (item.hasDiscount) {
+                val d = item.discount.coerceIn(0, 100)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color(0xFFFFE34D))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFFFFE34D))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "-$d%",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
                         Text(
-                            text = "$${String.format(Locale.US, "%.2f", item.originalUnitPrice)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textDecoration = TextDecoration.LineThrough
+                            text = "-$d%",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
+                    Text(
+                        text = "$${String.format(Locale.US, "%.2f", item.originalUnitPrice)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textDecoration = TextDecoration.LineThrough,
+                    )
                 }
-                Text(
-                    text = "${item.quantity} × $${String.format(Locale.US, "%.2f", item.chargedUnitPrice)} = $${String.format(Locale.US, "%.2f", item.lineTotal)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
             }
-            IconButton(onClick = onRemove) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Eliminar"
-                )
-            }
+        }
+        IconButton(onClick = onRemove) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Eliminar",
+                tint = Color(0xFF595959),
+            )
         }
     }
 }

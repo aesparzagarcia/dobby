@@ -3,6 +3,7 @@ package com.ares.ewe.presentation.ui.main.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,7 +55,7 @@ fun UniversalProductCard(
     val showPromotion = hasPromotion && validDiscount > 0
     val discountedPrice = if (showPromotion) price * (1 - validDiscount / 100.0) else price
     val corner = (16 * ProductCardScale).dp
-    val imageHeight = (120 * ProductCardScale).dp
+    val imagePadding = (4 * ProductCardScale).dp
 
     Card(
         modifier = modifier.clickable(onClick = onClick),
@@ -70,16 +71,19 @@ fun UniversalProductCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(imageHeight)
+                    .aspectRatio(1f)
                     .clip(RoundedCornerShape(topStart = corner, topEnd = corner))
-                    .background(Color(0xFFF3F4F6)),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center,
             ) {
                 LoadingAsyncImage(
                     model = resolvedImageUrl,
                     contentDescription = name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(imagePadding),
+                    contentScale = ContentScale.Fit,
+                    placeholderBackground = Color.White,
                     error = {
                         Text(
                             text = name.take(1).uppercase(),
@@ -181,7 +185,6 @@ fun HomeProductSeeMoreCard(
 ) {
     val scale = ProductCardScale
     val corner = (16 * scale).dp
-    val imageHeight = (120 * scale).dp
     val primary = MaterialTheme.colorScheme.primary
 
     Card(
@@ -203,7 +206,7 @@ fun HomeProductSeeMoreCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(imageHeight),
+                        .aspectRatio(1f),
                 )
                 ProductCardFooterPlaceholder(scale = scale)
             }

@@ -3,6 +3,7 @@ package com.ares.ewe.presentation.ui.main.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,8 @@ private val FooterBg = Color(0xFFF5F3FF)
 private val UnavailableFooterBg = Color(0xFFF3F4F6)
 
 private const val ShopDetailProductCardScale = 0.9f
+/** Image band aspect ratio (width : height). 4:3 gives room for tall products without a full-width square. */
+private const val ShopDetailProductImageAspectRatio = 4f / 3f
 
 @Composable
 fun ShopDetailSearchBar(
@@ -304,6 +307,7 @@ fun ShopDetailProductCard(
     val footerBg = if (isProductAvailable) FooterBg else UnavailableFooterBg
     val scale = ShopDetailProductCardScale
     val corner = (16 * scale).dp
+    val imagePadding = (8 * scale).dp
     val imageShape = RoundedCornerShape(topStart = corner, topEnd = corner)
 
     Card(
@@ -316,16 +320,20 @@ fun ShopDetailProductCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height((180 * scale).dp)
+                    .aspectRatio(ShopDetailProductImageAspectRatio)
                     .clip(imageShape)
-                    .background(Color(0xFFF3F4F6))
+                    .background(Color.White)
                     .clickable(onClick = onClick),
+                contentAlignment = Alignment.Center,
             ) {
                 LoadingAsyncImage(
                     model = product.imageUrl,
                     contentDescription = product.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(imagePadding),
+                    contentScale = ContentScale.Fit,
+                    placeholderBackground = Color.White,
                     error = {
                         Text(
                             text = product.name.take(1).uppercase(),

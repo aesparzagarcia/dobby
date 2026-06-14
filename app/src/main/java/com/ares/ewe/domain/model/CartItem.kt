@@ -7,6 +7,7 @@ data class CartItem(
     val price: Double,
     val quantity: Int,
     val imageUrl: String? = null,
+    val description: String? = null,
     /** Precio de catálogo sin descuento (como `price` en API cuando hay promo). */
     val listPrice: Double = 0.0,
     val hasPromotion: Boolean = false,

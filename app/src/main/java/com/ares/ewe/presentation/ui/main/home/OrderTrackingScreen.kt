@@ -88,8 +88,6 @@ private const val MARKER_ICON_SIZE_DP = 48
 private val FALLBACK_LATLNG = LatLng(20.6507582, -103.7029606)
 private val RoutePolylineColor = Color(0xFF1976D2)
 /** Brand green aligned with PhoneScreen (~#2ECC71). */
-private val BrandGreen = Color(0xFF2ECC71)
-
 private fun isValidMapCoordinate(lat: Double, lng: Double): Boolean {
     if (lat !in -90.0..90.0 || lng !in -180.0..180.0) return false
     if (abs(lat) < 1e-4 && abs(lng) < 1e-4) return false
@@ -546,7 +544,7 @@ private fun InProgressOrderTrackingLayout(
                     .padding(bottom = 12.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandGreen,
+                    containerColor = Color.Black,
                     contentColor = Color.White,
                 ),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 15.dp),

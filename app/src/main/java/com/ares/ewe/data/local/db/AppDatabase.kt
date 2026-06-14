@@ -9,7 +9,7 @@ import com.ares.ewe.data.local.entity.FavoriteProductEntity
 
 @Database(
     entities = [CartInfo::class, FavoriteProductEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

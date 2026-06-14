@@ -70,6 +70,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        OrderStatusNotificationHelper.clearAllOrderNotifications(this)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -103,6 +108,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (orderId != null) {
+            OrderStatusNotificationHelper.clearOrderNotifications(this, orderId)
             pendingOrderTrackingId = orderId
             intent.removeExtra(OrderStatusNotificationHelper.EXTRA_ORDER_ID)
             extras?.remove("order_id")

@@ -173,64 +173,75 @@ class HomeTabViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
-            coroutineScope {
-                val homeDeferred = async {
-                    try {
-                        val home = placesRepository.getHome()
+            refreshAll(clearOnFailure = false)
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    /** Silent refresh when returning from background (no pull-to-refresh indicator). */
+    fun refreshOnForeground() {
+        viewModelScope.launch {
+            refreshAll(clearOnFailure = false)
+        }
+    }
+
+    private suspend fun refreshAll(clearOnFailure: Boolean) {
+        coroutineScope {
+            val homeDeferred = async {
+                try {
+                    val home = placesRepository.getHome()
+                    _uiState.update {
+                        it.copy(
+                            featuredPlaces = home.featuredPlaces,
+                            bestSellerProducts = home.bestSellerProducts,
+                            errorMessage = null
+                        )
+                    }
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(errorMessage = e.toUserFacingMessage()) }
+                }
+            }
+            val addressesDeferred = async {
+                userAddressRepository.getAddresses()
+                    .onSuccess { list ->
+                        val displayAddress = list.firstOrNull()?.address?.toAddressWithColonyOnly()
+                        val addressLabel = list.firstOrNull()?.label ?: "Casa"
                         _uiState.update {
                             it.copy(
-                                featuredPlaces = home.featuredPlaces,
-                                bestSellerProducts = home.bestSellerProducts,
-                                errorMessage = null
+                                addressLabel = addressLabel,
+                                address = displayAddress,
+                                addressFetchCompleted = true,
+                                needsDeliveryAddressCallout = list.isEmpty(),
                             )
                         }
-                    } catch (e: Exception) {
-                        _uiState.update { it.copy(errorMessage = e.toUserFacingMessage()) }
                     }
-                }
-                val addressesDeferred = async {
-                    userAddressRepository.getAddresses()
-                        .onSuccess { list ->
-                            val displayAddress = list.firstOrNull()?.address?.toAddressWithColonyOnly()
-                            val addressLabel = list.firstOrNull()?.label ?: "Casa"
-                            _uiState.update {
-                                it.copy(
-                                    addressLabel = addressLabel,
-                                    address = displayAddress,
-                                    addressFetchCompleted = true,
-                                    needsDeliveryAddressCallout = list.isEmpty(),
-                                )
-                            }
-                        }
-                        .onFailure { e ->
-                            _uiState.update {
-                                it.copy(
-                                    addressLabel = "Casa",
-                                    address = null,
-                                    addressFetchCompleted = true,
-                                    needsDeliveryAddressCallout = false,
-                                    warningMessage = e.toUserFacingMessage()
-                                )
-                            }
-                        }
-                }
-                val adsDeferred = async {
-                    try {
-                        val ads = adsRepository.getAds()
-                        _uiState.update { it.copy(ads = ads) }
-                    } catch (e: Exception) {
+                    .onFailure { e ->
                         _uiState.update {
-                            it.copy(ads = emptyList(), warningMessage = e.toUserFacingMessage())
+                            it.copy(
+                                addressLabel = "Casa",
+                                address = null,
+                                addressFetchCompleted = true,
+                                needsDeliveryAddressCallout = false,
+                                warningMessage = e.toUserFacingMessage()
+                            )
                         }
                     }
-                }
-                val activeOrderDeferred = async { refreshActiveOrder(clearOnFailure = false) }
-                homeDeferred.await()
-                addressesDeferred.await()
-                adsDeferred.await()
-                activeOrderDeferred.await()
             }
-            _uiState.update { it.copy(isRefreshing = false) }
+            val adsDeferred = async {
+                try {
+                    val ads = adsRepository.getAds()
+                    _uiState.update { it.copy(ads = ads) }
+                } catch (e: Exception) {
+                    _uiState.update {
+                        it.copy(ads = emptyList(), warningMessage = e.toUserFacingMessage())
+                    }
+                }
+            }
+            val activeOrderDeferred = async { refreshActiveOrder(clearOnFailure = clearOnFailure) }
+            homeDeferred.await()
+            addressesDeferred.await()
+            adsDeferred.await()
+            activeOrderDeferred.await()
         }
     }
 

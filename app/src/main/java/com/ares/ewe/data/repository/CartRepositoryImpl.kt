@@ -105,6 +105,7 @@ private fun CartInfo.toCartItem() = CartItem(
     price = price,
     quantity = quantity,
     imageUrl = imageUrl,
+    description = description,
     listPrice = listPrice,
     hasPromotion = hasPromotion,
     discount = discount,

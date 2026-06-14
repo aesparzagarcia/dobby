@@ -5,8 +5,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.ares.ewe.R
 import com.ares.ewe.presentation.ui.MainActivity
 
@@ -17,18 +19,35 @@ object OrderStatusNotificationHelper {
 
     private const val CHANNEL_ID = "dobby_order_status"
     private const val CHANNEL_NAME = "Estado de pedidos"
+    private const val ORDER_NOTIFICATION_ID = 1001
+    private const val ORDER_TAG_PREFIX = "order-"
+    private const val PROMO_TAG_PREFIX = "promo-"
+
+    /** Matches backend `notificationGroupKey(orderId)`. */
+    fun orderNotificationTag(orderId: String): String =
+        "$ORDER_TAG_PREFIX${orderId.trim()}".take(64)
+
+    fun clearOrderNotifications(context: Context, orderId: String) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(orderNotificationTag(orderId), ORDER_NOTIFICATION_ID)
+    }
+
+    /** Clears all in-tray order status notifications when the user returns to the app. */
+    fun clearAllOrderNotifications(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.activeNotifications
+            .filter { it.tag?.startsWith(ORDER_TAG_PREFIX) == true }
+            .forEach { status ->
+                notificationManager.cancel(status.tag, status.id)
+            }
+    }
 
     fun show(context: Context, title: String, body: String, orderId: String?) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH,
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
 
         val launchIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -41,18 +60,9 @@ object OrderStatusNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
+        val notification = baseBuilder(context, title, body, pendingIntent).build()
 
-        val notificationId = orderId?.hashCode() ?: System.currentTimeMillis().toInt()
-        notificationManager.notify(notificationId, notification)
+        publishOrderNotification(notificationManager, orderId, notification)
     }
 
     fun showProductPromotion(
@@ -64,14 +74,6 @@ object OrderStatusNotificationHelper {
     ) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH,
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
 
         val launchIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -85,17 +87,58 @@ object OrderStatusNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+        val notification = baseBuilder(context, title, body, pendingIntent).build()
+
+        val tag = "$PROMO_TAG_PREFIX${productId.trim()}".take(64)
+        notificationManager.notify(tag, productId.hashCode(), notification)
+    }
+
+    private fun publishOrderNotification(
+        notificationManager: NotificationManager,
+        orderId: String?,
+        notification: android.app.Notification,
+    ) {
+        val trimmedOrderId = orderId?.trim()?.takeIf { it.isNotEmpty() }
+        if (trimmedOrderId != null) {
+            notificationManager.notify(
+                orderNotificationTag(trimmedOrderId),
+                ORDER_NOTIFICATION_ID,
+                notification,
+            )
+        } else {
+            notificationManager.notify(System.currentTimeMillis().toInt(), notification)
+        }
+    }
+
+    private fun baseBuilder(
+        context: Context,
+        title: String,
+        body: String,
+        pendingIntent: PendingIntent,
+    ): NotificationCompat.Builder {
+        ensureChannel(context)
+        return NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setLargeIcon(BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
+            .setColor(ContextCompat.getColor(context, R.color.dobby_notification_accent))
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
+    }
 
-        notificationManager.notify(productId.hashCode(), notification)
+    private fun ensureChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH,
+        )
+        notificationManager.createNotificationChannel(channel)
     }
 
     fun titleAndBodyForProductPromotion(productName: String?, discountPercent: Int?): Pair<String, String> {
