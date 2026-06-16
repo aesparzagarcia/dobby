@@ -90,6 +90,7 @@ class OrderRepositoryImpl @Inject constructor(
                     estimatedPreparationMinutes = dto.estimatedPreparationMinutes,
                     estimatedDeliveryMinutes = dto.estimatedDeliveryMinutes,
                     arrivedAtCustomerAt = dto.arrivedAtCustomerAt,
+                    deliveryCode = dto.deliveryCode?.trim()?.takeIf { it.isNotEmpty() },
                     deliveryRating = dto.deliveryRating,
                     canRateDelivery = dto.canRateDelivery,
                     shopRating = dto.shopRating,

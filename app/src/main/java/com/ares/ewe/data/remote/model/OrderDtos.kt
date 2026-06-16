@@ -63,6 +63,7 @@ data class OrderTrackingDto(
     @SerializedName("estimated_preparation_minutes") val estimatedPreparationMinutes: Int? = null,
     @SerializedName("estimated_delivery_minutes") val estimatedDeliveryMinutes: Int? = null,
     @SerializedName("arrived_at_customer_at") val arrivedAtCustomerAt: String? = null,
+    @SerializedName("delivery_code") val deliveryCode: String? = null,
     @SerializedName("delivery_rating") val deliveryRating: Int? = null,
     @SerializedName("can_rate_delivery") val canRateDelivery: Boolean = false,
     @SerializedName("shop_rating") val shopRating: Int? = null,

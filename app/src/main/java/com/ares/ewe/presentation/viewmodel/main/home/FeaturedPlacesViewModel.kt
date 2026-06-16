@@ -7,6 +7,7 @@ import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.domain.repository.PlacesRepository
 import com.ares.ewe.presentation.ui.main.home.HomeQuickCategory
 import com.ares.ewe.presentation.ui.main.home.filterPlacesByCategory
+import com.ares.ewe.presentation.ui.main.home.sortFeaturedPlacesByAvailability
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,7 +54,7 @@ class FeaturedPlacesViewModel @Inject constructor(
                 val places = placesRepository.getFeaturedPlaces()
                 _uiState.update {
                     it.copy(
-                        places = places,
+                        places = sortFeaturedPlacesByAvailability(places),
                         isLoading = false,
                         errorMessage = null,
                     )

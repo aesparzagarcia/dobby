@@ -32,6 +32,7 @@ data class OrderTrackingUiState(
 )
 
 private const val LOCATION_POLL_INTERVAL_MS = 3_000L
+private const val DELIVERY_CODE_POLL_INTERVAL_MS = 1_000L
 /** Avoid Directions API burst: refresh route at most this often while position updates. */
 private const val ROUTE_MIN_INTERVAL_MS = 20_000L
 
@@ -69,8 +70,18 @@ class OrderTrackingViewModel @Inject constructor(
     private fun startLocationRefreshPolling() {
         viewModelScope.launch {
             while (isActive) {
-                delay(LOCATION_POLL_INTERVAL_MS)
-                val status = _uiState.value.tracking?.status
+                val current = _uiState.value.tracking
+                val awaitingDeliveryCode =
+                    current?.courierArrivedAtCustomer == true &&
+                        current.isOnDelivery &&
+                        current.deliveryCode.isNullOrBlank()
+                val interval = if (awaitingDeliveryCode) {
+                    DELIVERY_CODE_POLL_INTERVAL_MS
+                } else {
+                    LOCATION_POLL_INTERVAL_MS
+                }
+                delay(interval)
+                val status = _uiState.value.tracking?.status?.uppercase()
                 if (status == "ASSIGNED" || status == "ON_DELIVERY") {
                     orderRepository.getOrderTracking(orderId).onSuccess { tracking ->
                         if (tracking != null) {

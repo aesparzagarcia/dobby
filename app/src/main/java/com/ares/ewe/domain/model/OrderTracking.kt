@@ -21,6 +21,8 @@ data class OrderTracking(
     val estimatedDeliveryMinutes: Int? = null,
     /** ISO timestamp when courier tapped "Llegué" at the customer's address. */
     val arrivedAtCustomerAt: String? = null,
+    /** 6-digit code shown to customer when courier arrives; share with driver to complete delivery. */
+    val deliveryCode: String? = null,
     val deliveryRating: Int? = null,
     val canRateDelivery: Boolean = false,
     val shopRating: Int? = null,

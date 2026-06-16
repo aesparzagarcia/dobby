@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -146,6 +148,15 @@ fun OrderTrackingBottomSheetContent(
         )
 
         OrderTrackingStatusCard(tracking = tracking)
+
+        if (tracking.courierArrivedAtCustomer && tracking.isOnDelivery) {
+            val code = tracking.deliveryCode?.trim().orEmpty()
+            if (code.isNotEmpty()) {
+                OrderTrackingDeliveryCodeCard(code = code)
+            } else {
+                OrderTrackingDeliveryCodePendingCard()
+            }
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.tightBlockGap)) {
             tracking.shopName?.let { shopName ->
@@ -692,6 +703,72 @@ private fun StarRatingBlock(
 private fun shouldShowFinishButton(tracking: OrderTracking): Boolean =
     tracking.isDelivered && !tracking.hasPendingRatings
 
+@Composable
+private fun OrderTrackingDeliveryCodePendingCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(OrderTrackingSheetPalette.StatusBackground, RoundedCornerShape(OrderTrackingSheetDim.radiusLg))
+            .padding(horizontal = OrderTrackingSheetDim.padH14, vertical = OrderTrackingSheetDim.padV14),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(28.dp),
+            color = OrderTrackingSheetPalette.Primary,
+            strokeWidth = 2.5.dp,
+        )
+        Text(
+            text = "Tu código de entrega",
+            fontSize = OrderTrackingSheetDim.sectionLabel,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = OrderTrackingSheetDim.sectionLabelTracking,
+            color = OrderTrackingSheetPalette.Muted,
+        )
+        Text(
+            text = "Estamos generando tu código. Si no aparece en unos segundos, actualiza la app o contacta soporte.",
+            fontSize = OrderTrackingSheetDim.statusSubtitle,
+            lineHeight = OrderTrackingSheetDim.statusSubtitleLine,
+            color = OrderTrackingSheetPalette.StatusSubtitle,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun OrderTrackingDeliveryCodeCard(code: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(OrderTrackingSheetPalette.StatusBackground, RoundedCornerShape(OrderTrackingSheetDim.radiusLg))
+            .padding(horizontal = OrderTrackingSheetDim.padH14, vertical = OrderTrackingSheetDim.padV14),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Tu código de entrega",
+            fontSize = OrderTrackingSheetDim.sectionLabel,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = OrderTrackingSheetDim.sectionLabelTracking,
+            color = OrderTrackingSheetPalette.Muted,
+        )
+        Text(
+            text = code,
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 6.sp,
+            color = OrderTrackingSheetPalette.Primary,
+        )
+        Text(
+            text = "Muéstralo al repartidor para confirmar la entrega.",
+            fontSize = OrderTrackingSheetDim.statusSubtitle,
+            lineHeight = OrderTrackingSheetDim.statusSubtitleLine,
+            color = OrderTrackingSheetPalette.StatusSubtitle,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
 private fun trackingStatusTitle(tracking: OrderTracking): String {
     if (tracking.courierArrivedAtCustomer && tracking.status.equals("ON_DELIVERY", ignoreCase = true)) {
         val name = tracking.deliveryMan?.name?.trim().orEmpty()
@@ -702,7 +779,11 @@ private fun trackingStatusTitle(tracking: OrderTracking): String {
 
 private fun trackingStatusSubtitle(tracking: OrderTracking): String {
     if (tracking.courierArrivedAtCustomer && tracking.status.equals("ON_DELIVERY", ignoreCase = true)) {
-        return "Tu pedido te está esperando en la puerta"
+        return if (!tracking.deliveryCode.isNullOrBlank()) {
+            "Comparte tu código de entrega con el repartidor"
+        } else {
+            "Tu pedido te está esperando en la puerta"
+        }
     }
     return when (tracking.status.uppercase()) {
         "PENDING" -> "Esperando confirmación de la tienda"

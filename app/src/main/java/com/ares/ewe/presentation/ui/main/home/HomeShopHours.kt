@@ -11,6 +11,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.ares.ewe.domain.model.FeaturedPlace
+import com.ares.ewe.domain.model.BestSellerProduct
+import com.ares.ewe.domain.model.ShopProduct
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -103,6 +105,45 @@ fun isProductShopAvailableForOrders(
         closingHour = shop.closingHour,
     )
 }
+
+/** Open/available featured places first; preserves API order within each group. */
+fun isFeaturedPlaceAvailable(place: FeaturedPlace): Boolean =
+    isPlaceOpenNow(place.openingHour, place.closingHour) != false
+
+fun sortFeaturedPlacesByAvailability(places: List<FeaturedPlace>): List<FeaturedPlace> =
+    places
+        .withIndex()
+        .sortedWith(
+            compareBy<IndexedValue<FeaturedPlace>> { (_, place) ->
+                if (isFeaturedPlaceAvailable(place)) 0 else 1
+            }.thenBy { (index, _) -> index },
+        )
+        .map { it.value }
+
+/** Available shops first; preserves sales/API order within each group. */
+fun sortBestSellersByShopAvailability(
+    products: List<BestSellerProduct>,
+    featuredPlaces: List<FeaturedPlace>,
+): List<BestSellerProduct> = sortProductsByShopAvailability(products, featuredPlaces) { it.shopId }
+
+fun sortShopProductsByShopAvailability(
+    products: List<ShopProduct>,
+    featuredPlaces: List<FeaturedPlace>,
+): List<ShopProduct> = sortProductsByShopAvailability(products, featuredPlaces) { it.shopId }
+
+private fun <T> sortProductsByShopAvailability(
+    products: List<T>,
+    featuredPlaces: List<FeaturedPlace>,
+    shopId: (T) -> String?,
+): List<T> =
+    products
+        .withIndex()
+        .sortedWith(
+            compareBy<IndexedValue<T>> { (_, product) ->
+                if (isProductShopAvailableForOrders(shopId(product), featuredPlaces)) 0 else 1
+            }.thenBy { (index, _) -> index },
+        )
+        .map { it.value }
 
 private fun parseHour(raw: String?): LocalTime? {
     val s = raw?.trim().orEmpty()

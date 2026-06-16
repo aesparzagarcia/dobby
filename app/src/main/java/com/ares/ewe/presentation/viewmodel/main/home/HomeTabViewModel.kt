@@ -14,6 +14,8 @@ import com.ares.ewe.domain.repository.PlacesRepository
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.domain.repository.UserAddressRepository
 import com.ares.ewe.push.ConsumerOrderRealtimeBus
+import com.ares.ewe.presentation.ui.main.home.sortBestSellersByShopAvailability
+import com.ares.ewe.presentation.ui.main.home.sortFeaturedPlacesByAvailability
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -153,8 +155,11 @@ class HomeTabViewModel @Inject constructor(
                 val home = placesRepository.getHome()
                 _uiState.update {
                     it.copy(
-                        featuredPlaces = home.featuredPlaces,
-                        bestSellerProducts = home.bestSellerProducts,
+                        featuredPlaces = sortFeaturedPlacesByAvailability(home.featuredPlaces),
+                        bestSellerProducts = sortBestSellersByShopAvailability(
+                            home.bestSellerProducts,
+                            home.featuredPlaces,
+                        ),
                         isLoading = false,
                         errorMessage = null
                     )
@@ -192,8 +197,11 @@ class HomeTabViewModel @Inject constructor(
                     val home = placesRepository.getHome()
                     _uiState.update {
                         it.copy(
-                            featuredPlaces = home.featuredPlaces,
-                            bestSellerProducts = home.bestSellerProducts,
+                            featuredPlaces = sortFeaturedPlacesByAvailability(home.featuredPlaces),
+                            bestSellerProducts = sortBestSellersByShopAvailability(
+                                home.bestSellerProducts,
+                                home.featuredPlaces,
+                            ),
                             errorMessage = null
                         )
                     }

@@ -9,6 +9,7 @@ import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.PlacesRepository
 import com.ares.ewe.presentation.ui.main.home.isProductShopAvailableForOrders
+import com.ares.ewe.presentation.ui.main.home.sortShopProductsByShopAvailability
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,7 +67,7 @@ class BestSellersViewModel @Inject constructor(
                 val featuredPlaces = homeDeferred.await().featuredPlaces
                 _uiState.update {
                     it.copy(
-                        products = products,
+                        products = sortShopProductsByShopAvailability(products, featuredPlaces),
                         featuredPlaces = featuredPlaces,
                         isLoading = false,
                         errorMessage = null,
