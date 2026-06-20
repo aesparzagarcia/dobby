@@ -22,29 +22,44 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Local API: default 10.0.2.2 = emulator → host localhost. Physical device: set DEV_API_HOST in gradle.properties
-        // (PC LAN IP) or use adb reverse tcp:3001 tcp:3001 with DEV_API_HOST=127.0.0.1. Path must end with /api/.
-        val devApiHost = (project.findProperty("DEV_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
-            ?: "https://dobby-api-31lf.onrender.com"
-        /*val devApiPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
-            ?: "3001"*/
-        //buildConfigField("String", "BASE_URL", "\"http://$devApiHost:$devApiPort/api/\"")
-        buildConfigField("String", "BASE_URL", "\"$devApiHost/api/\"")
-        // Replace with your Google Places API key (enable Places API in Cloud Console)
+        // Shared API keys (same Google Cloud project; override in gradle.properties).
         buildConfigField("String", "PLACES_API_KEY", "\"${project.findProperty("PLACES_API_KEY") ?: ""}\"")
-        // SHA-1 of your signing key (no colons), for Android app restriction. Get with: keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
         buildConfigField("String", "PLACES_ANDROID_CERT", "\"${project.findProperty("PLACES_ANDROID_CERT") ?: ""}\"")
-        // Maps / Places bundle key (manifest / SDK).
         val mapsApiKey = (project.findProperty("MAPS_API_KEY") as String?)?.takeIf { it.isNotBlank() }
             ?: (project.findProperty("PLACES_API_KEY") as String?) ?: ""
         buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
-        // Directions API (REST): prefer a separate key with "None" or "IP" app restriction — Android-only keys often get REQUEST_DENIED.
         val directionsKey = (project.findProperty("DIRECTIONS_API_KEY") as String?)?.takeIf { it.isNotBlank() }
             ?: mapsApiKey
         buildConfigField("String", "DIRECTIONS_API_KEY", "\"$directionsKey\"")
-        // Same resolution as MAPS_API_KEY BuildConfig so the Maps SDK manifest key is never empty
-        // when only MAPS_API_KEY is set in gradle.properties.
         manifestPlaceholders["PLACES_API_KEY"] = mapsApiKey
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Dobby Dev")
+            buildConfigField("String", "ENVIRONMENT", "\"dev\"")
+            val devHost = (project.findProperty("DEV_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
+                ?: "http://192.168.1.16:3001"
+            val devPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
+            val devBase = if (devPort != null && !devHost.contains(":")) {
+                "$devHost:$devPort"
+            } else {
+                devHost
+            }
+            buildConfigField("String", "BASE_URL", "\"$devBase/api/\"")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Dobby")
+            buildConfigField("String", "ENVIRONMENT", "\"prod\"")
+            val prodHost = (project.findProperty("PROD_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
+                ?: "https://dobby-api-31lf.onrender.com"
+            buildConfigField("String", "BASE_URL", "\"$prodHost/api/\"")
+        }
     }
 
     buildTypes {

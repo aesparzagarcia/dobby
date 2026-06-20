@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import com.ares.ewe.R
 import com.ares.ewe.core.theme.DobbyTheme
 import com.ares.ewe.presentation.ui.navigation.DobbyNavigation
 import com.ares.ewe.push.ConsumerRealtimeCoordinator
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_Dobby)
         super.onCreate(savedInstanceState)
         consumeOrderIdFromIntent(intent)
         enableEdgeToEdge()

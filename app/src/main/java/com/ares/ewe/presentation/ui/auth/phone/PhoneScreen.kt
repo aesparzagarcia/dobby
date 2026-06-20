@@ -1,7 +1,6 @@
 package com.ares.ewe.presentation.ui.auth.phone
 
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +20,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Sms
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,7 +27,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +44,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,7 +52,6 @@ import kotlinx.coroutines.delay
 
 private val SubtitleBlack = Color(0xFF111111)
 private val BackButtonSurface = Color(0xFFECECEC)
-private val OutlinedButtonBorder = Color(0xFFD9D9D9)
 
 @Composable
 fun PhoneScreen(
@@ -227,37 +222,6 @@ fun PhoneScreen(
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                     ),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            OutlinedButton(
-                onClick = send,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(27.dp),
-                border = BorderStroke(1.dp, OutlinedButtonBorder),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = DobbyPureScale.Onyx,
-                ),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Chat,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = DobbyPureScale.Onyx,
-                )
-                Spacer(modifier = Modifier.size(10.dp))
-                Text(
-                    text = "Recibir código por WhatsApp",
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = DobbyPureScale.Onyx,
-                    ),
-                    textAlign = TextAlign.Center,
                 )
             }
         }
