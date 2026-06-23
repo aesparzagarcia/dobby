@@ -130,7 +130,7 @@ fun OtpScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Introduce el código que enviamos 👀",
+                text = "Introduce el código que enviamos",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
