@@ -50,6 +50,7 @@ data class OrderTrackingDto(
     @SerializedName("id") val id: String,
     @SerializedName("status") val status: String,
     @SerializedName("total") val total: Double = 0.0,
+    @SerializedName("service_fee") val serviceFee: Double = 0.0,
     @SerializedName("delivery_fee") val deliveryFee: Double = 0.0,
     @SerializedName("products_subtotal") val productsSubtotal: Double = 0.0,
     @SerializedName("delivery_address") val deliveryAddress: String? = null,

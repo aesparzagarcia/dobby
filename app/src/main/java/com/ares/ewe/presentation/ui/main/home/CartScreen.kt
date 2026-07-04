@@ -211,6 +211,12 @@ private fun CartPricingFooter(
         PricingLine(label = "Subtotal productos", amount = pricing.productsSubtotal)
         Spacer(modifier = Modifier.height(4.dp))
         PricingLine(
+            label = "Tarifa de servicio",
+            amount = pricing.serviceFee,
+            subtitle = "8% de los productos"
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        PricingLine(
             label = "Envío",
             amount = pricing.delivery.finalDeliveryFee,
             subtitle = buildString {

@@ -4,6 +4,7 @@ data class OrderTracking(
     val id: String,
     val status: String,
     val total: Double,
+    val serviceFee: Double = 0.0,
     val deliveryFee: Double = 0.0,
     val productsSubtotal: Double = 0.0,
     val deliveryAddress: String?,

@@ -77,6 +77,7 @@ class OrderRepositoryImpl @Inject constructor(
                     id = dto.id,
                     status = dto.status,
                     total = dto.total,
+                    serviceFee = dto.serviceFee,
                     deliveryFee = dto.deliveryFee,
                     productsSubtotal = dto.productsSubtotal,
                     deliveryAddress = dto.deliveryAddress,

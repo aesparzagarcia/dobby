@@ -1,22 +1,21 @@
 package com.ares.ewe.presentation.ui.main.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -50,17 +49,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.domain.model.ProductDetail
+import com.ares.ewe.presentation.components.LoadingAsyncImage
 import java.util.Locale
 
-private val HeroHeight = 300.dp
+private val HeroImagePadding = 24.dp
 private val CardOverlap = 24.dp
 private val RatingPillBg = Color(0xFFF3F4F6)
 private val MutedText = Color(0xFF6B7280)
@@ -87,10 +85,9 @@ fun ProductDetailHero(
             else listState.firstVisibleItemIndex.coerceIn(0, imageCount - 1)
         }
     }
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val displayUrls = if (imageUrls.isEmpty()) listOf<String?>(null) else imageUrls
 
-    Box(modifier = modifier.fillMaxWidth().height(HeroHeight)) {
+    Box(modifier = modifier.fillMaxWidth().aspectRatio(1f)) {
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -98,16 +95,19 @@ fun ProductDetailHero(
             itemsIndexed(displayUrls) { _, url ->
                 Box(
                     modifier = Modifier
-                        .width(screenWidthDp.dp)
-                        .height(HeroHeight)
-                        .background(Color(0xFFF3F4F6)),
+                        .fillParentMaxWidth()
+                        .fillMaxSize()
+                        .background(Color.White),
                     contentAlignment = Alignment.Center,
                 ) {
                     LoadingAsyncImage(
                         model = url,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(HeroImagePadding),
+                        contentScale = ContentScale.Fit,
+                        placeholderBackground = Color.White,
                         error = {
                             Text(
                                 text = "?",
@@ -160,7 +160,7 @@ fun ProductDetailHero(
             onClick = onFavoriteClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 12.dp),
+                .padding(end = 16.dp, bottom = CardOverlap + 12.dp),
         ) {
             Icon(
                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,

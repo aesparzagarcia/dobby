@@ -183,6 +183,7 @@ fun OrderTrackingBottomSheetContent(
                 ?: tracking.items.sumOf { it.price * it.quantity }
             OrderTrackingPricingSection(
                 productsSubtotal = productsSubtotal,
+                serviceFee = tracking.serviceFee,
                 deliveryFee = tracking.deliveryFee,
                 total = tracking.total,
             )
@@ -399,11 +400,15 @@ private fun OrderTrackingProductRow(item: OrderTrackingItem) {
 @Composable
 private fun OrderTrackingPricingSection(
     productsSubtotal: Double,
+    serviceFee: Double,
     deliveryFee: Double,
     total: Double,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.pricingRowGap)) {
         PricingLine(label = "Subtotal productos", amount = productsSubtotal)
+        if (serviceFee > 0) {
+            PricingLine(label = "Tarifa de servicio", amount = serviceFee)
+        }
         if (deliveryFee > 0) {
             PricingLine(label = "Envío", amount = deliveryFee)
         }

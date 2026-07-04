@@ -5,7 +5,6 @@ import org.junit.Test
 
 class DeliveryPricingCalculatorTest {
 
-    @Test
     private val config = DeliveryPricingSettings.DEFAULT
 
     @Test
@@ -29,11 +28,11 @@ class DeliveryPricingCalculatorTest {
             DeliveryPricingInput(distanceKm = 8.0),
             config = config,
         )
-        // 25 + (8*7) + 10 = 81
-        assertEquals(81.0, result.finalDeliveryFee, 0.001)
+        // 25 + (8*7) + 25 = 106
+        assertEquals(106.0, result.finalDeliveryFee, 0.001)
         assertEquals(25.0, result.baseFee, 0.001)
         assertEquals(56.0, result.distanceFee, 0.001)
-        assertEquals(10.0, result.zoneFee, 0.001)
+        assertEquals(25.0, result.zoneFee, 0.001)
         assertEquals(0.0, result.weatherFee, 0.001)
     }
 
@@ -53,16 +52,17 @@ class DeliveryPricingCalculatorTest {
             DeliveryPricingInput(distanceKm = 8.0, demandMultiplier = 1.2),
             config = config,
         )
-        assertEquals(97.2, result.finalDeliveryFee, 0.001)
+        assertEquals(127.2, result.finalDeliveryFee, 0.001)
     }
 
     @Test
-    fun orderPricing_grandTotal_sumsProductsAndDelivery() {
+    fun orderPricing_grandTotal_sumsProductsServiceFeeAndDelivery() {
         val delivery = DeliveryPricingCalculator.calculate(
             DeliveryPricingInput(distanceKm = 8.0),
             config = config,
         )
         val order = OrderPricing(productsSubtotal = 220.0, delivery = delivery)
-        assertEquals(301.0, order.grandTotal, 0.001)
+        assertEquals(17.6, order.serviceFee, 0.001)
+        assertEquals(343.6, order.grandTotal, 0.001)
     }
 }
