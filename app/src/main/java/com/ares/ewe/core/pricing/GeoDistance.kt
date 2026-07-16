@@ -15,6 +15,14 @@ object GeoDistance {
 
     const val EARTH_RADIUS_M = 6_371_000.0
     const val ROAD_FACTOR = 1.32
+    const val MAX_REASONABLE_DELIVERY_ROAD_KM = 100.0
+
+    fun isUsableWgs84Point(lat: Double, lng: Double): Boolean {
+        if (!lat.isFinite() || !lng.isFinite()) return false
+        if (kotlin.math.abs(lat) > 90 || kotlin.math.abs(lng) > 180) return false
+        if (kotlin.math.abs(lat) < 1e-5 && kotlin.math.abs(lng) < 1e-5) return false
+        return true
+    }
 
     fun haversineMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r1 = Math.toRadians(lat1)
@@ -42,10 +50,11 @@ object GeoDistance {
         shopCoordsByShopId: Map<String, Pair<Double, Double>>,
     ): Double? {
         if (userLat == null || userLng == null) return null
-        if (!userLat.isFinite() || !userLng.isFinite()) return null
+        if (!isUsableWgs84Point(userLat, userLng)) return null
         val pickups = resolvePickups(items, shopCoordsByShopId)
         if (pickups.isEmpty()) return null
-        return pickups.maxOf { roadDistanceKm(userLat, userLng, it.first, it.second) }
+        val maxKm = pickups.maxOf { roadDistanceKm(userLat, userLng, it.first, it.second) }
+        return maxKm.takeIf { it <= MAX_REASONABLE_DELIVERY_ROAD_KM }
     }
 
     fun resolvePickups(
@@ -55,11 +64,11 @@ object GeoDistance {
         items.mapNotNull { item ->
             val fromPickup = item.pickupLatitude?.let { la ->
                 item.pickupLongitude?.let { lo ->
-                    if (la.isFinite() && lo.isFinite()) la to lo else null
+                    if (isUsableWgs84Point(la, lo)) la to lo else null
                 }
             }
             if (fromPickup != null) return@mapNotNull fromPickup
             val sid = item.shopId ?: return@mapNotNull null
-            shopCoordsByShopId[sid]
+            shopCoordsByShopId[sid]?.takeIf { isUsableWgs84Point(it.first, it.second) }
         }.distinctBy { "${it.first},${it.second}" }
 }

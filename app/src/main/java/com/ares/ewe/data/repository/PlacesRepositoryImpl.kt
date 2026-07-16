@@ -11,6 +11,7 @@ import com.ares.ewe.domain.model.ServiceDetail
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.model.ShopProductsPage
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.core.pricing.GeoDistance
 import com.ares.ewe.core.util.serviceCategoryLabelEs
 import com.ares.ewe.core.util.shopTypeLabelEs
 import javax.inject.Inject
@@ -59,6 +60,7 @@ class PlacesRepositoryImpl @Inject constructor(
         getPlaces().mapNotNull { place ->
             val lat = place.latitude ?: return@mapNotNull null
             val lng = place.longitude ?: return@mapNotNull null
+            if (!GeoDistance.isUsableWgs84Point(lat, lng)) return@mapNotNull null
             place.id to Pair(lat, lng)
         }.toMap()
 

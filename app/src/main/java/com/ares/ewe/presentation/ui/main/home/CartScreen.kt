@@ -151,7 +151,11 @@ fun CartScreen(
                         .padding(horizontal = 16.dp)
                         .padding(top = 8.dp, bottom = 16.dp)
                 ) {
-                    CartPricingFooter(pricing = uiState.pricing, grandTotal = uiState.grandTotal)
+                    CartPricingFooter(
+                        pricing = uiState.pricing,
+                        grandTotal = uiState.grandTotal,
+                        hasValidDeliveryAddress = uiState.hasValidDeliveryAddress,
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     androidx.compose.material3.Button(
                         onClick = {
@@ -183,6 +187,7 @@ fun CartScreen(
 private fun CartPricingFooter(
     pricing: OrderPricing?,
     grandTotal: Double,
+    hasValidDeliveryAddress: Boolean,
 ) {
     if (pricing == null) {
         Row(
@@ -202,7 +207,11 @@ private fun CartPricingFooter(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "El costo de envío se calculará al tener una dirección de entrega válida.",
+            text = if (hasValidDeliveryAddress) {
+                "No se pudo calcular el envío. La tienda no tiene ubicación válida configurada."
+            } else {
+                "El costo de envío se calculará al tener una dirección de entrega válida."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -210,20 +219,9 @@ private fun CartPricingFooter(
     } else {
         PricingLine(label = "Subtotal productos", amount = pricing.productsSubtotal)
         Spacer(modifier = Modifier.height(4.dp))
-        PricingLine(
-            label = "Tarifa de servicio",
-            amount = pricing.serviceFee,
-            subtitle = "8% de los productos"
-        )
+        PricingLine(label = "Tarifa de servicio", amount = pricing.serviceFee)
         Spacer(modifier = Modifier.height(4.dp))
-        PricingLine(
-            label = "Envío",
-            amount = pricing.delivery.finalDeliveryFee,
-            subtitle = buildString {
-                append("Base, distancia (${String.format(Locale.US, "%.1f", pricing.delivery.distanceKm)} km) y zona")
-                if (pricing.delivery.weatherFee > 0) append(" · clima")
-            }
-        )
+        PricingLine(label = "Envío", amount = pricing.delivery.finalDeliveryFee)
         if (pricing.delivery.dynamicMultiplier > 1.0) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -259,27 +257,17 @@ private fun CartPricingFooter(
 private fun PricingLine(
     label: String,
     amount: Double,
-    subtitle: String? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         Text(
             text = money(amount),
             style = MaterialTheme.typography.bodyMedium,
