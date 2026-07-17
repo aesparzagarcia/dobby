@@ -1,6 +1,10 @@
 package com.ares.ewe.presentation.ui.main.profile
 
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -36,22 +39,46 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.profile.ProfileTabViewModel
 
+private const val PROFILE_SUPPORT_URL = "https://dobby-frontend-wwru.onrender.com/"
+
 @Composable
 fun ProfileTabScreen(
     onLogout: () -> Unit,
     onOrdersClick: () -> Unit = {},
+    onGoHome: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProfileTabViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scroll = rememberScrollState()
+    val context = LocalContext.current
+
+    val openNotificationSettings = {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData("package:${context.packageName}".toUri())
+        }
+        runCatching { context.startActivity(intent) }
+        Unit
+    }
+
+    val openSupport = {
+        val intent = Intent(Intent.ACTION_VIEW, PROFILE_SUPPORT_URL.toUri())
+        runCatching { context.startActivity(intent) }
+        Unit
+    }
 
     Column(
         modifier = modifier
@@ -72,7 +99,7 @@ fun ProfileTabScreen(
                 fontWeight = FontWeight.Bold,
                 color = DobbyColors.Dark,
             )
-            IconButton(onClick = { /* settings — próximamente */ }) {
+            IconButton(onClick = openNotificationSettings) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Ajustes",
@@ -175,7 +202,10 @@ fun ProfileTabScreen(
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         profileTodayMissions.forEachIndexed { index, mission ->
-                            ProfileMissionRow(mission = mission)
+                            ProfileMissionRow(
+                                mission = mission,
+                                modifier = Modifier.clickable(onClick = onGoHome),
+                            )
                             if (index < profileTodayMissions.lastIndex) {
                                 ProfileMenuDivider()
                             }
@@ -228,21 +258,15 @@ fun ProfileTabScreen(
 
                 ProfileMenuCard(modifier = Modifier.padding(top = 4.dp)) {
                     ProfileMenuRow(
-                        title = "Métodos de pago",
-                        icon = Icons.Default.CreditCard,
-                        onClick = { },
-                    )
-                    ProfileMenuDivider()
-                    ProfileMenuRow(
                         title = "Notificaciones",
                         icon = Icons.Default.Notifications,
-                        onClick = { },
+                        onClick = openNotificationSettings,
                     )
                     ProfileMenuDivider()
                     ProfileMenuRow(
                         title = "Ayuda y soporte",
                         icon = Icons.Default.Help,
-                        onClick = { },
+                        onClick = openSupport,
                     )
                 }
             }

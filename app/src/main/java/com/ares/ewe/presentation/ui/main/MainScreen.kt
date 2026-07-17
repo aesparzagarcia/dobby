@@ -75,6 +75,7 @@ fun HomeScreen(
                     MainTab.Profile -> ProfileTabScreen(
                         onLogout = { viewModel.logout(onLogout) },
                         onOrdersClick = onOrderHistoryClick,
+                        onGoHome = { currentTab = MainTab.Home },
                     )
                 }
             }

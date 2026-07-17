@@ -296,17 +296,15 @@ fun ProfileSectionHeader(
             fontWeight = FontWeight.Bold,
             color = DobbyColors.Dark,
         )
-        Text(
-            text = actionLabel,
-            style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = DobbyColors.Primary,
-            modifier = if (onActionClick != null) {
-                Modifier.clickable(onClick = onActionClick)
-            } else {
-                Modifier
-            },
-        )
+        if (onActionClick != null) {
+            Text(
+                text = actionLabel,
+                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = DobbyColors.Primary,
+                modifier = Modifier.clickable(onClick = onActionClick),
+            )
+        }
     }
 }
 
