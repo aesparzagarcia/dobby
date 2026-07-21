@@ -11,7 +11,9 @@ import com.ares.ewe.domain.repository.AdsRepository
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.OrderRepository
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.core.network.isAuthorizationError
 import com.ares.ewe.core.network.toUserFacingMessage
+import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.domain.repository.UserAddressRepository
 import com.ares.ewe.push.ConsumerOrderRealtimeBus
 import com.ares.ewe.presentation.ui.main.home.sortBestSellersByShopAvailability
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -56,6 +59,7 @@ class HomeTabViewModel @Inject constructor(
     private val userAddressRepository: UserAddressRepository,
     private val orderRepository: OrderRepository,
     private val orderRealtimeBus: ConsumerOrderRealtimeBus,
+    private val sessionManager: SessionManager,
     cartRepository: CartRepository,
 ) : ViewModel() {
 
@@ -83,6 +87,12 @@ class HomeTabViewModel @Inject constructor(
 
     /** Espera el API antes de volver al home tras checkout (paridad iOS). */
     suspend fun refreshActiveOrder(clearOnFailure: Boolean = true) {
+        if (!sessionManager.isLoggedIn.first()) {
+            if (clearOnFailure) {
+                _uiState.update { it.copy(activeOrders = emptyList()) }
+            }
+            return
+        }
         orderRepository.getActiveOrders()
             .onSuccess { orders ->
                 _uiState.update { it.copy(activeOrders = orders) }
@@ -108,6 +118,17 @@ class HomeTabViewModel @Inject constructor(
 
     fun loadAddresses() {
         viewModelScope.launch {
+            if (!sessionManager.isLoggedIn.first()) {
+                _uiState.update {
+                    it.copy(
+                        addressLabel = "Casa",
+                        address = null,
+                        addressFetchCompleted = true,
+                        needsDeliveryAddressCallout = false,
+                    )
+                }
+                return@launch
+            }
             userAddressRepository.getAddresses()
                 .onSuccess { list ->
                     val displayAddress = list.firstOrNull()?.address?.toAddressWithColonyOnly()
@@ -128,7 +149,8 @@ class HomeTabViewModel @Inject constructor(
                             address = null,
                             addressFetchCompleted = true,
                             needsDeliveryAddressCallout = false,
-                            warningMessage = e.toUserFacingMessage()
+                            // Guest / expired session: no scary auth banner on Home.
+                            warningMessage = if (e.isAuthorizationError()) null else e.toUserFacingMessage(),
                         )
                     }
                 }
@@ -142,7 +164,10 @@ class HomeTabViewModel @Inject constructor(
                 _uiState.update { it.copy(ads = ads) }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(ads = emptyList(), warningMessage = e.toUserFacingMessage())
+                    it.copy(
+                        ads = emptyList(),
+                        warningMessage = if (e.isAuthorizationError()) null else e.toUserFacingMessage(),
+                    )
                 }
             }
         }
@@ -210,6 +235,17 @@ class HomeTabViewModel @Inject constructor(
                 }
             }
             val addressesDeferred = async {
+                if (!sessionManager.isLoggedIn.first()) {
+                    _uiState.update {
+                        it.copy(
+                            addressLabel = "Casa",
+                            address = null,
+                            addressFetchCompleted = true,
+                            needsDeliveryAddressCallout = false,
+                        )
+                    }
+                    return@async
+                }
                 userAddressRepository.getAddresses()
                     .onSuccess { list ->
                         val displayAddress = list.firstOrNull()?.address?.toAddressWithColonyOnly()
@@ -230,7 +266,7 @@ class HomeTabViewModel @Inject constructor(
                                 address = null,
                                 addressFetchCompleted = true,
                                 needsDeliveryAddressCallout = false,
-                                warningMessage = e.toUserFacingMessage()
+                                warningMessage = if (e.isAuthorizationError()) null else e.toUserFacingMessage(),
                             )
                         }
                     }
@@ -241,7 +277,10 @@ class HomeTabViewModel @Inject constructor(
                     _uiState.update { it.copy(ads = ads) }
                 } catch (e: Exception) {
                     _uiState.update {
-                        it.copy(ads = emptyList(), warningMessage = e.toUserFacingMessage())
+                        it.copy(
+                            ads = emptyList(),
+                            warningMessage = if (e.isAuthorizationError()) null else e.toUserFacingMessage(),
+                        )
                     }
                 }
             }

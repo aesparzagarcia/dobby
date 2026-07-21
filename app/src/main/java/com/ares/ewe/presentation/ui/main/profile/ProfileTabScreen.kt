@@ -35,7 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,11 +50,12 @@ import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.profile.ProfileTabViewModel
 
-private const val PROFILE_SUPPORT_URL = "https://dobby-frontend-wwru.onrender.com/"
+private const val PROFILE_SUPPORT_URL = "https://dobby-frontend-wwru.onrender.com/soporte"
 
 @Composable
 fun ProfileTabScreen(
     onLogout: () -> Unit,
+    onRequireLogin: () -> Unit = {},
     onOrdersClick: () -> Unit = {},
     onGoHome: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -61,6 +64,8 @@ fun ProfileTabScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scroll = rememberScrollState()
     val context = LocalContext.current
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showDeleteFinalConfirm by remember { mutableStateOf(false) }
 
     val openNotificationSettings = {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -78,6 +83,56 @@ fun ProfileTabScreen(
         val intent = Intent(Intent.ACTION_VIEW, PROFILE_SUPPORT_URL.toUri())
         runCatching { context.startActivity(intent) }
         Unit
+    }
+
+    if (showDeleteConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Eliminar cuenta") },
+            text = {
+                Text("Se eliminará tu cuenta y los datos personales asociados de forma permanente. Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirm = false
+                        showDeleteFinalConfirm = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                ) {
+                    Text("Continuar")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancelar")
+                }
+            },
+        )
+    }
+
+    if (showDeleteFinalConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteFinalConfirm = false },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Seguro que quieres eliminar tu cuenta de Dobbi?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteFinalConfirm = false
+                        viewModel.deleteAccount(onDeleted = onLogout)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                ) {
+                    Text("Eliminar definitivamente")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteFinalConfirm = false }) {
+                    Text("Cancelar")
+                }
+            },
+        )
     }
 
     Column(
@@ -116,6 +171,32 @@ fun ProfileTabScreen(
         )
 
         when {
+            uiState.isGuest -> {
+                Text(
+                    text = "Inicia sesión para ver tu perfil, historial de pedidos y recompensas.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF6B7280),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onRequireLogin,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DobbyColors.Primary,
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                ProfileMenuCard {
+                    ProfileMenuRow(
+                        title = "Ayuda y soporte",
+                        icon = Icons.Default.Help,
+                        onClick = openSupport,
+                    )
+                }
+            }
             uiState.isLoading -> {
                 Row(
                     modifier = Modifier
@@ -269,24 +350,59 @@ fun ProfileTabScreen(
                         onClick = openSupport,
                     )
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = onLogout,
+                    enabled = !uiState.isDeletingAccount,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFF2F2F7),
+                        contentColor = Color(0xFFEF4444),
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                ) {
+                    Text(
+                        text = "Cerrar sesión",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { showDeleteConfirm = true },
+                    enabled = !uiState.isDeletingAccount,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color(0xFFEF4444),
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                ) {
+                    if (uiState.isDeletingAccount) {
+                        CircularProgressIndicator(
+                            color = Color(0xFFEF4444),
+                            modifier = Modifier.height(20.dp),
+                        )
+                    } else {
+                        Text(
+                            text = "Eliminar cuenta",
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                uiState.deleteAccountError?.takeIf { it.isNotBlank() }?.let { err ->
+                    Text(
+                        text = err,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = onLogout,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFF2F2F7),
-                contentColor = Color(0xFFEF4444),
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-        ) {
-            Text(
-                text = "Cerrar sesión",
-                fontWeight = FontWeight.SemiBold,
-            )
         }
 
         // Scrollable tail inset — bottom padding on the modifier does not extend scroll range.

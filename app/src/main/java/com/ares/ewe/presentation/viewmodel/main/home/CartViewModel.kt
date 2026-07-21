@@ -3,12 +3,14 @@ package com.ares.ewe.presentation.viewmodel.main.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.delivery.DeliveryEtaEstimator
+import com.ares.ewe.core.network.isAuthorizationError
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.pricing.DeliveryPricingCalculator
 import com.ares.ewe.core.pricing.DeliveryPricingInput
 import com.ares.ewe.core.pricing.GeoDistance
 import com.ares.ewe.core.pricing.OrderPricing
 import com.ares.ewe.core.pricing.roundMoney
+import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.domain.model.toAddressWithColonyOnly
 import com.ares.ewe.domain.repository.CartRepository
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -52,6 +55,7 @@ data class CartUiState(
     val placeOrderError: String? = null,
     /** Dirección guardada con id y coordenadas (necesarias para envío y checkout). */
     val hasValidDeliveryAddress: Boolean = false,
+    val isLoggedIn: Boolean = false,
 )
 
 @HiltViewModel
@@ -61,6 +65,7 @@ class CartViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val placesRepository: PlacesRepository,
     private val deliveryPricingConfigRepository: DeliveryPricingConfigRepository,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     init {
@@ -114,7 +119,8 @@ class CartViewModel @Inject constructor(
         deliveryState,
         shopCoordsByShopId,
         deliveryPricingConfigRepository.settings,
-    ) { cart, delivery, shopCoords, pricingSettings ->
+        sessionManager.isLoggedIn,
+    ) { cart, delivery, shopCoords, pricingSettings, isLoggedIn ->
         val eta = DeliveryEtaEstimator.estimateLabel(
             userLat = delivery.userLatitude,
             userLng = delivery.userLongitude,
@@ -163,6 +169,7 @@ class CartViewModel @Inject constructor(
             orderPlaced = delivery.orderPlaced,
             placeOrderError = delivery.placeOrderError,
             hasValidDeliveryAddress = hasValidDeliveryAddress,
+            isLoggedIn = isLoggedIn,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -172,6 +179,7 @@ class CartViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            if (!sessionManager.isLoggedIn.first()) return@launch
             userAddressRepository.getAddresses().onSuccess { addresses ->
                 val addr = addresses.firstOrNull()
                 if (addr != null) {
@@ -225,7 +233,11 @@ class CartViewModel @Inject constructor(
                     _deliveryState.update {
                         it.copy(
                             isPlacingOrder = false,
-                            placeOrderError = e.toUserFacingMessage()
+                            placeOrderError = if (e.isAuthorizationError()) {
+                                "Inicia sesión para realizar tu pedido."
+                            } else {
+                                e.toUserFacingMessage()
+                            },
                         )
                     }
                 }

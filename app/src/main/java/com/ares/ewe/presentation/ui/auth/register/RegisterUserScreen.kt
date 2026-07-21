@@ -1,5 +1,6 @@
 package com.ares.ewe.presentation.ui.auth.register
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,9 +21,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +54,7 @@ import kotlinx.coroutines.launch
 /** Mismos tonos que [com.ares.ewe.presentation.ui.auth.phone.PhoneScreen]. */
 private val BrandGreen = Color(0xFF2ECC71)
 private val SubtitleBlack = Color(0xFF111111)
+private val BackButtonSurface = Color(0xFFECECEC)
 
 private const val PAGE_COUNT = 3
 
@@ -59,6 +66,7 @@ private fun RegistrationBasicField(
     keyboardType: KeyboardType,
     imeAction: ImeAction,
     enabled: Boolean,
+    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
 ) {
     BasicTextField(
         value = value,
@@ -73,6 +81,7 @@ private fun RegistrationBasicField(
             textAlign = TextAlign.Center,
         ),
         keyboardOptions = KeyboardOptions(
+            capitalization = capitalization,
             keyboardType = keyboardType,
             imeAction = imeAction,
         ),
@@ -102,11 +111,26 @@ private fun RegistrationBasicField(
 @Composable
 fun AddUserInfoScreen(
     onComplete: () -> Unit,
+    onBack: () -> Unit = {},
     viewModel: AddUserInfoViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { PAGE_COUNT })
     val scope = rememberCoroutineScope()
+
+    fun handleBack() {
+        val page = pagerState.currentPage
+        if (page > 0) {
+            viewModel.clearError()
+            scope.launch {
+                pagerState.animateScrollToPage(page - 1)
+            }
+        } else {
+            onBack()
+        }
+    }
+
+    BackHandler(onBack = ::handleBack)
 
     Column(
         modifier = Modifier
@@ -117,6 +141,20 @@ fun AddUserInfoScreen(
             .imePadding()
             .padding(horizontal = 24.dp),
     ) {
+        IconButton(
+            onClick = ::handleBack,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .size(40.dp)
+                .background(BackButtonSurface, CircleShape),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Volver",
+                tint = Color.Black,
+            )
+        }
+
         Spacer(modifier = Modifier.height(20.dp))
 
         Row(
@@ -177,6 +215,7 @@ fun AddUserInfoScreen(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next,
                         enabled = !uiState.isLoading,
+                        capitalization = KeyboardCapitalization.Words,
                     )
                     1 -> RegistrationBasicField(
                         value = uiState.lastName,
@@ -185,6 +224,7 @@ fun AddUserInfoScreen(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next,
                         enabled = !uiState.isLoading,
+                        capitalization = KeyboardCapitalization.Words,
                     )
                     else -> RegistrationBasicField(
                         value = uiState.email,

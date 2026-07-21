@@ -61,6 +61,7 @@ private val CartListBackground = Color.White
 fun CartScreen(
     onBack: () -> Unit,
     onCheckoutComplete: suspend () -> Unit = {},
+    onRequireLogin: () -> Unit = {},
     viewModel: CartViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -157,20 +158,29 @@ fun CartScreen(
                         hasValidDeliveryAddress = uiState.hasValidDeliveryAddress,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    androidx.compose.material3.Button(
-                        onClick = {
-                            viewModel.placeOrder(
-                                uiState.addressId,
-                                uiState.items,
-                                uiState.pricing?.delivery?.finalDeliveryFee ?: 0.0
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = uiState.hasValidDeliveryAddress &&
-                            uiState.items.isNotEmpty() &&
-                            !uiState.isPlacingOrder,
-                    ) {
-                        Text("Pagar $${String.format(Locale.US, "%.2f", uiState.grandTotal)}")
+                    if (uiState.isLoggedIn) {
+                        androidx.compose.material3.Button(
+                            onClick = {
+                                viewModel.placeOrder(
+                                    uiState.addressId,
+                                    uiState.items,
+                                    uiState.pricing?.delivery?.finalDeliveryFee ?: 0.0
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = uiState.hasValidDeliveryAddress &&
+                                uiState.items.isNotEmpty() &&
+                                !uiState.isPlacingOrder,
+                        ) {
+                            Text("Pagar $${String.format(Locale.US, "%.2f", uiState.grandTotal)}")
+                        }
+                    } else {
+                        androidx.compose.material3.Button(
+                            onClick = onRequireLogin,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Iniciar sesión para pedir")
+                        }
                     }
                 }
             }

@@ -11,8 +11,11 @@ class SplashViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    /** Always open Home (guest browse). Sync session when already logged in. */
     suspend fun shouldOpenHomeAfterSplash(): Boolean {
-        if (!authRepository.isLoggedIn.first()) return false
-        return authRepository.syncSessionAtLaunch()
+        if (authRepository.isLoggedIn.first()) {
+            authRepository.syncSessionAtLaunch()
+        }
+        return true
     }
 }

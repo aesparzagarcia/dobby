@@ -29,6 +29,7 @@ import com.ares.ewe.presentation.viewmodel.main.MainViewModel
 @Composable
 fun HomeScreen(
     onLogout: () -> Unit,
+    onRequireLogin: () -> Unit = {},
     onPlaceClick: (FeaturedPlace) -> Unit = {},
     onAdClick: (String) -> Unit = {},
     onAddressLabelClick: () -> Unit = {},
@@ -74,6 +75,7 @@ fun HomeScreen(
                     )
                     MainTab.Profile -> ProfileTabScreen(
                         onLogout = { viewModel.logout(onLogout) },
+                        onRequireLogin = onRequireLogin,
                         onOrdersClick = onOrderHistoryClick,
                         onGoHome = { currentTab = MainTab.Home },
                     )

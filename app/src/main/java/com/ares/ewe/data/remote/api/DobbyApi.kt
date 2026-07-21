@@ -135,6 +135,9 @@ interface DobbyApi {
     @DELETE("app/push-device")
     suspend fun unregisterPushDevice(): Unit
 
+    @DELETE("app/me")
+    suspend fun deleteAccount(): Response<Unit>
+
     @POST("app/firebase-token")
     suspend fun getFirebaseCustomToken(): com.ares.ewe.data.remote.model.FirebaseTokenResponse
 }

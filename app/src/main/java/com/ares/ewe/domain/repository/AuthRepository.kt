@@ -22,6 +22,9 @@ interface AuthRepository {
 
     suspend fun logout()
 
+    /** Permanently deletes the consumer account on the server, then clears local session. */
+    suspend fun deleteAccount(): AuthResult<Unit>
+
     /**
      * If the user has a refresh token, exchanges it for new tokens before the main UI loads.
      * Returns false if the refresh was rejected and the session was cleared.

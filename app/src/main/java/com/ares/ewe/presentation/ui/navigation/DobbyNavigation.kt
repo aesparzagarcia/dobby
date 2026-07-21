@@ -104,7 +104,7 @@ fun DobbyNavigation(
     }
     LaunchedEffect(sessionEventBus) {
         sessionEventBus.sessionExpired.collect {
-            navController.navigate(DobbyScreens.Phone) {
+            navController.navigate(DobbyScreens.Home) {
                 popUpTo(navController.graph.id) { inclusive = true }
                 launchSingleTop = true
             }
@@ -180,7 +180,15 @@ fun DobbyNavigation(
             PhoneScreen(
                 onCodeSent = { phone, userExists ->
                     navController.navigate(DobbyScreens.otp(phone, userExists))
-                }
+                },
+                onBack = {
+                    if (!navController.popBackStack()) {
+                        navController.navigate(DobbyScreens.Home) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
             )
         }
         composable(
@@ -193,7 +201,8 @@ fun DobbyNavigation(
             OtpScreen(
                 onLoggedIn = {
                     navController.navigate(DobbyScreens.Home) {
-                        popUpTo(DobbyScreens.Phone) { inclusive = true }
+                        popUpTo(DobbyScreens.Home) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
                 onRequiresRegistration = { phone ->
@@ -210,17 +219,28 @@ fun DobbyNavigation(
             AddUserInfoScreen(
                 onComplete = {
                     navController.navigate(DobbyScreens.Home) {
-                        popUpTo(DobbyScreens.Phone) { inclusive = true }
+                        popUpTo(DobbyScreens.Home) { inclusive = true }
+                        launchSingleTop = true
                     }
-                }
+                },
+                onBack = {
+                    navController.navigate(DobbyScreens.Phone) {
+                        popUpTo(DobbyScreens.AddUserInfo) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(DobbyScreens.Home) {
             HomeScreen(
                 onLogout = {
-                    navController.navigate(DobbyScreens.Phone) {
+                    navController.navigate(DobbyScreens.Home) {
                         popUpTo(DobbyScreens.Home) { inclusive = true }
+                        launchSingleTop = true
                     }
+                },
+                onRequireLogin = {
+                    navController.navigate(DobbyScreens.Phone)
                 },
                 onPlaceClick = ::handlePlaceClick,
                 onAdClick = { adId ->
@@ -302,7 +322,11 @@ fun DobbyNavigation(
                 onCurrentLocationClick = { navController.navigate(DobbyScreens.CurrentLocationMap) },
                 onNavigateToMapWithLocation = { lat, lng, address ->
                     navController.navigate(DobbyScreens.currentLocationMapWithLocation(lat, lng, address))
-                }
+                },
+                onRequireLogin = {
+                    navController.popBackStack()
+                    navController.navigate(DobbyScreens.Phone)
+                },
             )
         }
         composable(DobbyScreens.CurrentLocationMap) {
@@ -389,6 +413,9 @@ fun DobbyNavigation(
                 onCheckoutComplete = {
                     homeTabViewModel.refreshActiveOrderAfterCheckout()
                     navController.popBackStack(DobbyScreens.Home, inclusive = false)
+                },
+                onRequireLogin = {
+                    navController.navigate(DobbyScreens.Phone)
                 },
             )
         }

@@ -2,7 +2,9 @@ package com.ares.ewe.presentation.viewmodel.main.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.core.network.isAuthorizationError
 import com.ares.ewe.core.network.toUserFacingMessage
+import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.domain.model.UserAddress
 import com.ares.ewe.domain.repository.PlacesAutocompleteRepository
 import com.ares.ewe.domain.repository.UserAddressRepository
@@ -13,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -37,7 +40,8 @@ data class AddressUiState(
     val errorMessage: String? = null,
     val navigateToMapWithLocation: NavigateToMapData? = null,
     val navigateBackToHome: Boolean = false,
-    val isLoadingPlaceDetails: Boolean = false
+    val isLoadingPlaceDetails: Boolean = false,
+    val isLoggedIn: Boolean = false,
 )
 
 private const val DEBOUNCE_MS = 350L
@@ -46,7 +50,8 @@ private const val MIN_QUERY_LENGTH = 2
 @HiltViewModel
 class AddressViewModel @Inject constructor(
     private val placesAutocompleteRepository: PlacesAutocompleteRepository,
-    private val userAddressRepository: UserAddressRepository
+    private val userAddressRepository: UserAddressRepository,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddressUiState())
@@ -54,12 +59,30 @@ class AddressViewModel @Inject constructor(
 
     private var autocompleteJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            sessionManager.isLoggedIn.collect { loggedIn ->
+                _uiState.update { it.copy(isLoggedIn = loggedIn) }
+            }
+        }
+    }
+
     fun onMyAddressesClick() {
         viewModelScope.launch {
+            if (!sessionManager.isLoggedIn.first()) {
+                _uiState.update {
+                    it.copy(
+                        showMyAddressesSheet = true,
+                        myAddresses = emptyList(),
+                        errorMessage = "Inicia sesión para ver y guardar tus direcciones.",
+                    )
+                }
+                return@launch
+            }
             userAddressRepository.getAddresses()
                 .onSuccess { list ->
                     _uiState.update {
-                        it.copy(myAddresses = list, showMyAddressesSheet = true)
+                        it.copy(myAddresses = list, showMyAddressesSheet = true, errorMessage = null)
                     }
                 }
                 .onFailure { e ->
@@ -67,7 +90,11 @@ class AddressViewModel @Inject constructor(
                         it.copy(
                             showMyAddressesSheet = true,
                             myAddresses = emptyList(),
-                            errorMessage = e.toUserFacingMessage()
+                            errorMessage = if (e.isAuthorizationError()) {
+                                "Inicia sesión para ver y guardar tus direcciones."
+                            } else {
+                                e.toUserFacingMessage()
+                            },
                         )
                     }
                 }
@@ -89,7 +116,11 @@ class AddressViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             showMyAddressesSheet = true,
-                            errorMessage = e.toUserFacingMessage()
+                            errorMessage = if (e.isAuthorizationError()) {
+                                "Inicia sesión para gestionar tus direcciones."
+                            } else {
+                                e.toUserFacingMessage()
+                            },
                         )
                     }
                 }

@@ -35,11 +35,11 @@ class AddUserInfoViewModel @Inject constructor(
     val uiState: StateFlow<AddUserInfoUiState> = _uiState.asStateFlow()
 
     fun onNameChange(name: String) {
-        _uiState.update { it.copy(name = name, errorMessage = null) }
+        _uiState.update { it.copy(name = capitalizePersonName(name), errorMessage = null) }
     }
 
     fun onLastNameChange(lastName: String) {
-        _uiState.update { it.copy(lastName = lastName, errorMessage = null) }
+        _uiState.update { it.copy(lastName = capitalizePersonName(lastName), errorMessage = null) }
     }
 
     fun onEmailChange(email: String) {
@@ -114,6 +114,27 @@ class AddUserInfoViewModel @Inject constructor(
                 }
             }
             else -> true
+        }
+    }
+}
+
+/** Capitaliza la primera letra de cada palabra (nombre / apellidos). */
+private fun capitalizePersonName(input: String): String {
+    if (input.isEmpty()) return input
+    return buildString(input.length) {
+        var capitalizeNext = true
+        for (ch in input) {
+            when {
+                ch.isWhitespace() -> {
+                    append(ch)
+                    capitalizeNext = true
+                }
+                capitalizeNext -> {
+                    append(ch.titlecaseChar())
+                    capitalizeNext = false
+                }
+                else -> append(ch)
+            }
         }
     }
 }

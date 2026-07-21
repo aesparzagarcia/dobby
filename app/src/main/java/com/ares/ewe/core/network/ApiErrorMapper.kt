@@ -112,7 +112,9 @@ private fun mapHttpException(e: HttpException): UserFacingApiError {
         401, 403 -> UserFacingApiError(
             ApiErrorKind.AUTHORIZATION,
             "Autorización",
-            serverMsg ?: "Tu sesión expiró o no tienes permiso. Vuelve a iniciar sesión."
+            serverMsg
+                ?.takeUnless { it.equals("Unauthorized", ignoreCase = true) || it.equals("Forbidden", ignoreCase = true) }
+                ?: "Inicia sesión para continuar."
         )
         in 500..599 -> UserFacingApiError(
             ApiErrorKind.SERVER,
@@ -138,3 +140,7 @@ private fun mapHttpException(e: HttpException): UserFacingApiError {
 }
 
 fun Throwable.toUserFacingMessage(): String = toUserFacingApiError().formattedMessage()
+
+/** True for HTTP 401/403 (guest or expired session). */
+fun Throwable.isAuthorizationError(): Boolean =
+    toUserFacingApiError().kind == ApiErrorKind.AUTHORIZATION

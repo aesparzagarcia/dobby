@@ -110,6 +110,22 @@ class AuthRepositoryImpl @Inject constructor(
         sessionManager.clearSession()
     }
 
+    override suspend fun deleteAccount(): AuthResult<Unit> {
+        return try {
+            val response = api.deleteAccount()
+            if (!response.isSuccessful) {
+                val msg = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+                    ?: "No se pudo eliminar la cuenta"
+                return AuthResult.Error(msg)
+            }
+            consumerRealtimeCoordinator.onLogout()
+            sessionManager.clearSession()
+            AuthResult.Success(Unit)
+        } catch (e: Exception) {
+            AuthResult.Error(e.toUserFacingMessage())
+        }
+    }
+
     override suspend fun syncSessionAtLaunch(): Boolean {
         if (!sessionManager.isLoggedIn.first()) return false
         return when (consumerTokenRefreshService.refreshStoredSession(sessionManager)) {

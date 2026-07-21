@@ -20,9 +20,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +42,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.domain.model.toAddressWithColonyOnly
@@ -52,6 +56,7 @@ fun AddressScreen(
     onBack: () -> Unit,
     onCurrentLocationClick: () -> Unit = {},
     onNavigateToMapWithLocation: (lat: Double, lng: Double, address: String) -> Unit = { _, _, _ -> },
+    onRequireLogin: () -> Unit = {},
     viewModel: AddressViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -70,7 +75,7 @@ fun AddressScreen(
         }
     }
 
-    if (uiState.showMyAddressesSheet) {
+    if (uiState.showMyAddressesSheet && uiState.isLoggedIn) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         LaunchedEffect(Unit) { sheetState.expand() }
         ModalBottomSheet(
@@ -129,6 +134,35 @@ fun AddressScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            if (!uiState.isLoggedIn) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(
+                        text = "Inicia sesión para guardar y administrar tu dirección de entrega.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onRequireLogin,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    ) {
+                        Text(
+                            text = "Inicia sesión para continuar",
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -273,6 +307,7 @@ fun AddressScreen(
                         )
                     }
                 }
+            }
             }
         }
     }

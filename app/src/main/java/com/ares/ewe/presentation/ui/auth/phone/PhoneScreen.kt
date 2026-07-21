@@ -2,7 +2,6 @@ package com.ares.ewe.presentation.ui.auth.phone
 
 import android.content.Intent
 import android.net.Uri
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,10 +70,10 @@ private const val MX_NATIONAL_LENGTH = 10
 @Composable
 fun PhoneScreen(
     onCodeSent: (phone: String, userExists: Boolean) -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: PhoneViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     val phoneFieldFocusRequester = remember { FocusRequester() }
     var acceptedTerms by remember { mutableStateOf(false) }
     var acceptedPrivacy by remember { mutableStateOf(false) }
@@ -94,6 +93,22 @@ fun PhoneScreen(
             .navigationBarsPadding()
             .padding(horizontal = 24.dp),
     ) {
+
+        if (onBack != null) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .size(40.dp)
+                    .background(BackButtonSurface, CircleShape),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = Color.Black,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 

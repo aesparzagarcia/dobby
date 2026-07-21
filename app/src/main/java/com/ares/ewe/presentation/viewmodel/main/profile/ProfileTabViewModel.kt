@@ -2,12 +2,15 @@ package com.ares.ewe.presentation.viewmodel.main.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ares.ewe.domain.model.AuthResult
+import com.ares.ewe.domain.repository.AuthRepository
 import com.ares.ewe.domain.repository.FavoritesRepository
 import com.ares.ewe.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,6 +18,7 @@ import javax.inject.Inject
 data class ProfileUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
+    val isGuest: Boolean = false,
     val displayName: String = "",
     val email: String = "",
     val phone: String? = null,
@@ -28,6 +32,8 @@ data class ProfileUiState(
     val totalOrdersDelivered: Int = 0,
     val favoritesCount: Int = 0,
     val recentEvents: List<ProfileRecentEvent> = emptyList(),
+    val isDeletingAccount: Boolean = false,
+    val deleteAccountError: String? = null,
 ) {
     val levelNumber: Int
         get() = consumerLevelNumber(levelKey)
@@ -50,6 +56,7 @@ data class ProfileRecentEvent(
 class ProfileTabViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val favoritesRepository: FavoritesRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -66,7 +73,13 @@ class ProfileTabViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, deleteAccountError = null) }
+            if (!authRepository.isLoggedIn.first()) {
+                _uiState.update {
+                    it.copy(isLoading = false, isGuest = true, error = null)
+                }
+                return@launch
+            }
             profileRepository.getGamification()
                 .onSuccess { g ->
                     val next = g.xpForNextLevel
@@ -88,6 +101,7 @@ class ProfileTabViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             error = null,
+                            isGuest = false,
                             displayName = display,
                             email = g.email,
                             phone = g.phone?.takeIf { p -> p.isNotBlank() },
@@ -110,13 +124,37 @@ class ProfileTabViewModel @Inject constructor(
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = e.message ?: "No se pudo cargar",
-                        )
+                    if (!authRepository.isLoggedIn.first()) {
+                        _uiState.update {
+                            it.copy(isLoading = false, isGuest = true, error = null)
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                isGuest = false,
+                                error = e.message ?: "No se pudo cargar",
+                            )
+                        }
                     }
                 }
+        }
+    }
+
+    fun deleteAccount(onDeleted: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeletingAccount = true, deleteAccountError = null) }
+            when (val result = authRepository.deleteAccount()) {
+                is AuthResult.Success -> {
+                    _uiState.update { it.copy(isDeletingAccount = false) }
+                    onDeleted()
+                }
+                is AuthResult.Error -> {
+                    _uiState.update {
+                        it.copy(isDeletingAccount = false, deleteAccountError = result.message)
+                    }
+                }
+            }
         }
     }
 
