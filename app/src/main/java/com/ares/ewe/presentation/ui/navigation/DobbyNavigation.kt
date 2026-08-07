@@ -19,6 +19,7 @@ import androidx.navigation.navArgument
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.snapshotFlow
+import com.ares.ewe.core.crash.TrackNavDestination
 import com.ares.ewe.di.OrderRepositoryEntryPoint
 import com.ares.ewe.di.SessionEventBusEntryPoint
 import com.ares.ewe.di.CartRepositoryEntryPoint
@@ -57,6 +58,7 @@ fun DobbyNavigation(
     onPendingProductNavigated: () -> Unit = {},
 ) {
     val navController = rememberNavController()
+    TrackNavDestination(navController)
     val context = LocalContext.current
     val cartRepository = remember(context) {
         EntryPointAccessors.fromApplication(

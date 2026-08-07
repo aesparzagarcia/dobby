@@ -194,6 +194,8 @@ fun ProfileTabScreen(
                         title = "Ayuda y soporte",
                         icon = Icons.Default.Help,
                         onClick = openSupport,
+                        iconTint = Color(0xFF6B7280),
+                        iconBackground = Color(0xFFF2F2F7),
                     )
                 }
             }
@@ -342,66 +344,27 @@ fun ProfileTabScreen(
                         title = "Notificaciones",
                         icon = Icons.Default.Notifications,
                         onClick = openNotificationSettings,
+                        iconTint = Color(0xFF6B7280),
+                        iconBackground = Color(0xFFF2F2F7),
                     )
                     ProfileMenuDivider()
                     ProfileMenuRow(
                         title = "Ayuda y soporte",
                         icon = Icons.Default.Help,
                         onClick = openSupport,
+                        iconTint = Color(0xFF6B7280),
+                        iconBackground = Color(0xFFF2F2F7),
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Button(
-                    onClick = onLogout,
-                    enabled = !uiState.isDeletingAccount,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF2F2F7),
-                        contentColor = Color(0xFFEF4444),
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                ) {
-                    Text(
-                        text = "Cerrar sesión",
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { showDeleteConfirm = true },
-                    enabled = !uiState.isDeletingAccount,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color(0xFFEF4444),
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                ) {
-                    if (uiState.isDeletingAccount) {
-                        CircularProgressIndicator(
-                            color = Color(0xFFEF4444),
-                            modifier = Modifier.height(20.dp),
-                        )
-                    } else {
-                        Text(
-                            text = "Eliminar cuenta",
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-
-                uiState.deleteAccountError?.takeIf { it.isNotBlank() }?.let { err ->
-                    Text(
-                        text = err,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
+                ProfileAccountSection(
+                    isDeletingAccount = uiState.isDeletingAccount,
+                    deleteAccountError = uiState.deleteAccountError,
+                    onLogout = onLogout,
+                    onDeleteAccount = { showDeleteConfirm = true },
+                )
             }
         }
 

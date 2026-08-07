@@ -461,33 +461,87 @@ fun ProfileMenuRow(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    titleColor: Color = DobbyColors.Dark,
+    iconTint: Color = DobbyColors.Dark,
+    iconBackground: Color = Color(0xFFF2F2F7),
+    chevronTint: Color = ProfileMuted,
+    showChevron: Boolean = true,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = DobbyColors.Primary,
-            modifier = Modifier.size(22.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(iconBackground),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(18.dp),
+            )
+        }
         Text(
             text = title,
             style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-            color = DobbyColors.Dark,
+            color = titleColor,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 14.dp),
         )
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = ProfileMuted,
+        when {
+            trailingContent != null -> trailingContent()
+            showChevron -> Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = chevronTint,
+            )
+        }
+    }
+}
+
+@Composable
+fun ProfileDevSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = DobbyColors.Dark,
         )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(Color(0xFF8B5CF6))
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+        ) {
+            Text(
+                text = "Solo desarrollo",
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

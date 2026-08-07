@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
+    alias(libs.plugins.firebase.crashlytics)
     id("kotlin-kapt")
     id("kotlinx-serialization")
 }
@@ -187,4 +188,5 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 }
