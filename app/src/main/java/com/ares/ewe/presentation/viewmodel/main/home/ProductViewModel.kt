@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.normalizeImageUrlForStorage
+import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
 import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.repository.CartRepository
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -30,6 +32,7 @@ data class ProductUiState(
     val isFavorite: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val showCarWashSingleProductDialog: Boolean = false,
 ) {
     /** Precio por unidad que paga el cliente (con descuento si aplica). */
     val unitPriceEffective: Double
@@ -104,6 +107,13 @@ class ProductViewModel @Inject constructor(
     }
 
     fun incrementQuantity() {
+        val state = _uiState.value
+        if (CartCarWashSingleProductPolicy.isCarWash(state.product?.shopType)) {
+            if (state.quantity >= 1) {
+                _uiState.update { it.copy(showCarWashSingleProductDialog = true) }
+                return
+            }
+        }
         _uiState.update { it.copy(quantity = (it.quantity + 1).coerceAtMost(999)) }
     }
 
@@ -111,26 +121,46 @@ class ProductViewModel @Inject constructor(
         _uiState.update { it.copy(quantity = (it.quantity - 1).coerceAtLeast(1)) }
     }
 
-    fun addToCart() {
+    fun dismissCarWashSingleProductDialog() {
+        _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
+    }
+
+    fun addToCart(onAdded: () -> Unit = {}) {
         val product = _uiState.value.product ?: return
         if (!_uiState.value.isProductAvailable) return
         val quantity = _uiState.value.quantity
         if (quantity <= 0) return
-        val imageUrl = product.imageUrls.firstOrNull()
-        val unitPrice = _uiState.value.unitPriceEffective
-        cartRepository.addItem(
-            productId = product.id,
-            name = product.name,
-            price = unitPrice,
-            quantity = quantity,
-            imageUrl = imageUrl,
-            listPrice = product.price,
-            hasPromotion = product.hasPromotion,
-            discount = product.discount,
-            pickupLatitude = pickupLatitude,
-            pickupLongitude = pickupLongitude,
-            shopId = product.shopId ?: navShopId,
-        )
+        viewModelScope.launch {
+            val cartItems = cartRepository.items.first()
+            val shopId = product.shopId ?: navShopId
+            if (CartCarWashSingleProductPolicy.blocksAdd(
+                    shopType = product.shopType,
+                    cartItems = cartItems,
+                    productId = product.id,
+                    shopId = shopId,
+                    quantityToAdd = quantity,
+                )
+            ) {
+                _uiState.update { it.copy(showCarWashSingleProductDialog = true) }
+                return@launch
+            }
+            val imageUrl = product.imageUrls.firstOrNull()
+            val unitPrice = _uiState.value.unitPriceEffective
+            cartRepository.addItem(
+                productId = product.id,
+                name = product.name,
+                price = unitPrice,
+                quantity = quantity,
+                imageUrl = imageUrl,
+                listPrice = product.price,
+                hasPromotion = product.hasPromotion,
+                discount = product.discount,
+                pickupLatitude = pickupLatitude,
+                pickupLongitude = pickupLongitude,
+                shopId = shopId,
+            )
+            onAdded()
+        }
     }
 
     fun toggleFavorite() {

@@ -4,6 +4,7 @@ fun shopTypeLabelEs(type: String?): String = when (type) {
     "RESTAURANT" -> "Restaurante"
     "SHOP" -> "Tienda"
     "SERVICE_PROVIDER" -> "Servicios"
+    "CAR_WASH" -> "Autolavado"
     else -> type?.replace('_', ' ')?.replaceFirstChar { it.uppercase() } ?: "Tienda"
 }
 

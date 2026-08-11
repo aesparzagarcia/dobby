@@ -37,6 +37,7 @@ class PlacesRepositoryImpl @Inject constructor(
                     "RESTAURANT" -> "Restaurant"
                     "SHOP" -> "Shop"
                     "SERVICE_PROVIDER" -> "Service"
+                    "CAR_WASH" -> "Car wash"
                     else -> shop.type
                 },
                 latitude = shop.lat,
@@ -170,6 +171,12 @@ class PlacesRepositoryImpl @Inject constructor(
             openingHour = response.shop.openingHour,
             closingHour = response.shop.closingHour,
             products = products,
+            shopName = response.shop.name,
+            shopType = response.shop.type,
+            logoUrl = response.shop.logoUrl?.toFullImageUrl(),
+            rate = response.shop.rate,
+            ratingCount = response.shop.ratingCount,
+            jobsDone = response.shop.jobsDone,
         )
     }
 
@@ -187,6 +194,7 @@ class PlacesRepositoryImpl @Inject constructor(
             hasPromotion = dto.hasPromotion,
             discount = dto.discount,
             shopId = dto.shopId,
+            shopType = dto.shopType,
         )
     }
 

@@ -21,6 +21,7 @@ data class FeaturedPlacesUiState(
     val searchQuery: String = "",
     val selectedCategory: HomeQuickCategory = HomeQuickCategory.All,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
 ) {
     val filteredPlaces: List<FeaturedPlace>
@@ -56,6 +57,7 @@ class FeaturedPlacesViewModel @Inject constructor(
                     it.copy(
                         places = sortFeaturedPlacesByAvailability(places),
                         isLoading = false,
+                        isRefreshing = false,
                         errorMessage = null,
                     )
                 }
@@ -63,6 +65,31 @@ class FeaturedPlacesViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
+                        errorMessage = e.toUserFacingMessage(),
+                    )
+                }
+            }
+        }
+    }
+
+    fun refresh() {
+        if (_uiState.value.isRefreshing || _uiState.value.isLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+            try {
+                val places = placesRepository.getFeaturedPlaces()
+                _uiState.update {
+                    it.copy(
+                        places = sortFeaturedPlacesByAvailability(places),
+                        isRefreshing = false,
+                        errorMessage = null,
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
                         errorMessage = e.toUserFacingMessage(),
                     )
                 }

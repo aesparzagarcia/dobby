@@ -53,6 +53,12 @@ data class ShopProductsPage(
     val openingHour: String?,
     val closingHour: String?,
     val products: List<ShopProduct>,
+    val shopName: String? = null,
+    val shopType: String? = null,
+    val logoUrl: String? = null,
+    val rate: Float = 0f,
+    val ratingCount: Int = 0,
+    val jobsDone: Int = 0,
 )
 
 data class ProductDetail(
@@ -66,6 +72,7 @@ data class ProductDetail(
     val hasPromotion: Boolean = false,
     val discount: Int = 0,
     val shopId: String? = null,
+    val shopType: String? = null,
 )
 
 data class ServiceDetail(

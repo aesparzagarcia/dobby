@@ -737,8 +737,8 @@ fun filterPlacesByCategory(
     category: HomeQuickCategory,
 ): List<FeaturedPlace> = when (category) {
     HomeQuickCategory.All -> places
-    HomeQuickCategory.Restaurants -> places.filter { !it.isService && it.shopType != "SHOP" }
-    HomeQuickCategory.Shops -> places.filter { !it.isService && it.shopType == "SHOP" }
+    HomeQuickCategory.Restaurants -> places.filter { !it.isService && it.shopType != "SHOP" && it.shopType != "CAR_WASH" }
+    HomeQuickCategory.Shops -> places.filter { !it.isService && (it.shopType == "SHOP" || it.shopType == "CAR_WASH") }
     HomeQuickCategory.Services -> places.filter { it.isService }
     HomeQuickCategory.Offers -> places
 }

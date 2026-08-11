@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.core.delivery.DeliveryEtaEstimator
+import com.ares.ewe.presentation.ui.components.CarWashSingleProductDialog
 import com.ares.ewe.presentation.viewmodel.main.home.ProductViewModel
 
 @Composable
@@ -109,12 +110,17 @@ fun ProductScreen(
                         onDecrement = { viewModel.decrementQuantity() },
                         onIncrement = { viewModel.incrementQuantity() },
                         onAddToCart = {
-                            viewModel.addToCart()
-                            onAddToCartClick()
+                            viewModel.addToCart(onAdded = onAddToCartClick)
                         },
                     )
                 }
             }
         }
+    }
+
+    if (uiState.showCarWashSingleProductDialog) {
+        CarWashSingleProductDialog(
+            onDismiss = { viewModel.dismissCarWashSingleProductDialog() },
+        )
     }
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.presentation.ui.components.CarWashSingleProductDialog
 import com.ares.ewe.presentation.viewmodel.main.home.BestSellersViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -172,5 +173,11 @@ fun BestSellersScreen(
                 }
             }
         }
+    }
+
+    if (uiState.showCarWashSingleProductDialog) {
+        CarWashSingleProductDialog(
+            onDismiss = { viewModel.dismissCarWashSingleProductDialog() },
+        )
     }
 }

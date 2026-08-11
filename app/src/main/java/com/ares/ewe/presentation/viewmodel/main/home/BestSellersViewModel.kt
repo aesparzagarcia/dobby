@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.ProductCategory
+import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.repository.CartRepository
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -29,6 +31,7 @@ data class BestSellersUiState(
     val selectedCategoryId: String? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val showCarWashSingleProductDialog: Boolean = false,
 ) {
     val filteredProducts: List<ShopProduct>
         get() {
@@ -95,28 +98,46 @@ class BestSellersViewModel @Inject constructor(
     fun isProductAvailable(product: ShopProduct): Boolean =
         isProductShopAvailableForOrders(product.shopId, _uiState.value.featuredPlaces)
 
+    fun dismissCarWashSingleProductDialog() {
+        _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
+    }
+
     fun addToCart(product: ShopProduct) {
         if (!isProductAvailable(product)) return
         val shopId = product.shopId?.trim().orEmpty().ifEmpty { return }
-        val place = _uiState.value.featuredPlaces.find { it.id == shopId && !it.isService }
-        val validDiscount = product.discount.coerceIn(0, 100)
-        val unitPrice = if (product.hasPromotion && validDiscount > 0) {
-            product.price * (1 - validDiscount / 100.0)
-        } else {
-            product.price
+        viewModelScope.launch {
+            val place = _uiState.value.featuredPlaces.find { it.id == shopId && !it.isService }
+            val cartItems = cartRepository.items.first()
+            if (CartCarWashSingleProductPolicy.blocksAdd(
+                    shopType = place?.shopType,
+                    cartItems = cartItems,
+                    productId = product.id,
+                    shopId = shopId,
+                    quantityToAdd = 1,
+                )
+            ) {
+                _uiState.update { it.copy(showCarWashSingleProductDialog = true) }
+                return@launch
+            }
+            val validDiscount = product.discount.coerceIn(0, 100)
+            val unitPrice = if (product.hasPromotion && validDiscount > 0) {
+                product.price * (1 - validDiscount / 100.0)
+            } else {
+                product.price
+            }
+            cartRepository.addItem(
+                productId = product.id,
+                name = product.name,
+                price = unitPrice,
+                quantity = 1,
+                imageUrl = product.imageUrl,
+                listPrice = product.price,
+                hasPromotion = product.hasPromotion,
+                discount = product.discount,
+                pickupLatitude = place?.latitude,
+                pickupLongitude = place?.longitude,
+                shopId = shopId,
+            )
         }
-        cartRepository.addItem(
-            productId = product.id,
-            name = product.name,
-            price = unitPrice,
-            quantity = 1,
-            imageUrl = product.imageUrl,
-            listPrice = product.price,
-            hasPromotion = product.hasPromotion,
-            discount = product.discount,
-            pickupLatitude = place?.latitude,
-            pickupLongitude = place?.longitude,
-            shopId = shopId,
-        )
     }
 }

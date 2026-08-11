@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.ProductCategory
+import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
 import com.ares.ewe.presentation.ui.main.home.formatShopReopensLabel
 import com.ares.ewe.presentation.ui.main.home.isShopAvailableForOrders
 import com.ares.ewe.domain.model.ShopProduct
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -23,6 +25,7 @@ import javax.inject.Inject
 
 data class ShopDetailUiState(
     val shopName: String = "",
+    val shopType: String? = null,
     val products: List<ShopProduct> = emptyList(),
     val searchQuery: String = "",
     val selectedCategoryId: String? = null,
@@ -32,6 +35,7 @@ data class ShopDetailUiState(
     val isShopAvailableForOrders: Boolean = true,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val showCarWashSingleProductDialog: Boolean = false,
 ) {
     val showShopClosedBanner: Boolean
         get() = !isShopAvailableForOrders
@@ -80,6 +84,7 @@ class ShopDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         shopName = shopName,
+                        shopType = page.shopType,
                         products = page.products,
                         isShopAvailableForOrders = isShopAvailableForOrders(
                             shopStatus = page.shopStatus,
@@ -112,27 +117,46 @@ class ShopDetailViewModel @Inject constructor(
         _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
 
+    fun dismissCarWashSingleProductDialog() {
+        _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
+    }
+
     fun addToCart(product: ShopProduct) {
         if (!_uiState.value.isShopAvailableForOrders) return
-        val validDiscount = product.discount.coerceIn(0, 100)
-        val unitPrice = if (product.hasPromotion && validDiscount > 0) {
-            product.price * (1 - validDiscount / 100.0)
-        } else {
-            product.price
+        viewModelScope.launch {
+            val shopId = product.shopId ?: openedShopId
+            val cartItems = cartRepository.items.first()
+            if (CartCarWashSingleProductPolicy.blocksAdd(
+                    shopType = _uiState.value.shopType,
+                    cartItems = cartItems,
+                    productId = product.id,
+                    shopId = shopId,
+                    quantityToAdd = 1,
+                )
+            ) {
+                _uiState.update { it.copy(showCarWashSingleProductDialog = true) }
+                return@launch
+            }
+            val validDiscount = product.discount.coerceIn(0, 100)
+            val unitPrice = if (product.hasPromotion && validDiscount > 0) {
+                product.price * (1 - validDiscount / 100.0)
+            } else {
+                product.price
+            }
+            cartRepository.addItem(
+                productId = product.id,
+                name = product.name,
+                price = unitPrice,
+                quantity = 1,
+                imageUrl = product.imageUrl,
+                listPrice = product.price,
+                hasPromotion = product.hasPromotion,
+                discount = product.discount,
+                pickupLatitude = pickupLatitude,
+                pickupLongitude = pickupLongitude,
+                shopId = shopId,
+            )
         }
-        cartRepository.addItem(
-            productId = product.id,
-            name = product.name,
-            price = unitPrice,
-            quantity = 1,
-            imageUrl = product.imageUrl,
-            listPrice = product.price,
-            hasPromotion = product.hasPromotion,
-            discount = product.discount,
-            pickupLatitude = pickupLatitude,
-            pickupLongitude = pickupLongitude,
-            shopId = product.shopId ?: openedShopId,
-        )
     }
 }
 

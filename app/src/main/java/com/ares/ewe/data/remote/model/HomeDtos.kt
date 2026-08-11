@@ -66,6 +66,13 @@ data class ShopInfoDto(
     @SerializedName("status") val status: String,
     @SerializedName("opening_hour") val openingHour: String? = null,
     @SerializedName("closing_hour") val closingHour: String? = null,
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("type") val type: String? = null,
+    @SerializedName("logo_url") val logoUrl: String? = null,
+    @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("rating_count") val ratingCount: Int = 0,
+    @SerializedName("jobs_done") val jobsDone: Int = 0,
 )
 
 data class ShopProductsResponseDto(
@@ -84,6 +91,7 @@ data class ProductDetailDto(
     @SerializedName("has_promotion") val hasPromotion: Boolean = false,
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
+    @SerializedName("shop_type") val shopType: String? = null,
 )
 
 data class ServiceDetailDto(

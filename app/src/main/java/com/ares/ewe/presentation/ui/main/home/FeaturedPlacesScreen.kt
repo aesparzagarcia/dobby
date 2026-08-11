@@ -13,12 +13,15 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.presentation.viewmodel.main.home.FeaturedPlacesViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeaturedPlacesScreen(
     onBack: () -> Unit,
@@ -47,7 +51,7 @@ fun FeaturedPlacesScreen(
             .navigationBarsPadding(),
     ) {
         when {
-            uiState.isLoading -> {
+            uiState.isLoading && uiState.places.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -55,7 +59,7 @@ fun FeaturedPlacesScreen(
                     CircularProgressIndicator()
                 }
             }
-            uiState.errorMessage != null -> {
+            uiState.errorMessage != null && uiState.places.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -94,32 +98,16 @@ fun FeaturedPlacesScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    if (filteredPlaces.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = when {
-                                    uiState.searchQuery.isNotBlank() ->
-                                        "Ningún lugar coincide con la búsqueda"
-                                    uiState.selectedCategory != HomeQuickCategory.All ->
-                                        "No hay lugares en esta categoría"
-                                    else -> "No hay restaurantes ni servicios disponibles"
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 24.dp),
-                            )
-                        }
-                    } else {
+                    PullToRefreshBox(
+                        isRefreshing = uiState.isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                    ) {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
                                 end = 16.dp,
@@ -129,13 +117,37 @@ fun FeaturedPlacesScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(filteredPlaces, key = { it.id }) { place ->
-                                HomeFeaturedPlaceCard(
-                                    place = place,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = { onPlaceClick(place) },
-                                    cardScale = 1f,
-                                )
+                            if (filteredPlaces.isEmpty()) {
+                                item(span = { GridItemSpan(maxLineSpan) }) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 48.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = when {
+                                                uiState.searchQuery.isNotBlank() ->
+                                                    "Ningún lugar coincide con la búsqueda"
+                                                uiState.selectedCategory != HomeQuickCategory.All ->
+                                                    "No hay lugares en esta categoría"
+                                                else -> "No hay restaurantes ni servicios disponibles"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(horizontal = 24.dp),
+                                        )
+                                    }
+                                }
+                            } else {
+                                items(filteredPlaces, key = { it.id }) { place ->
+                                    HomeFeaturedPlaceCard(
+                                        place = place,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = { onPlaceClick(place) },
+                                        cardScale = 1f,
+                                    )
+                                }
                             }
                         }
                     }

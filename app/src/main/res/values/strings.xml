@@ -4,4 +4,7 @@
     <string name="shop_switch_dialog_message">Si entras a otra tienda perderás los productos de tu carrito actual.</string>
     <string name="shop_switch_dialog_confirm">Continuar</string>
     <string name="shop_switch_dialog_cancel">Cancelar</string>
+    <string name="car_wash_single_product_title">Un solo producto</string>
+    <string name="car_wash_single_product_message">Este comercio acepta un solo producto por compra.</string>
+    <string name="car_wash_single_product_ok">Entendido</string>
 </resources>
