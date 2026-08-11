@@ -7,4 +7,8 @@
     <string name="car_wash_single_product_title">Un solo producto</string>
     <string name="car_wash_single_product_message">Este comercio acepta un solo producto por compra.</string>
     <string name="car_wash_single_product_ok">Entendido</string>
+    <string name="address_required_for_cart_title">Dirección requerida</string>
+    <string name="address_required_for_cart_message">Agrega primero una dirección antes de comenzar a agregar productos al carrito.</string>
+    <string name="address_required_for_cart_ok">Agregar dirección</string>
+    <string name="address_required_for_cart_cancel">Cancelar</string>
 </resources>

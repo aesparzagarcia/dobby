@@ -1,6 +1,7 @@
 package com.ares.ewe.data.repository
 
 import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.location.AddressSearchRegion
 import com.ares.ewe.data.remote.api.GooglePlacesApi
 import com.ares.ewe.domain.model.AddressPrediction
 import com.ares.ewe.domain.repository.PlacesAutocompleteRepository
@@ -58,27 +59,43 @@ class PlacesAutocompleteRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAddressPredictions(input: String): Result<List<AddressPrediction>> {
+    override suspend fun getAddressPredictions(
+        input: String,
+        latitude: Double?,
+        longitude: Double?,
+    ): Result<List<AddressPrediction>> {
         if (BuildConfig.PLACES_API_KEY.isBlank()) {
             return Result.failure(IllegalStateException("PLACES_API_KEY is not set. Add it to gradle.properties or build.gradle."))
         }
         return try {
+            // Por ahora siempre Tala (ignora GPS). Cuando se amplíe, usar latitude/longitude.
             val response = api.getAutocomplete(
-                input = input,
+                input = AddressSearchRegion.localizedQuery(input),
                 key = BuildConfig.PLACES_API_KEY,
-                types = "address",
-                language = "en"
+                types = "geocode",
+                language = "es",
+                components = "country:mx",
+                location = "${AddressSearchRegion.CENTER_LAT},${AddressSearchRegion.CENTER_LNG}",
+                radius = AddressSearchRegion.RADIUS_METERS,
+                strictbounds = true,
             )
             if (response.status != "OK" && response.status != "ZERO_RESULTS") {
                 return Result.failure(Exception("Places API: ${response.status}"))
             }
-            val list = (response.predictions ?: emptyList()).map { p ->
-                AddressPrediction(
-                    placeId = p.placeId,
-                    mainText = p.structuredFormatting?.mainText ?: p.description,
-                    secondaryText = p.structuredFormatting?.secondaryText
-                )
-            }
+            val list = (response.predictions ?: emptyList())
+                .map { p ->
+                    AddressPrediction(
+                        placeId = p.placeId,
+                        mainText = p.structuredFormatting?.mainText ?: p.description,
+                        secondaryText = p.structuredFormatting?.secondaryText
+                    )
+                }
+                .filter { prediction ->
+                    val haystack = listOfNotNull(prediction.mainText, prediction.secondaryText)
+                        .joinToString(" ")
+                        .lowercase()
+                    haystack.contains("tala")
+                }
             Result.success(list)
         } catch (e: Exception) {
             Result.failure(e)

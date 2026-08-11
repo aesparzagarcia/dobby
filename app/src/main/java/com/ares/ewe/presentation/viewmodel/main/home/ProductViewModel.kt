@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.normalizeImageUrlForStorage
 import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
+import com.ares.ewe.domain.cart.PendingCartAddGate
 import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.repository.CartRepository
@@ -52,6 +53,7 @@ class ProductViewModel @Inject constructor(
     private val placesRepository: PlacesRepository,
     private val cartRepository: CartRepository,
     private val favoritesRepository: FavoritesRepository,
+    private val pendingCartAddGate: PendingCartAddGate,
 ) : ViewModel() {
 
     private val productId: String = checkNotNull(savedStateHandle.get<String>("id"))
@@ -146,20 +148,22 @@ class ProductViewModel @Inject constructor(
             }
             val imageUrl = product.imageUrls.firstOrNull()
             val unitPrice = _uiState.value.unitPriceEffective
-            cartRepository.addItem(
-                productId = product.id,
-                name = product.name,
-                price = unitPrice,
-                quantity = quantity,
-                imageUrl = imageUrl,
-                listPrice = product.price,
-                hasPromotion = product.hasPromotion,
-                discount = product.discount,
-                pickupLatitude = pickupLatitude,
-                pickupLongitude = pickupLongitude,
-                shopId = shopId,
-            )
-            onAdded()
+            pendingCartAddGate.runOrRequestAddress {
+                cartRepository.addItem(
+                    productId = product.id,
+                    name = product.name,
+                    price = unitPrice,
+                    quantity = quantity,
+                    imageUrl = imageUrl,
+                    listPrice = product.price,
+                    hasPromotion = product.hasPromotion,
+                    discount = product.discount,
+                    pickupLatitude = pickupLatitude,
+                    pickupLongitude = pickupLongitude,
+                    shopId = shopId,
+                )
+                onAdded()
+            }
         }
     }
 

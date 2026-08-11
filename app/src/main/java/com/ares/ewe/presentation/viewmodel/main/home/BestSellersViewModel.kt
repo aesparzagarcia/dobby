@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.ProductCategory
 import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
+import com.ares.ewe.domain.cart.PendingCartAddGate
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.repository.CartRepository
@@ -47,6 +48,7 @@ data class BestSellersUiState(
 class BestSellersViewModel @Inject constructor(
     private val placesRepository: PlacesRepository,
     private val cartRepository: CartRepository,
+    private val pendingCartAddGate: PendingCartAddGate,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BestSellersUiState(isLoading = true))
@@ -125,19 +127,21 @@ class BestSellersViewModel @Inject constructor(
             } else {
                 product.price
             }
-            cartRepository.addItem(
-                productId = product.id,
-                name = product.name,
-                price = unitPrice,
-                quantity = 1,
-                imageUrl = product.imageUrl,
-                listPrice = product.price,
-                hasPromotion = product.hasPromotion,
-                discount = product.discount,
-                pickupLatitude = place?.latitude,
-                pickupLongitude = place?.longitude,
-                shopId = shopId,
-            )
+            pendingCartAddGate.runOrRequestAddress {
+                cartRepository.addItem(
+                    productId = product.id,
+                    name = product.name,
+                    price = unitPrice,
+                    quantity = 1,
+                    imageUrl = product.imageUrl,
+                    listPrice = product.price,
+                    hasPromotion = product.hasPromotion,
+                    discount = product.discount,
+                    pickupLatitude = place?.latitude,
+                    pickupLongitude = place?.longitude,
+                    shopId = shopId,
+                )
+            }
         }
     }
 }

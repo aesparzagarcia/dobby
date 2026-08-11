@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.ProductCategory
 import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
+import com.ares.ewe.domain.cart.PendingCartAddGate
 import com.ares.ewe.presentation.ui.main.home.formatShopReopensLabel
 import com.ares.ewe.presentation.ui.main.home.isShopAvailableForOrders
 import com.ares.ewe.domain.model.ShopProduct
@@ -57,6 +58,7 @@ class ShopDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val placesRepository: PlacesRepository,
     private val cartRepository: CartRepository,
+    private val pendingCartAddGate: PendingCartAddGate,
 ) : ViewModel() {
 
     val openedShopId: String = checkNotNull(savedStateHandle.get<String>("id"))
@@ -143,19 +145,21 @@ class ShopDetailViewModel @Inject constructor(
             } else {
                 product.price
             }
-            cartRepository.addItem(
-                productId = product.id,
-                name = product.name,
-                price = unitPrice,
-                quantity = 1,
-                imageUrl = product.imageUrl,
-                listPrice = product.price,
-                hasPromotion = product.hasPromotion,
-                discount = product.discount,
-                pickupLatitude = pickupLatitude,
-                pickupLongitude = pickupLongitude,
-                shopId = shopId,
-            )
+            pendingCartAddGate.runOrRequestAddress {
+                cartRepository.addItem(
+                    productId = product.id,
+                    name = product.name,
+                    price = unitPrice,
+                    quantity = 1,
+                    imageUrl = product.imageUrl,
+                    listPrice = product.price,
+                    hasPromotion = product.hasPromotion,
+                    discount = product.discount,
+                    pickupLatitude = pickupLatitude,
+                    pickupLongitude = pickupLongitude,
+                    shopId = shopId,
+                )
+            }
         }
     }
 }

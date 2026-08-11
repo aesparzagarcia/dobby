@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.isAuthorizationError
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.data.local.datastore.SessionManager
+import com.ares.ewe.data.location.FusedLocationProvider
 import com.ares.ewe.domain.model.UserAddress
 import com.ares.ewe.domain.repository.PlacesAutocompleteRepository
 import com.ares.ewe.domain.repository.UserAddressRepository
@@ -35,6 +36,10 @@ data class AddressUiState(
     val searchQuery: String = "",
     val searchResults: List<AddressSearchResult> = emptyList(),
     val myAddresses: List<UserAddress> = emptyList(),
+    val isLoadingAddresses: Boolean = false,
+    val deviceLocation: LatLng? = null,
+    val deviceLocationAddress: String? = null,
+    val isLoadingDeviceLocation: Boolean = false,
     val showMyAddressesSheet: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -51,6 +56,7 @@ private const val MIN_QUERY_LENGTH = 2
 class AddressViewModel @Inject constructor(
     private val placesAutocompleteRepository: PlacesAutocompleteRepository,
     private val userAddressRepository: UserAddressRepository,
+    private val locationProvider: FusedLocationProvider,
     private val sessionManager: SessionManager,
 ) : ViewModel() {
 
@@ -63,7 +69,66 @@ class AddressViewModel @Inject constructor(
         viewModelScope.launch {
             sessionManager.isLoggedIn.collect { loggedIn ->
                 _uiState.update { it.copy(isLoggedIn = loggedIn) }
+                if (loggedIn) {
+                    loadSavedAddresses()
+                    refreshDeviceLocation()
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            myAddresses = emptyList(),
+                            deviceLocation = null,
+                            deviceLocationAddress = null,
+                        )
+                    }
+                }
             }
+        }
+    }
+
+    fun loadSavedAddresses() {
+        viewModelScope.launch {
+            if (!sessionManager.isLoggedIn.first()) return@launch
+            _uiState.update { it.copy(isLoadingAddresses = true) }
+            userAddressRepository.getAddresses()
+                .onSuccess { list ->
+                    _uiState.update {
+                        it.copy(myAddresses = list, isLoadingAddresses = false, errorMessage = null)
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingAddresses = false,
+                            errorMessage = if (e.isAuthorizationError()) {
+                                "Inicia sesión para ver y guardar tus direcciones."
+                            } else {
+                                e.toUserFacingMessage()
+                            },
+                        )
+                    }
+                }
+        }
+    }
+
+    fun refreshDeviceLocation() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingDeviceLocation = true) }
+            locationProvider.getLastLocation()
+                .onSuccess { latLng ->
+                    val address = placesAutocompleteRepository
+                        .getAddressFromLocation(latLng.latitude, latLng.longitude)
+                        .getOrNull()
+                    _uiState.update {
+                        it.copy(
+                            deviceLocation = latLng,
+                            deviceLocationAddress = address,
+                            isLoadingDeviceLocation = false,
+                        )
+                    }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isLoadingDeviceLocation = false) }
+                }
         }
     }
 
@@ -110,12 +175,48 @@ class AddressViewModel @Inject constructor(
             _uiState.update { it.copy(showMyAddressesSheet = false) }
             userAddressRepository.setDefaultAddress(address.id)
                 .onSuccess {
+                    loadSavedAddresses()
                     _uiState.update { it.copy(navigateBackToHome = true) }
                 }
                 .onFailure { e ->
                     _uiState.update {
                         it.copy(
-                            showMyAddressesSheet = true,
+                            errorMessage = if (e.isAuthorizationError()) {
+                                "Inicia sesión para gestionar tus direcciones."
+                            } else {
+                                e.toUserFacingMessage()
+                            },
+                        )
+                    }
+                }
+        }
+    }
+
+    fun onSetAsDefault(address: UserAddress) {
+        viewModelScope.launch {
+            userAddressRepository.setDefaultAddress(address.id)
+                .onSuccess { loadSavedAddresses() }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            errorMessage = if (e.isAuthorizationError()) {
+                                "Inicia sesión para gestionar tus direcciones."
+                            } else {
+                                e.toUserFacingMessage()
+                            },
+                        )
+                    }
+                }
+        }
+    }
+
+    fun onDeleteAddress(address: UserAddress) {
+        viewModelScope.launch {
+            userAddressRepository.deleteAddress(address.id)
+                .onSuccess { loadSavedAddresses() }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(
                             errorMessage = if (e.isAuthorizationError()) {
                                 "Inicia sesión para gestionar tus direcciones."
                             } else {
@@ -151,7 +252,11 @@ class AddressViewModel @Inject constructor(
             val currentQuery = _uiState.value.searchQuery
             if (currentQuery.length < MIN_QUERY_LENGTH) return@launch
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            placesAutocompleteRepository.getAddressPredictions(currentQuery)
+            placesAutocompleteRepository.getAddressPredictions(
+                currentQuery,
+                latitude = _uiState.value.deviceLocation?.latitude,
+                longitude = _uiState.value.deviceLocation?.longitude,
+            )
                 .onSuccess { predictions ->
                     val results = predictions.map { p ->
                         AddressSearchResult(id = p.placeId, title = p.mainText, subtitle = p.secondaryText)

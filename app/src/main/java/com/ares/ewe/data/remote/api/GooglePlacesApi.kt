@@ -17,7 +17,11 @@ interface GooglePlacesApi {
         @Query("input") input: String,
         @Query("key") key: String,
         @Query("types") types: String = "address",
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "es",
+        @Query("components") components: String = "country:mx",
+        @Query("location") location: String? = null,
+        @Query("radius") radius: Int? = null,
+        @Query("strictbounds") strictbounds: Boolean? = null,
     ): PlacesAutocompleteResponse
 
     @GET("place/details/json")
@@ -31,6 +35,6 @@ interface GooglePlacesApi {
     suspend fun getReverseGeocode(
         @Query("latlng") latlng: String,
         @Query("key") key: String,
-        @Query("language") language: String = "en"
+        @Query("language") language: String = "es"
     ): GeocodeResponse
 }

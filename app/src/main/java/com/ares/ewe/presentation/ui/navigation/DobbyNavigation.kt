@@ -23,12 +23,15 @@ import com.ares.ewe.core.crash.TrackNavDestination
 import com.ares.ewe.di.OrderRepositoryEntryPoint
 import com.ares.ewe.di.SessionEventBusEntryPoint
 import com.ares.ewe.di.CartRepositoryEntryPoint
+import com.ares.ewe.di.PendingCartAddGateEntryPoint
 import com.ares.ewe.domain.cart.CartShopSwitchPolicy
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.push.OrderPushNavigation
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
 import com.ares.ewe.presentation.ui.auth.register.AddUserInfoScreen
 import com.ares.ewe.presentation.ui.auth.otp.OtpScreen
 import com.ares.ewe.presentation.ui.auth.phone.PhoneScreen
@@ -45,6 +48,7 @@ import com.ares.ewe.presentation.ui.main.home.ServiceDetailScreen
 import com.ares.ewe.presentation.ui.main.home.BestSellersScreen
 import com.ares.ewe.presentation.ui.main.home.FeaturedPlacesScreen
 import com.ares.ewe.presentation.ui.main.home.ShopDetailScreen
+import com.ares.ewe.presentation.ui.components.AddressRequiredForCartDialog
 import com.ares.ewe.presentation.ui.components.ShopSwitchConfirmDialog
 import com.ares.ewe.presentation.ui.splash.SplashScreen
 import com.ares.ewe.presentation.viewmodel.main.home.HomeTabViewModel
@@ -68,6 +72,55 @@ fun DobbyNavigation(
     }
     val cartItems by cartRepository.items.collectAsState(initial = emptyList())
     var pendingShopPlace by remember { mutableStateOf<FeaturedPlace?>(null) }
+    var showAddressRequiredForCartDialog by remember { mutableStateOf(false) }
+    val pendingCartAddGate = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            PendingCartAddGateEntryPoint::class.java,
+        ).pendingCartAddGate()
+    }
+    val coroutineScope = rememberCoroutineScope()
+
+    fun resumePendingCartAfterAddress(homeTabViewModel: HomeTabViewModel) {
+        homeTabViewModel.loadAddresses()
+        if (pendingCartAddGate.hasPending()) {
+            navController.popBackStack(DobbyScreens.DeliveryAddress, inclusive = true)
+            coroutineScope.launch {
+                pendingCartAddGate.resumePendingIfReady()
+            }
+        } else {
+            navController.popBackStack(DobbyScreens.Home, false)
+        }
+    }
+
+    fun openDeliveryAddressForPendingCart() {
+        val route = navController.currentDestination?.route
+        if (route != DobbyScreens.DeliveryAddress &&
+            route != DobbyScreens.CurrentLocationMap &&
+            route?.startsWith("current_location_map") != true
+        ) {
+            navController.navigate(DobbyScreens.DeliveryAddress)
+        }
+    }
+
+    LaunchedEffect(pendingCartAddGate) {
+        pendingCartAddGate.requireAddress.collect {
+            showAddressRequiredForCartDialog = true
+        }
+    }
+
+    if (showAddressRequiredForCartDialog) {
+        AddressRequiredForCartDialog(
+            onConfirm = {
+                showAddressRequiredForCartDialog = false
+                openDeliveryAddressForPendingCart()
+            },
+            onDismiss = {
+                showAddressRequiredForCartDialog = false
+                pendingCartAddGate.clearPending()
+            },
+        )
+    }
 
     fun navigateToShop(place: FeaturedPlace) {
         navController.navigate(
@@ -319,13 +372,24 @@ fun DobbyNavigation(
             AddressScreen(
                 onBack = {
                     homeTabViewModel.loadAddresses()
-                    navController.popBackStack()
+                    coroutineScope.launch {
+                        if (pendingCartAddGate.hasPending() &&
+                            pendingCartAddGate.hasValidDeliveryAddress()
+                        ) {
+                            navController.popBackStack()
+                            pendingCartAddGate.resumePendingIfReady()
+                        } else {
+                            pendingCartAddGate.clearPending()
+                            navController.popBackStack()
+                        }
+                    }
                 },
                 onCurrentLocationClick = { navController.navigate(DobbyScreens.CurrentLocationMap) },
                 onNavigateToMapWithLocation = { lat, lng, address ->
                     navController.navigate(DobbyScreens.currentLocationMapWithLocation(lat, lng, address))
                 },
                 onRequireLogin = {
+                    pendingCartAddGate.clearPending()
                     navController.popBackStack()
                     navController.navigate(DobbyScreens.Phone)
                 },
@@ -338,8 +402,7 @@ fun DobbyNavigation(
             MapLocationScreen(
                 onBack = { navController.popBackStack() },
                 onSaveSuccess = {
-                    homeTabViewModel.loadAddresses()
-                    navController.popBackStack(DobbyScreens.Home, false)
+                    resumePendingCartAfterAddress(homeTabViewModel)
                 }
             )
         }
@@ -357,8 +420,7 @@ fun DobbyNavigation(
             MapLocationScreen(
                 onBack = { navController.popBackStack() },
                 onSaveSuccess = {
-                    homeTabViewModel.loadAddresses()
-                    navController.popBackStack(DobbyScreens.Home, false)
+                    resumePendingCartAfterAddress(homeTabViewModel)
                 }
             )
         }

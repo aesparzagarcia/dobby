@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
@@ -207,6 +208,9 @@ fun MapLocationScreen(
 
     // Address label + description bottom sheet before saving
     if (uiState.showDescriptionDialog) {
+        var addressText by remember(uiState.showDescriptionDialog) {
+            mutableStateOf(uiState.editableAddress)
+        }
         var descriptionText by remember { mutableStateOf("") }
         var selectedLabel by remember { mutableStateOf("Casa") }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -217,6 +221,8 @@ fun MapLocationScreen(
             containerColor = Color.White,
         ) {
             SaveAddressBottomSheetContent(
+                addressText = addressText,
+                onAddressChange = { addressText = it },
                 descriptionText = descriptionText,
                 onDescriptionChange = { descriptionText = it },
                 selectedLabel = selectedLabel,
@@ -229,7 +235,7 @@ fun MapLocationScreen(
                         label = selectedLabel,
                         description = descriptionText.ifBlank { null },
                         latLng = center,
-                        addressText = uiState.editableAddress,
+                        addressText = addressText.trim(),
                     )
                 },
             )
@@ -428,6 +434,8 @@ fun MapLocationScreen(
 
 @Composable
 private fun SaveAddressBottomSheetContent(
+    addressText: String,
+    onAddressChange: (String) -> Unit,
     descriptionText: String,
     onDescriptionChange: (String) -> Unit,
     selectedLabel: String,
@@ -452,6 +460,49 @@ private fun SaveAddressBottomSheetContent(
         )
 
         Text(
+            text = "Dirección",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = SaveSheetAccent,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, SaveSheetFieldBorder, RoundedCornerShape(12.dp))
+                .background(Color.White)
+                .padding(horizontal = 14.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = SaveSheetAccent,
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            OutlinedTextField(
+                value = addressText,
+                onValueChange = onAddressChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Calle, número, colonia…", color = SaveSheetSubtitle) },
+                minLines = 2,
+                maxLines = 4,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                ),
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
             text = "Descripción",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
@@ -468,7 +519,7 @@ private fun SaveAddressBottomSheetContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = Icons.Default.LocationOn,
+                imageVector = Icons.Default.Edit,
                 contentDescription = null,
                 tint = SaveSheetAccent,
                 modifier = Modifier.size(22.dp),
@@ -478,7 +529,7 @@ private fun SaveAddressBottomSheetContent(
                 value = descriptionText,
                 onValueChange = onDescriptionChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("ej. Casa verde, piso 2", color = SaveSheetSubtitle) },
+                placeholder = { Text("ej. Casa verde, piso 2, int 15", color = SaveSheetSubtitle) },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
@@ -540,7 +591,7 @@ private fun SaveAddressBottomSheetContent(
             }
             Button(
                 onClick = onSave,
-                enabled = !isSaving,
+                enabled = !isSaving && addressText.isNotBlank(),
                 modifier = Modifier
                     .weight(1f)
                     .height(50.dp),
