@@ -31,9 +31,17 @@ data class CreateOrderItemRequest(
     @SerializedName("price") val price: Double
 )
 
+data class CreateServicePaymentItemRequest(
+    @SerializedName("serviceId") val serviceId: String,
+    @SerializedName("serviceNumber") val serviceNumber: String,
+    @SerializedName("amount") val amount: Double,
+)
+
 data class CreateOrderRequest(
     @SerializedName("addressId") val addressId: String,
-    @SerializedName("items") val items: List<CreateOrderItemRequest>,
+    @SerializedName("items") val items: List<CreateOrderItemRequest> = emptyList(),
+    @SerializedName("serviceItems") val serviceItems: List<CreateServicePaymentItemRequest>? = null,
+    @SerializedName("orderType") val orderType: String? = null,
     @SerializedName("deliveryFee") val deliveryFee: Double = 0.0
 )
 
@@ -49,6 +57,7 @@ data class CreateOrderResponse(
 data class OrderTrackingDto(
     @SerializedName("id") val id: String,
     @SerializedName("status") val status: String,
+    @SerializedName("order_type") val orderType: String? = null,
     @SerializedName("total") val total: Double = 0.0,
     @SerializedName("service_fee") val serviceFee: Double = 0.0,
     @SerializedName("delivery_fee") val deliveryFee: Double = 0.0,

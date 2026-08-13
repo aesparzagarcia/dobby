@@ -69,6 +69,14 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE cart ADD COLUMN lineKind TEXT NOT NULL DEFAULT 'PRODUCT'")
+            db.execSQL("ALTER TABLE cart ADD COLUMN serviceId TEXT")
+            db.execSQL("ALTER TABLE cart ADD COLUMN serviceNumber TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -84,6 +92,7 @@ object DatabaseModule {
         MIGRATION_4_5,
         MIGRATION_5_6,
         MIGRATION_6_7,
+        MIGRATION_7_8,
     ).build()
 
     @Provides

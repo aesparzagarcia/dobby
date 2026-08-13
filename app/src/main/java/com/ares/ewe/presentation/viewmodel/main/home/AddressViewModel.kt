@@ -212,6 +212,18 @@ class AddressViewModel @Inject constructor(
 
     fun onDeleteAddress(address: UserAddress) {
         viewModelScope.launch {
+            if (address.isDefault) {
+                _uiState.update {
+                    it.copy(errorMessage = "No puedes eliminar la dirección principal. Elige otra como principal primero.")
+                }
+                return@launch
+            }
+            if (_uiState.value.myAddresses.size <= 1) {
+                _uiState.update {
+                    it.copy(errorMessage = "Debes conservar al menos una dirección activa.")
+                }
+                return@launch
+            }
             userAddressRepository.deleteAddress(address.id)
                 .onSuccess { loadSavedAddresses() }
                 .onFailure { e ->

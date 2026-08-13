@@ -206,7 +206,10 @@ class PlacesRepositoryImpl @Inject constructor(
             description = s.description,
             imageUrl = s.logoUrl?.toFullImageUrl(),
             category = s.category,
-            rate = s.rate
+            rate = s.rate,
+            address = s.address,
+            lat = s.lat,
+            lng = s.lng,
         )
     }
 }

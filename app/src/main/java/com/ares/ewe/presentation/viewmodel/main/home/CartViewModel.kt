@@ -220,7 +220,13 @@ class CartViewModel @Inject constructor(
             _deliveryState.update {
                 it.copy(isPlacingOrder = true, placeOrderError = null)
             }
-            orderRepository.createOrder(addressId, items, deliveryFee)
+            val isServicePayment = items.all { it.isServicePayment }
+            val result = if (isServicePayment) {
+                orderRepository.createServicePaymentOrder(addressId, items, deliveryFee)
+            } else {
+                orderRepository.createOrder(addressId, items, deliveryFee)
+            }
+            result
                 .onSuccess {
                     cartRepository.clear()
                     // Paridad iOS: mantener overlay ~5s tras éxito antes de cerrar carrito.

@@ -4,6 +4,7 @@ import com.ares.ewe.BuildConfig
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.data.remote.model.CreateOrderItemRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
+import com.ares.ewe.data.remote.model.CreateServicePaymentItemRequest
 import com.ares.ewe.data.remote.model.RateDeliveryRequest
 import com.ares.ewe.data.remote.model.RateProductEntryDto
 import com.ares.ewe.data.remote.model.RateProductsRequest
@@ -76,6 +77,7 @@ class OrderRepositoryImpl @Inject constructor(
                 OrderTracking(
                     id = dto.id,
                     status = dto.status,
+                    orderType = dto.orderType?.takeIf { it.isNotBlank() } ?: "SHOP",
                     total = dto.total,
                     serviceFee = dto.serviceFee,
                     deliveryFee = dto.deliveryFee,
@@ -157,6 +159,7 @@ class OrderRepositoryImpl @Inject constructor(
         val request = CreateOrderRequest(
             addressId = addressId,
             deliveryFee = deliveryFee,
+            orderType = "SHOP",
             items = items.map { item ->
                 CreateOrderItemRequest(
                     productId = item.productId,
@@ -164,6 +167,32 @@ class OrderRepositoryImpl @Inject constructor(
                     price = item.chargedUnitPrice
                 )
             }
+        )
+        api.createOrder(request)
+    }
+
+    override suspend fun createServicePaymentOrder(
+        addressId: String,
+        items: List<CartItem>,
+        deliveryFee: Double,
+    ): Result<Unit> = runCatching {
+        val serviceItems = items.mapNotNull { item ->
+            val serviceId = item.serviceId?.trim().orEmpty()
+            val serviceNumber = item.serviceNumber?.trim().orEmpty()
+            if (serviceId.isEmpty() || serviceNumber.isEmpty()) return@mapNotNull null
+            CreateServicePaymentItemRequest(
+                serviceId = serviceId,
+                serviceNumber = serviceNumber,
+                amount = item.chargedUnitPrice,
+            )
+        }
+        require(serviceItems.isNotEmpty()) { "Carrito de servicios vacío" }
+        val request = CreateOrderRequest(
+            addressId = addressId,
+            deliveryFee = deliveryFee,
+            orderType = "SERVICE_PAYMENT",
+            items = emptyList(),
+            serviceItems = serviceItems,
         )
         api.createOrder(request)
     }

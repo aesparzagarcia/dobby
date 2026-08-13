@@ -100,5 +100,8 @@ data class ServiceDetailDto(
     @SerializedName("description") val description: String? = null,
     @SerializedName("logoUrl") val logoUrl: String? = null,
     @SerializedName("category") val category: String? = null,
-    @SerializedName("rate") val rate: Float = 0f
+    @SerializedName("rate") val rate: Float = 0f,
+    @SerializedName("address") val address: String? = null,
+    @SerializedName("lat") val lat: Double? = null,
+    @SerializedName("lng") val lng: Double? = null,
 )

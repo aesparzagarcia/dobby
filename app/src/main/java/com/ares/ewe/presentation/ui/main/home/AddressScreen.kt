@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
@@ -37,7 +38,6 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -91,7 +91,8 @@ private val AddressScreenBg = Color(0xFFF7F8FA)
 private val AddressCardBorder = Color(0xFFE8EAEF)
 private val AddressMuted = Color(0xFF8A8F98)
 private val AddressLocationBlue = Color(0xFF2F6BFF)
-private val AddressPrincipalBg = Color(0xFFE8F0FF)
+private val AddressPrincipalBg = Color(0xFFEEEEF0)
+private val AddressPrincipalText = DobbyPureScale.Onyx
 private val DefaultMapPosition = LatLng(20.6507582, -103.7029606)
 
 @Composable
@@ -177,12 +178,14 @@ fun AddressScreen(
                     color = DobbyColors.TextPrimary,
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
-                Text(
-                    text = "Selecciona o agrega la dirección donde quieres que te lleguen tus pedidos.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AddressMuted,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
+                if (uiState.isLoggedIn) {
+                    Text(
+                        text = "Selecciona o agrega la dirección donde quieres que te lleguen tus pedidos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AddressMuted,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -306,6 +309,7 @@ fun AddressScreen(
                             items(uiState.myAddresses, key = { it.id }) { address ->
                                 SavedAddressCard(
                                     address = address,
+                                    showMenu = uiState.myAddresses.size > 1 && !address.isDefault,
                                     onSelect = { viewModel.onMyAddressSelected(address) },
                                     onSetDefault = { viewModel.onSetAsDefault(address) },
                                     onDelete = { viewModel.onDeleteAddress(address) },
@@ -397,13 +401,18 @@ private fun AddressSearchBar(
                 strokeWidth = 2.dp,
                 color = AddressLocationBlue,
             )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Tune,
-                contentDescription = null,
-                tint = DobbyColors.TextPrimary,
-                modifier = Modifier.size(20.dp)
-            )
+        } else if (query.isNotEmpty()) {
+            IconButton(
+                onClick = { onQueryChange("") },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Limpiar búsqueda",
+                    tint = DobbyColors.TextPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
@@ -562,6 +571,7 @@ private fun SavedAddressesHeader(onAddNew: () -> Unit) {
 @Composable
 private fun SavedAddressCard(
     address: UserAddress,
+    showMenu: Boolean,
     onSelect: () -> Unit,
     onSetDefault: () -> Unit,
     onDelete: () -> Unit,
@@ -612,7 +622,7 @@ private fun SavedAddressCard(
                     if (address.isDefault) {
                         Text(
                             text = "Principal",
-                            color = AddressLocationBlue,
+                            color = AddressPrincipalText,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier
@@ -632,37 +642,39 @@ private fun SavedAddressCard(
                 )
             }
         }
-        Box {
-            IconButton(
-                onClick = { menuExpanded = true },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Opciones",
-                    tint = AddressMuted,
-                )
-            }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
-            ) {
-                if (!address.isDefault) {
+        if (showMenu) {
+            Box {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Opciones",
+                        tint = AddressMuted,
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    if (!address.isDefault) {
+                        DropdownMenuItem(
+                            text = { Text("Establecer como principal") },
+                            onClick = {
+                                menuExpanded = false
+                                onSetDefault()
+                            }
+                        )
+                    }
                     DropdownMenuItem(
-                        text = { Text("Establecer como principal") },
+                        text = { Text("Eliminar") },
                         onClick = {
                             menuExpanded = false
-                            onSetDefault()
+                            onDelete()
                         }
                     )
                 }
-                DropdownMenuItem(
-                    text = { Text("Eliminar") },
-                    onClick = {
-                        menuExpanded = false
-                        onDelete()
-                    }
-                )
             }
         }
     }
@@ -675,11 +687,11 @@ private data class AddressLabelStyle(
 
 private fun addressLabelStyle(label: String): AddressLabelStyle {
     return when (label.trim().lowercase()) {
-        "casa", "home" -> AddressLabelStyle(Icons.Default.Home, AddressLocationBlue)
-        "trabajo", "work" -> AddressLabelStyle(Icons.Default.Work, Color(0xFF34C759))
+        "casa", "home" -> AddressLabelStyle(Icons.Default.Home, DobbyPureScale.Onyx)
+        "trabajo", "work" -> AddressLabelStyle(Icons.Default.Work, DobbyPureScale.Onyx)
         "gimnasio", "gym" -> AddressLabelStyle(Icons.Default.FitnessCenter, Color(0xFFAF52DE))
-        "novia" -> AddressLabelStyle(Icons.Default.Favorite, Color(0xFFFF2D55))
-        "apartamento" -> AddressLabelStyle(Icons.Default.Apartment, Color(0xFF5856D6))
+        "novia", "amor" -> AddressLabelStyle(Icons.Default.Favorite, DobbyPureScale.Onyx)
+        "apartamento" -> AddressLabelStyle(Icons.Default.Apartment, DobbyPureScale.Onyx)
         "fiesta" -> AddressLabelStyle(Icons.Default.Celebration, Color(0xFFFF9500))
         else -> AddressLabelStyle(Icons.Default.Place, DobbyPureScale.Graphite)
     }

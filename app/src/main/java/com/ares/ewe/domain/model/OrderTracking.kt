@@ -3,6 +3,8 @@ package com.ares.ewe.domain.model
 data class OrderTracking(
     val id: String,
     val status: String,
+    /** SHOP | SERVICE_PAYMENT */
+    val orderType: String = "SHOP",
     val total: Double,
     val serviceFee: Double = 0.0,
     val deliveryFee: Double = 0.0,
@@ -31,6 +33,9 @@ data class OrderTracking(
     val items: List<OrderTrackingItem>,
     val deliveryMan: OrderTrackingDeliveryMan?
 ) {
+    val isServicePayment: Boolean
+        get() = orderType.equals("SERVICE_PAYMENT", ignoreCase = true)
+
     val isDelivered: Boolean get() = status.equals("DELIVERED", ignoreCase = true)
 
     val courierArrivedAtCustomer: Boolean

@@ -81,7 +81,10 @@ data class ServiceDetail(
     val description: String?,
     val imageUrl: String?,
     val category: String?,
-    val rate: Float = 0f
+    val rate: Float = 0f,
+    val address: String? = null,
+    val lat: Double? = null,
+    val lng: Double? = null,
 )
 
 data class Ad(

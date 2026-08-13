@@ -20,4 +20,7 @@ data class CartInfo(
     val pickupLatitude: Double? = null,
     val pickupLongitude: Double? = null,
     val shopId: String? = null,
+    val lineKind: String = "PRODUCT",
+    val serviceId: String? = null,
+    val serviceNumber: String? = null,
 )

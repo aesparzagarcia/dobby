@@ -163,29 +163,51 @@ object OrderStatusNotificationHelper {
         status: String?,
         deliveryManName: String? = null,
         estimatedPreparationMinutes: Int? = null,
-    ): Pair<String, String> = when (status) {
-        "PENDING" -> "Pedido recibido" to "Tu pedido está pendiente de confirmación."
-        "CONFIRMED" -> "Pedido confirmado" to "La tienda aceptó tu pedido."
-        "PREPARING" -> {
-            var body = "Tu pedido se está preparando."
-            estimatedPreparationMinutes?.takeIf { it > 0 }?.let { mins ->
-                body += " Tiempo estimado: ${formatPrepMinutes(mins)}."
+        orderType: String? = null,
+    ): Pair<String, String> {
+        val servicePayment = orderType.equals("SERVICE_PAYMENT", ignoreCase = true)
+        return when (status) {
+            "PENDING" -> "Pedido recibido" to "Tu pedido está pendiente de confirmación."
+            "CONFIRMED" -> "Pedido confirmado" to "La tienda aceptó tu pedido."
+            "PREPARING" -> {
+                var body = "Tu pedido se está preparando."
+                estimatedPreparationMinutes?.takeIf { it > 0 }?.let { mins ->
+                    body += " Tiempo estimado: ${formatPrepMinutes(mins)}."
+                }
+                "En preparación" to body
             }
-            "En preparación" to body
-        }
-        "READY_FOR_PICKUP" -> "Listo para envío" to "Tu pedido está listo para salir."
-        "ASSIGNED" -> {
-            val name = deliveryManName?.trim()
-            if (!name.isNullOrEmpty()) {
-                "Repartidor en camino" to "$name va en camino a recoger tu pedido en la tienda."
+            "READY_FOR_PICKUP" -> if (servicePayment) {
+                "Buscando repartidor" to "Estamos buscando un repartidor para pagar tus servicios."
             } else {
-                "Repartidor asignado" to "Un repartidor va en camino a recoger tu pedido en la tienda."
+                "Listo para envío" to "Tu pedido está listo para salir."
             }
+            "ASSIGNED" -> {
+                val name = deliveryManName?.trim()
+                if (servicePayment) {
+                    if (!name.isNullOrEmpty()) {
+                        "Repartidor en camino" to "El repartidor $name va en camino a pagar tus servicios."
+                    } else {
+                        "Repartidor asignado" to "El repartidor va en camino a pagar tus servicios."
+                    }
+                } else if (!name.isNullOrEmpty()) {
+                    "Repartidor en camino" to "$name va en camino a recoger tu pedido en la tienda."
+                } else {
+                    "Repartidor asignado" to "Un repartidor va en camino a recoger tu pedido en la tienda."
+                }
+            }
+            "ON_DELIVERY" -> if (servicePayment) {
+                "En camino" to "El repartidor va en camino a pagar tus servicios."
+            } else {
+                "En camino" to "Tu pedido va rumbo a tu domicilio."
+            }
+            "DELIVERED" -> if (servicePayment) {
+                "Entregado" to "Tu pago de servicios fue entregado."
+            } else {
+                "Entregado" to "Tu pedido fue entregado."
+            }
+            "CANCELLED" -> "Pedido cancelado" to "Tu pedido fue cancelado."
+            else -> "Actualización de pedido" to (status?.let { "Estado: $it" } ?: "Hay novedades en tu pedido.")
         }
-        "ON_DELIVERY" -> "En camino" to "Tu pedido va rumbo a tu domicilio."
-        "DELIVERED" -> "Entregado" to "Tu pedido fue entregado."
-        "CANCELLED" -> "Pedido cancelado" to "Tu pedido fue cancelado."
-        else -> "Actualización de pedido" to (status?.let { "Estado: $it" } ?: "Hay novedades en tu pedido.")
     }
 
     fun titleAndBodyForCourierArrived(deliveryManName: String? = null): Pair<String, String> {

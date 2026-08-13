@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.location.DeliveryServiceArea
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.data.location.FusedLocationProvider
+import com.ares.ewe.domain.model.AddressDuplicate
 import com.ares.ewe.domain.repository.PlacesAutocompleteRepository
 import com.ares.ewe.domain.repository.UserAddressRepository
 import com.google.android.gms.maps.model.LatLng
@@ -31,7 +32,8 @@ data class MapLocationUiState(
     val editableAddress: String = "",
     val isReverseGeocoding: Boolean = false,
     val addressSaved: Boolean = false,
-    val showDescriptionDialog: Boolean = false
+    val showDescriptionDialog: Boolean = false,
+    val isSavingAddress: Boolean = false
 )
 
 @HiltViewModel
@@ -133,7 +135,7 @@ class MapLocationViewModel @Inject constructor(
     }
 
     fun onDismissDescriptionDialog() {
-        _uiState.update { it.copy(showDescriptionDialog = false) }
+        _uiState.update { it.copy(showDescriptionDialog = false, errorMessage = null, isSavingAddress = false) }
     }
 
     fun saveAddressWithDescription(label: String, description: String?, latLng: LatLng, addressText: String) {
@@ -142,6 +144,7 @@ class MapLocationViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         showDescriptionDialog = false,
+                        isSavingAddress = false,
                         errorMessage = if (deliveryServiceArea.isConfigBlockingSaves()) {
                             deliveryServiceArea.denialMessage()
                         } else {
@@ -151,11 +154,22 @@ class MapLocationViewModel @Inject constructor(
                 }
                 return@launch
             }
-            _uiState.update { it.copy(showDescriptionDialog = false) }
+            _uiState.update { it.copy(isSavingAddress = true, errorMessage = null) }
             val labelStr = label.ifBlank { "Casa" }
             val descStr = description?.trim()?.takeIf { it.isNotBlank() }
             val finalAddress = if (addressText.isNotBlank()) addressText else {
                 placesRepository.getAddressFromLocation(latLng.latitude, latLng.longitude).getOrNull() ?: ""
+            }
+            val existing = userAddressRepository.getAddresses().getOrElse { emptyList() }
+            if (AddressDuplicate.isDuplicate(existing, finalAddress, latLng.latitude, latLng.longitude)) {
+                _uiState.update {
+                    it.copy(
+                        isSavingAddress = false,
+                        showDescriptionDialog = true,
+                        errorMessage = AddressDuplicate.MESSAGE
+                    )
+                }
+                return@launch
             }
             userAddressRepository.createAddress(
                 label = labelStr,
@@ -166,11 +180,22 @@ class MapLocationViewModel @Inject constructor(
                 isDefault = true
             )
                 .onSuccess {
-                    _uiState.update { it.copy(addressSaved = true) }
+                    _uiState.update {
+                        it.copy(
+                            addressSaved = true,
+                            isSavingAddress = false,
+                            showDescriptionDialog = false,
+                            errorMessage = null
+                        )
+                    }
                 }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(errorMessage = e.toUserFacingMessage())
+                        it.copy(
+                            isSavingAddress = false,
+                            showDescriptionDialog = true,
+                            errorMessage = e.toUserFacingMessage()
+                        )
                     }
                 }
         }

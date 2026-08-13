@@ -18,6 +18,15 @@ interface CartRepository {
         pickupLongitude: Double? = null,
         shopId: String? = null,
     )
+    fun addServiceItem(
+        serviceId: String,
+        serviceName: String,
+        serviceNumber: String,
+        amount: Double,
+        imageUrl: String? = null,
+        pickupLatitude: Double? = null,
+        pickupLongitude: Double? = null,
+    )
     fun removeItem(productId: String)
     fun updateQuantity(productId: String, quantity: Int)
     fun clear()

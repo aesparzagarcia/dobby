@@ -779,7 +779,7 @@ private fun trackingStatusTitle(tracking: OrderTracking): String {
         val name = tracking.deliveryMan?.name?.trim().orEmpty()
         return if (name.isNotEmpty()) "$name está afuera" else "Repartidor afuera"
     }
-    return statusLabel(tracking.status)
+    return statusLabel(tracking.status, tracking.isServicePayment)
 }
 
 private fun trackingStatusSubtitle(tracking: OrderTracking): String {
@@ -790,20 +790,44 @@ private fun trackingStatusSubtitle(tracking: OrderTracking): String {
             "Tu pedido te está esperando en la puerta"
         }
     }
+    val service = tracking.isServicePayment
     return when (tracking.status.uppercase()) {
-        "PENDING" -> "Esperando confirmación de la tienda"
-        "CONFIRMED" -> "Gracias por tu compra"
+        "PENDING" -> if (service) "Procesando tu pago de servicios" else "Esperando confirmación de la tienda"
+        "CONFIRMED" -> if (service) "Tu solicitud fue confirmada" else "Gracias por tu compra"
         "PREPARING" -> tracking.estimatedPreparationMinutes?.let { mins ->
             "Tiempo estimado de preparación: $mins min"
         } ?: "Tu pedido se está preparando"
-        "READY_FOR_PICKUP" -> "Listo para que el repartidor lo recoja"
-        "ASSIGNED" -> tracking.estimatedDeliveryMinutes?.let { mins ->
-            "Llegada estimada al recoger: ~$mins min"
-        } ?: "Un repartidor irá por tu pedido pronto"
-        "ON_DELIVERY" -> tracking.estimatedDeliveryMinutes?.let { mins ->
-            "Llegada estimada: ~$mins min"
-        } ?: "Tu pedido va en camino a tu domicilio"
-        "DELIVERED" -> "¡Buen provecho!"
+        "READY_FOR_PICKUP" -> if (service) {
+            "Estamos buscando un repartidor para pagar tus servicios"
+        } else {
+            "Listo para que el repartidor lo recoja"
+        }
+        "ASSIGNED" -> if (service) {
+            tracking.estimatedDeliveryMinutes?.let { mins ->
+                "Llegada estimada al punto de pago: ~$mins min"
+            } ?: run {
+                val name = tracking.deliveryMan?.name?.trim().orEmpty()
+                if (name.isNotEmpty()) {
+                    "El repartidor $name va en camino a pagar tus servicios"
+                } else {
+                    "El repartidor va en camino a pagar tus servicios"
+                }
+            }
+        } else {
+            tracking.estimatedDeliveryMinutes?.let { mins ->
+                "Llegada estimada al recoger: ~$mins min"
+            } ?: "Un repartidor irá por tu pedido pronto"
+        }
+        "ON_DELIVERY" -> if (service) {
+            tracking.estimatedDeliveryMinutes?.let { mins ->
+                "Llegada estimada: ~$mins min"
+            } ?: "Tus servicios ya fueron pagados y van rumbo a tu domicilio"
+        } else {
+            tracking.estimatedDeliveryMinutes?.let { mins ->
+                "Llegada estimada: ~$mins min"
+            } ?: "Tu pedido va en camino a tu domicilio"
+        }
+        "DELIVERED" -> if (service) "Tu pago de servicios fue entregado" else "¡Buen provecho!"
         "CANCELLED" -> "Este pedido fue cancelado"
         else -> ""
     }
@@ -817,11 +841,11 @@ private fun statusCardIcon(status: String) = when (status.uppercase()) {
     else -> Icons.Default.ShoppingBag
 }
 
-private fun statusLabel(status: String): String = when (status.uppercase()) {
+private fun statusLabel(status: String, servicePayment: Boolean = false): String = when (status.uppercase()) {
     "PENDING" -> "Pendiente"
     "CONFIRMED" -> "Confirmado"
     "PREPARING" -> "En preparación"
-    "READY_FOR_PICKUP" -> "Listo para recoger"
+    "READY_FOR_PICKUP" -> if (servicePayment) "Buscando repartidor" else "Listo para recoger"
     "ASSIGNED" -> "Asignado a repartidor"
     "ON_DELIVERY" -> "En camino"
     "DELIVERED" -> "Entregado"

@@ -182,6 +182,9 @@ dependencies {
     // Misma lógica punto-en-polígono que el ecosistema Google Maps (evita desajustes con LatLng).
     implementation("com.google.maps.android:android-maps-utils:3.10.0")
 
+    // Escáner de códigos de barras (pago de servicios)
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+
     // Firebase (FCM, Auth, Firestore) — use BOM only; do not add a second firebase-auth version.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)

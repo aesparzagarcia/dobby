@@ -15,7 +15,14 @@ data class CartItem(
     val pickupLatitude: Double? = null,
     val pickupLongitude: Double? = null,
     val shopId: String? = null,
+    /** PRODUCT (tienda) o SERVICE (pago de servicio). */
+    val lineKind: String = "PRODUCT",
+    val serviceId: String? = null,
+    val serviceNumber: String? = null,
 ) {
+    val isServicePayment: Boolean
+        get() = lineKind.equals("SERVICE", ignoreCase = true)
+
     private val discountPercent: Int get() = discount.coerceIn(0, 100)
 
     /** Coincide con API: `has_promotion` + `discount` > 0. */

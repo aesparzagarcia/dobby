@@ -43,8 +43,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -78,6 +76,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.core.location.DeliveryServiceArea
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.core.theme.DobbyPureScale
+import com.ares.ewe.domain.model.toAddressWithColonyOnly
+import com.ares.ewe.domain.model.withEditedStreetAndColony
 import com.ares.ewe.presentation.viewmodel.main.home.MapLocationViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -107,7 +107,7 @@ private data class AddressLabelOption(
 private val ADDRESS_LABEL_GRID = listOf(
     listOf(
         AddressLabelOption("Casa", Icons.Default.Home),
-        AddressLabelOption("Novia", Icons.Default.Favorite),
+        AddressLabelOption("Amor", Icons.Default.Favorite),
         AddressLabelOption("Apartamento", Icons.Default.Apartment),
     ),
     listOf(
@@ -209,7 +209,7 @@ fun MapLocationScreen(
     // Address label + description bottom sheet before saving
     if (uiState.showDescriptionDialog) {
         var addressText by remember(uiState.showDescriptionDialog) {
-            mutableStateOf(uiState.editableAddress)
+            mutableStateOf(uiState.editableAddress.toAddressWithColonyOnly())
         }
         var descriptionText by remember { mutableStateOf("") }
         var selectedLabel by remember { mutableStateOf("Casa") }
@@ -227,7 +227,8 @@ fun MapLocationScreen(
                 onDescriptionChange = { descriptionText = it },
                 selectedLabel = selectedLabel,
                 onLabelSelected = { selectedLabel = it },
-                isSaving = false,
+                isSaving = uiState.isSavingAddress,
+                errorMessage = uiState.errorMessage,
                 onCancel = viewModel::onDismissDescriptionDialog,
                 onSave = {
                     val center = cameraPositionState.position.target
@@ -235,7 +236,7 @@ fun MapLocationScreen(
                         label = selectedLabel,
                         description = descriptionText.ifBlank { null },
                         latLng = center,
-                        addressText = addressText.trim(),
+                        addressText = uiState.editableAddress.withEditedStreetAndColony(addressText),
                     )
                 },
             )
@@ -417,16 +418,18 @@ fun MapLocationScreen(
                 )
             }
 
-            uiState.errorMessage?.let { message ->
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 24.dp)
-                        .padding(bottom = 72.dp)
-                )
+            if (!uiState.showDescriptionDialog) {
+                uiState.errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = 24.dp)
+                            .padding(bottom = 72.dp)
+                    )
+                }
             }
         }
     }
@@ -441,6 +444,7 @@ private fun SaveAddressBottomSheetContent(
     selectedLabel: String,
     onLabelSelected: (String) -> Unit,
     isSaving: Boolean,
+    errorMessage: String? = null,
     onCancel: () -> Unit,
     onSave: () -> Unit,
 ) {
@@ -472,7 +476,7 @@ private fun SaveAddressBottomSheetContent(
                 .clip(RoundedCornerShape(12.dp))
                 .border(1.dp, SaveSheetFieldBorder, RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .padding(horizontal = 14.dp, vertical = 4.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.Top,
         ) {
             Icon(
@@ -480,24 +484,29 @@ private fun SaveAddressBottomSheetContent(
                 contentDescription = null,
                 tint = SaveSheetAccent,
                 modifier = Modifier
-                    .padding(top = 16.dp)
+                    .padding(top = 2.dp)
                     .size(22.dp),
             )
             Spacer(modifier = Modifier.width(10.dp))
-            OutlinedTextField(
+            BasicTextField(
                 value = addressText,
                 onValueChange = onAddressChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Calle, número, colonia…", color = SaveSheetSubtitle) },
-                minLines = 2,
-                maxLines = 4,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = SaveSheetAccent),
+                minLines = 1,
+                maxLines = 2,
+                decorationBox = { inner ->
+                    Box {
+                        if (addressText.isBlank()) {
+                            Text(
+                                text = "Calle, número, colonia",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = SaveSheetSubtitle,
+                            )
+                        }
+                        inner()
+                    }
+                },
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -515,7 +524,7 @@ private fun SaveAddressBottomSheetContent(
                 .clip(RoundedCornerShape(12.dp))
                 .border(1.dp, SaveSheetFieldBorder, RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .padding(horizontal = 14.dp, vertical = 4.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -525,19 +534,24 @@ private fun SaveAddressBottomSheetContent(
                 modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.width(10.dp))
-            OutlinedTextField(
+            BasicTextField(
                 value = descriptionText,
                 onValueChange = onDescriptionChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("ej. Casa verde, piso 2, int 15", color = SaveSheetSubtitle) },
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = SaveSheetAccent),
+                decorationBox = { inner ->
+                    Box {
+                        if (descriptionText.isBlank()) {
+                            Text(
+                                text = "ej. Casa verde, piso 2, int 15",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = SaveSheetSubtitle,
+                            )
+                        }
+                        inner()
+                    }
+                },
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -569,6 +583,15 @@ private fun SaveAddressBottomSheetContent(
                     }
                 }
             }
+        }
+
+        if (!errorMessage.isNullOrBlank()) {
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
         }
 
         Row(

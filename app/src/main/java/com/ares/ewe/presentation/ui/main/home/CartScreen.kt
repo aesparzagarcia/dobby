@@ -156,6 +156,7 @@ fun CartScreen(
                         pricing = uiState.pricing,
                         grandTotal = uiState.grandTotal,
                         hasValidDeliveryAddress = uiState.hasValidDeliveryAddress,
+                        isServicePayment = uiState.items.isNotEmpty() && uiState.items.all { it.isServicePayment },
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     if (uiState.isLoggedIn) {
@@ -198,6 +199,7 @@ private fun CartPricingFooter(
     pricing: OrderPricing?,
     grandTotal: Double,
     hasValidDeliveryAddress: Boolean,
+    isServicePayment: Boolean = false,
 ) {
     if (pricing == null) {
         Row(
@@ -218,7 +220,11 @@ private fun CartPricingFooter(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = if (hasValidDeliveryAddress) {
-                "No se pudo calcular el envío. La tienda no tiene ubicación válida configurada."
+                if (isServicePayment) {
+                    "No se pudo calcular el envío. El servicio no tiene ubicación válida configurada."
+                } else {
+                    "No se pudo calcular el envío. La tienda no tiene ubicación válida configurada."
+                }
             } else {
                 "El costo de envío se calculará al tener una dirección de entrega válida."
             },
@@ -227,7 +233,10 @@ private fun CartPricingFooter(
         )
         Spacer(modifier = Modifier.height(8.dp))
     } else {
-        PricingLine(label = "Subtotal productos", amount = pricing.productsSubtotal)
+        PricingLine(
+            label = if (isServicePayment) "Subtotal servicios" else "Subtotal productos",
+            amount = pricing.productsSubtotal,
+        )
         Spacer(modifier = Modifier.height(4.dp))
         PricingLine(label = "Tarifa de servicio", amount = pricing.serviceFee)
         Spacer(modifier = Modifier.height(4.dp))
@@ -413,12 +422,31 @@ private fun CartItemRow(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = "${item.quantity} × $${String.format(Locale.US, "%.2f", item.chargedUnitPrice)} = $${String.format(Locale.US, "%.2f", item.lineTotal)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            if (item.isServicePayment) {
+                val number = item.serviceNumber?.takeIf { it.isNotBlank() }
+                    ?: item.description?.removePrefix("Nº ")?.trim().orEmpty()
+                if (number.isNotEmpty()) {
+                    Text(
+                        text = "Nº $number",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                Text(
+                    text = "$${String.format(Locale.US, "%.2f", item.lineTotal)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else {
+                Text(
+                    text = "${item.quantity} × $${String.format(Locale.US, "%.2f", item.chargedUnitPrice)} = $${String.format(Locale.US, "%.2f", item.lineTotal)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
             if (item.hasDiscount) {
                 val d = item.discount.coerceIn(0, 100)
                 Row(

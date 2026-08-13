@@ -30,4 +30,10 @@ interface CartDao {
 
     @Query("DELETE FROM cart")
     suspend fun deleteAll()
+
+    @Query("DELETE FROM cart WHERE lineKind = :lineKind")
+    suspend fun deleteByLineKind(lineKind: String)
+
+    @Query("SELECT * FROM cart WHERE lineKind = :lineKind")
+    suspend fun getByLineKind(lineKind: String): List<CartInfo>
 }
