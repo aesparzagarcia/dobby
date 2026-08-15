@@ -39,11 +39,27 @@ class ConsumerOrderRealtimeListener @Inject constructor(
                 .document(userId)
                 .collection("order_signals")
                 .addSnapshotListener { snapshot, _ ->
-                    snapshot?.documentChanges?.forEach { change ->
-                        orderRealtimeBus.notifyOrderChanged(change.document.id)
-                    } ?: orderRealtimeBus.notifyOrderChanged()
+                    // Any snapshot (incl. reconnect) should wake UI — not only documentChanges.
+                    if (snapshot == null) {
+                        orderRealtimeBus.notifyOrderChanged()
+                        return@addSnapshotListener
+                    }
+                    val changes = snapshot.documentChanges
+                    if (changes.isEmpty()) {
+                        orderRealtimeBus.notifyOrderChanged()
+                    } else {
+                        changes.forEach { change ->
+                            orderRealtimeBus.notifyOrderChanged(change.document.id)
+                        }
+                    }
                 }
         }
+    }
+
+    /** Force re-attach after background (parity with DobbyShop resume). */
+    fun resume() {
+        stop()
+        start()
     }
 
     fun stop() {

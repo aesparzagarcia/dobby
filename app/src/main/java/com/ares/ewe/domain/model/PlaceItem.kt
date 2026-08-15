@@ -7,4 +7,7 @@ data class PlaceItem(
     val typeLabel: String,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** RESTAURANT | SHOP | CAR_WASH | … — null for service places. */
+    val shopType: String? = null,
+    val isService: Boolean = false,
 )

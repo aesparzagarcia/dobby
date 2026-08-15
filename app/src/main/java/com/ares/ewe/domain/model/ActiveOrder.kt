@@ -15,11 +15,15 @@ data class ActiveOrder(
     val total: Double = 0.0,
     val deliveryAddress: String? = null,
     val createdAt: String? = null,
+    val shopType: String? = null,
     val productLines: List<ActiveOrderProductLine> = emptyList(),
 ) {
     /** Step index 0–6 for the 7-stage home progress (6 = delivered). */
     val stepIndex: Int
         get() = orderStatusToTrackingStep(status)
+
+    val isCarWash: Boolean
+        get() = shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
 
     /** Etiqueta para listas con varios pedidos activos. */
     val productSummary: String

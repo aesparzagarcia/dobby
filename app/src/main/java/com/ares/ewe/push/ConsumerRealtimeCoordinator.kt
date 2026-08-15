@@ -27,6 +27,18 @@ class ConsumerRealtimeCoordinator @Inject constructor(
         }
     }
 
+    /**
+     * After background, re-attach Firestore and wake UI collectors.
+     * Needed because system tray FCM often skips [onMessageReceived], so the bus never fires.
+     */
+    fun resumeAfterBackground() {
+        scope.launch {
+            if (!sessionManager.isLoggedIn.first()) return@launch
+            consumerFirebaseAuth.signInWithBackendToken()
+            orderRealtimeListener.resume()
+        }
+    }
+
     fun onLogout() {
         orderRealtimeListener.stop()
         consumerFirebaseAuth.signOut()

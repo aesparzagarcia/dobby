@@ -28,4 +28,15 @@ interface PlacesRepository {
 
     /** Tiendas con `lat`/`lng` desde `GET app/places` (para ETA en carrito por `shop_id`). */
     suspend fun getShopCoordinatesByShopId(): Map<String, Pair<Double, Double>>
+
+    /**
+     * Coords + tipos de tienda desde `GET app/places` (carrito: ETA y envío gratis CAR_WASH).
+     */
+    suspend fun getShopDeliveryLookup(): ShopDeliveryLookup
 }
+
+/** Resultado de [PlacesRepository.getShopDeliveryLookup]. */
+data class ShopDeliveryLookup(
+    val coordinatesByShopId: Map<String, Pair<Double, Double>>,
+    val typeByShopId: Map<String, String>,
+)

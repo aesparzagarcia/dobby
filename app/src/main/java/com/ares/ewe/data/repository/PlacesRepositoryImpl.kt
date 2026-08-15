@@ -11,6 +11,7 @@ import com.ares.ewe.domain.model.ServiceDetail
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.model.ShopProductsPage
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.domain.repository.ShopDeliveryLookup
 import com.ares.ewe.core.pricing.GeoDistance
 import com.ares.ewe.core.util.serviceCategoryLabelEs
 import com.ares.ewe.core.util.shopTypeLabelEs
@@ -42,6 +43,8 @@ class PlacesRepositoryImpl @Inject constructor(
                 },
                 latitude = shop.lat,
                 longitude = shop.lng,
+                shopType = shop.type,
+                isService = false,
             )
         }
         val services = response.services.map { service ->
@@ -52,18 +55,34 @@ class PlacesRepositoryImpl @Inject constructor(
                 typeLabel = "Service",
                 latitude = null,
                 longitude = null,
+                shopType = null,
+                isService = true,
             )
         }
         return shops + services
     }
 
     override suspend fun getShopCoordinatesByShopId(): Map<String, Pair<Double, Double>> =
-        getPlaces().mapNotNull { place ->
-            val lat = place.latitude ?: return@mapNotNull null
-            val lng = place.longitude ?: return@mapNotNull null
-            if (!GeoDistance.isUsableWgs84Point(lat, lng)) return@mapNotNull null
-            place.id to Pair(lat, lng)
-        }.toMap()
+        getShopDeliveryLookup().coordinatesByShopId
+
+    override suspend fun getShopDeliveryLookup(): ShopDeliveryLookup {
+        val places = getPlaces()
+        val coordinates = linkedMapOf<String, Pair<Double, Double>>()
+        val types = linkedMapOf<String, String>()
+        for (place in places) {
+            if (!place.isService) {
+                place.shopType?.trim()?.takeIf { it.isNotEmpty() }?.let { types[place.id] = it }
+            }
+            val lat = place.latitude ?: continue
+            val lng = place.longitude ?: continue
+            if (!GeoDistance.isUsableWgs84Point(lat, lng)) continue
+            coordinates[place.id] = Pair(lat, lng)
+        }
+        return ShopDeliveryLookup(
+            coordinatesByShopId = coordinates,
+            typeByShopId = types,
+        )
+    }
 
     private fun mapFeaturedPlace(p: com.ares.ewe.data.remote.model.FeaturedPlaceDto): FeaturedPlace {
         val isService = p.kind == "service"

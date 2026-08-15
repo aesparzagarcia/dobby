@@ -38,6 +38,9 @@ data class ShopDetailUiState(
     val errorMessage: String? = null,
     val showCarWashSingleProductDialog: Boolean = false,
 ) {
+    val isCarWash: Boolean
+        get() = shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
+
     val showShopClosedBanner: Boolean
         get() = !isShopAvailableForOrders
 
@@ -47,7 +50,7 @@ data class ShopDetailUiState(
         get() {
             val query = searchQuery.trim()
             return products.filter { product ->
-                ProductCategory.matchesFilter(product.category, selectedCategoryId) &&
+                (isCarWash || ProductCategory.matchesFilter(product.category, selectedCategoryId)) &&
                     (query.isBlank() || product.name.contains(query, ignoreCase = true))
             }
         }
@@ -88,6 +91,13 @@ class ShopDetailViewModel @Inject constructor(
                         shopName = shopName,
                         shopType = page.shopType,
                         products = page.products,
+                        selectedCategoryId = if (
+                            page.shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
+                        ) {
+                            null
+                        } else {
+                            it.selectedCategoryId
+                        },
                         isShopAvailableForOrders = isShopAvailableForOrders(
                             shopStatus = page.shopStatus,
                             openingHour = page.openingHour,

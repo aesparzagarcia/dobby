@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.domain.model.ActiveOrder
+import kotlin.math.roundToInt
 
 /** Escala pura aplicada al tracking en home. */
 private object OrderTrackingSectionPalette {
@@ -62,12 +65,12 @@ private data class TrackingStage(
     val icon: ImageVector,
 )
 
-private val TRACKING_STAGES = listOf(
+private fun trackingStages(isCarWash: Boolean): List<TrackingStage> = listOf(
     TrackingStage("Pendiente", Icons.Default.Check),
     TrackingStage("Confirmado", Icons.Default.ShoppingBag),
-    TrackingStage("En preparación", Icons.Default.Inventory2),
-    TrackingStage("Listo para recoger", Icons.Default.Store),
-    TrackingStage("Asignado", Icons.Default.Person),
+    TrackingStage(if (isCarWash) "Lavando" else "En preparación", Icons.Default.Inventory2),
+    TrackingStage(if (isCarWash) "Secado y Aspirado" else "Listo para recoger", Icons.Default.Store),
+    TrackingStage(if (isCarWash) "Detallado" else "Asignado", Icons.Default.Person),
     TrackingStage("En camino", Icons.Default.TwoWheeler),
     TrackingStage("Entregado", Icons.Default.Check),
 )
@@ -95,9 +98,25 @@ fun OrderTrackingSection(
     headerTitle: String = "Tu pedido",
 ) {
     val stepIndex = activeOrder.stepIndex.coerceIn(0, TRACKING_LAST_STEP)
+    val stages = trackingStages(activeOrder.isCarWash)
     val scroll = rememberScrollState()
+    val density = LocalDensity.current
     val primary = MaterialTheme.colorScheme.primary
     val currentHalo = primary.copy(alpha = 0.22f)
+
+    // Keep the current stage visible when status moves past the first few steps (5–7).
+    LaunchedEffect(stepIndex, scroll.maxValue) {
+        if (scroll.maxValue <= 0) return@LaunchedEffect
+        val pitchPx = with(density) { (StageColumnWidth + ConnectorWidth).toPx() }
+        val stageCenterPx = pitchPx * stepIndex + with(density) { StageColumnWidth.toPx() } / 2f
+        // Prefer centering the current step; fall back if viewport size is not ready yet.
+        val viewport = scroll.viewportSize.takeIf { it > 0 }?.toFloat()
+            ?: with(density) { 280.dp.toPx() }
+        val target = (stageCenterPx - viewport / 2f)
+            .roundToInt()
+            .coerceIn(0, scroll.maxValue)
+        scroll.animateScrollTo(target)
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -150,7 +169,7 @@ fun OrderTrackingSection(
                     .horizontalScroll(scroll),
                 verticalAlignment = Alignment.Top,
             ) {
-                TRACKING_STAGES.forEachIndexed { index, stage ->
+                stages.forEachIndexed { index, stage ->
                     if (index > 0) {
                         OrderTrackingConnector(
                             primary = primary,

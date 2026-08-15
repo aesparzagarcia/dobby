@@ -23,6 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import com.ares.ewe.R
 import com.ares.ewe.core.theme.DobbyTheme
 import com.ares.ewe.presentation.ui.navigation.DobbyNavigation
+import com.ares.ewe.push.ConsumerOrderRealtimeBus
 import com.ares.ewe.push.ConsumerRealtimeCoordinator
 import com.ares.ewe.push.OrderStatusNotificationHelper
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,9 +36,15 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var consumerRealtimeCoordinator: ConsumerRealtimeCoordinator
 
+    @Inject
+    lateinit var orderRealtimeBus: ConsumerOrderRealtimeBus
+
     private var pendingOrderTrackingId by mutableStateOf<String?>(null)
     private var pendingProductId by mutableStateOf<String?>(null)
     private var pendingProductShopId by mutableStateOf<String?>(null)
+
+    /** True tras [onStop] (app en background u otra activity encima). */
+    private var wasStopped = false
 
     private val notifPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -75,6 +82,21 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         OrderStatusNotificationHelper.clearAllOrderNotifications(this)
+    }
+
+    override fun onStop() {
+        wasStopped = true
+        super.onStop()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (wasStopped) {
+            wasStopped = false
+            // Background FCM often never hits the realtime bus; force refresh on return.
+            consumerRealtimeCoordinator.resumeAfterBackground()
+            orderRealtimeBus.notifyOrderChanged()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

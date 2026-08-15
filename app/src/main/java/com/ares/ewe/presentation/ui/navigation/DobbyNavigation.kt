@@ -476,7 +476,10 @@ fun DobbyNavigation(
                 onBack = { navController.popBackStack() },
                 onCheckoutComplete = {
                     homeTabViewModel.refreshActiveOrderAfterCheckout()
-                    navController.popBackStack(DobbyScreens.Home, inclusive = false)
+                    val wentHome = navController.popBackStack(DobbyScreens.Home, inclusive = false)
+                    if (!wentHome) {
+                        navController.popBackStack()
+                    }
                 },
                 onRequireLogin = {
                     navController.navigate(DobbyScreens.Phone)

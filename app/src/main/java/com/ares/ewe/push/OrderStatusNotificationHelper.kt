@@ -164,35 +164,47 @@ object OrderStatusNotificationHelper {
         deliveryManName: String? = null,
         estimatedPreparationMinutes: Int? = null,
         orderType: String? = null,
+        shopType: String? = null,
     ): Pair<String, String> {
         val servicePayment = orderType.equals("SERVICE_PAYMENT", ignoreCase = true)
+        val carWash = shopType.equals("CAR_WASH", ignoreCase = true)
         return when (status) {
             "PENDING" -> "Pedido recibido" to "Tu pedido está pendiente de confirmación."
             "CONFIRMED" -> "Pedido confirmado" to "La tienda aceptó tu pedido."
             "PREPARING" -> {
-                var body = "Tu pedido se está preparando."
+                var body = if (carWash) {
+                    "Tu vehículo se está lavando."
+                } else {
+                    "Tu pedido se está preparando."
+                }
                 estimatedPreparationMinutes?.takeIf { it > 0 }?.let { mins ->
                     body += " Tiempo estimado: ${formatPrepMinutes(mins)}."
                 }
-                "En preparación" to body
+                (if (carWash) "Lavando" else "En preparación") to body
             }
-            "READY_FOR_PICKUP" -> if (servicePayment) {
-                "Buscando repartidor" to "Estamos buscando un repartidor para pagar tus servicios."
-            } else {
-                "Listo para envío" to "Tu pedido está listo para salir."
+            "READY_FOR_PICKUP" -> when {
+                carWash ->
+                    "Secado y Aspirado" to "Tu vehículo ha pasado al área de secado y aspirado."
+                servicePayment ->
+                    "Buscando repartidor" to "Estamos buscando un repartidor para pagar tus servicios."
+                else ->
+                    "Listo para envío" to "Tu pedido está listo para salir."
             }
             "ASSIGNED" -> {
                 val name = deliveryManName?.trim()
-                if (servicePayment) {
-                    if (!name.isNullOrEmpty()) {
-                        "Repartidor en camino" to "El repartidor $name va en camino a pagar tus servicios."
-                    } else {
-                        "Repartidor asignado" to "El repartidor va en camino a pagar tus servicios."
-                    }
-                } else if (!name.isNullOrEmpty()) {
-                    "Repartidor en camino" to "$name va en camino a recoger tu pedido en la tienda."
-                } else {
-                    "Repartidor asignado" to "Un repartidor va en camino a recoger tu pedido en la tienda."
+                when {
+                    carWash ->
+                        "Detallado" to "Tu vehículo está en el área de detallado."
+                    servicePayment ->
+                        if (!name.isNullOrEmpty()) {
+                            "Repartidor en camino" to "El repartidor $name va en camino a pagar tus servicios."
+                        } else {
+                            "Repartidor asignado" to "El repartidor va en camino a pagar tus servicios."
+                        }
+                    !name.isNullOrEmpty() ->
+                        "Repartidor en camino" to "$name va en camino a recoger tu pedido en la tienda."
+                    else ->
+                        "Repartidor asignado" to "Un repartidor va en camino a recoger tu pedido en la tienda."
                 }
             }
             "ON_DELIVERY" -> if (servicePayment) {

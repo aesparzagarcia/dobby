@@ -84,6 +84,16 @@ fun HomeTabScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var wasStopped by remember { mutableStateOf(false) }
     DisposableEffect(lifecycleOwner, viewModel) {
+        // Re-entering Home tab (still resumed): one silent refresh if we already have data.
+        val hasCatalog =
+            viewModel.uiState.value.featuredPlaces.isNotEmpty() ||
+                viewModel.uiState.value.bestSellerProducts.isNotEmpty()
+        if (
+            lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
+            hasCatalog
+        ) {
+            viewModel.refreshOnForeground()
+        }
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_STOP -> wasStopped = true

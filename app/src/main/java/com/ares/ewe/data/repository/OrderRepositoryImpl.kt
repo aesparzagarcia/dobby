@@ -57,6 +57,7 @@ class OrderRepositoryImpl @Inject constructor(
                     total = dto.total,
                     deliveryAddress = dto.deliveryAddress,
                     createdAt = dto.createdAt,
+                    shopType = dto.shopType,
                     productLines = dto.items.orEmpty().map { item ->
                         ActiveOrderProductLine(
                             name = item.productName,
@@ -78,6 +79,7 @@ class OrderRepositoryImpl @Inject constructor(
                     id = dto.id,
                     status = dto.status,
                     orderType = dto.orderType?.takeIf { it.isNotBlank() } ?: "SHOP",
+                    shopType = dto.shopType,
                     total = dto.total,
                     serviceFee = dto.serviceFee,
                     deliveryFee = dto.deliveryFee,

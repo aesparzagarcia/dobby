@@ -17,6 +17,7 @@ import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.DeliveryPricingConfigRepository
 import com.ares.ewe.domain.repository.OrderRepository
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.domain.repository.ShopDeliveryLookup
 import com.ares.ewe.domain.repository.UserAddressRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,19 +86,19 @@ class CartViewModel @Inject constructor(
     )
     private val deliveryState: StateFlow<CartUiState> = _deliveryState.asStateFlow()
 
-    private val shopCoordsByShopId: StateFlow<Map<String, Pair<Double, Double>>> = cartRepository.items
+    private val shopDeliveryLookup: StateFlow<ShopDeliveryLookup> = cartRepository.items
         .map { items -> items.mapNotNull { it.shopId }.toSet() }
         .distinctUntilChanged()
         .flatMapLatest { shopIds ->
             flow {
                 if (shopIds.isEmpty()) {
-                    emit(emptyMap())
+                    emit(ShopDeliveryLookup(emptyMap(), emptyMap()))
                 } else {
                     emit(
                         try {
-                            placesRepository.getShopCoordinatesByShopId()
+                            placesRepository.getShopDeliveryLookup()
                         } catch (_: Exception) {
-                            emptyMap()
+                            ShopDeliveryLookup(emptyMap(), emptyMap())
                         }
                     )
                 }
@@ -106,7 +107,7 @@ class CartViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyMap()
+            initialValue = ShopDeliveryLookup(emptyMap(), emptyMap())
         )
 
     val uiState: StateFlow<CartUiState> = combine(
@@ -117,10 +118,12 @@ class CartViewModel @Inject constructor(
             )
         },
         deliveryState,
-        shopCoordsByShopId,
+        shopDeliveryLookup,
         deliveryPricingConfigRepository.settings,
         sessionManager.isLoggedIn,
-    ) { cart, delivery, shopCoords, pricingSettings, isLoggedIn ->
+    ) { cart, delivery, shopLookup, pricingSettings, isLoggedIn ->
+        val shopCoords = shopLookup.coordinatesByShopId
+        val shopTypes = shopLookup.typeByShopId
         val eta = DeliveryEtaEstimator.estimateLabel(
             userLat = delivery.userLatitude,
             userLng = delivery.userLongitude,
@@ -134,19 +137,35 @@ class CartViewModel @Inject constructor(
             items = cart.items,
             shopCoordsByShopId = shopCoords,
         )
-        val orderPricing = distanceKm?.let { km ->
-            val deliveryBreakdown = DeliveryPricingCalculator.calculate(
-                DeliveryPricingInput(
-                    distanceKm = km,
-                    demandMultiplier = pricingSettings.defaultDemandMultiplier,
-                    isRaining = pricingSettings.defaultIsRaining,
-                ),
-                config = pricingSettings,
-            )
-            OrderPricing(
-                productsSubtotal = productsSubtotal,
-                delivery = deliveryBreakdown,
-            )
+        val productShopIds = cart.items
+            .filter { !it.isServicePayment }
+            .mapNotNull { it.shopId?.trim()?.takeIf { id -> id.isNotEmpty() } }
+            .toSet()
+        val isCarWashCart = productShopIds.isNotEmpty() &&
+            productShopIds.all { id ->
+                shopTypes[id]?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
+            }
+        val orderPricing = when {
+            isCarWashCart && cart.items.isNotEmpty() -> {
+                OrderPricing(
+                    productsSubtotal = productsSubtotal,
+                    delivery = DeliveryPricingCalculator.waived(distanceKm ?: 0.0),
+                )
+            }
+            else -> distanceKm?.let { km ->
+                val deliveryBreakdown = DeliveryPricingCalculator.calculate(
+                    DeliveryPricingInput(
+                        distanceKm = km,
+                        demandMultiplier = pricingSettings.defaultDemandMultiplier,
+                        isRaining = pricingSettings.defaultIsRaining,
+                    ),
+                    config = pricingSettings,
+                )
+                OrderPricing(
+                    productsSubtotal = productsSubtotal,
+                    delivery = deliveryBreakdown,
+                )
+            }
         }
         val grandTotal = orderPricing?.grandTotal ?: productsSubtotal
         val hasValidDeliveryAddress =

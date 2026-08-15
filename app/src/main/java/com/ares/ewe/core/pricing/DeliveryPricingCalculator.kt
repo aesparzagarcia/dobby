@@ -35,4 +35,17 @@ object DeliveryPricingCalculator {
             finalDeliveryFee = finalFee,
         )
     }
+
+    /** Envío sin costo (p. ej. CAR_WASH con repartidor propio). */
+    fun waived(distanceKm: Double = 0.0): DeliveryPricingBreakdown =
+        DeliveryPricingBreakdown(
+            distanceKm = roundMoney(distanceKm.coerceAtLeast(0.0)),
+            baseFee = 0.0,
+            distanceFee = 0.0,
+            zoneFee = 0.0,
+            weatherFee = 0.0,
+            deliverySubtotal = 0.0,
+            dynamicMultiplier = 1.0,
+            finalDeliveryFee = 0.0,
+        )
 }

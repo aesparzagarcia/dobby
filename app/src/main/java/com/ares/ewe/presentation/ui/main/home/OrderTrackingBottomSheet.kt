@@ -68,58 +68,59 @@ private object OrderTrackingSheetPalette {
     val CheckBadgeBackground = Primary.copy(alpha = 0.18f)
 }
 
-/** All sheet layout metrics at 99% of design spec (−1%). */
+/** Slightly compact sheet metrics (≈2% smaller than base). */
 private object OrderTrackingSheetDim {
-    private const val F = 0.99f
+    private const val F = 0.98f
 
     private fun d(v: Number): Dp = (v.toFloat() * F).dp
     private fun s(v: Number): TextUnit = (v.toFloat() * F).sp
 
-    val sectionGap = d(14)
+    val sectionGap = d(10)
     /** Tighter gaps: shop→productos, productos→precios, total→repartidor. */
-    val tightBlockGap = d(6)
-    val productsInnerGap = d(4)
-    val rowGap = d(8)
+    val tightBlockGap = d(5)
+    val productsInnerGap = d(3)
+    val rowGap = d(6)
     /** Tight gap between stacked title + subtitle (status, shop, courier). */
     val textStackGap = d(0)
     /** Subtotal / envío rows. */
-    val pricingRowGap = d(4)
+    val pricingRowGap = d(3)
     val gapXs = d(2)
-    val gapSm = d(4)
-    val gapMd = d(6)
-    val gapLg = d(8)
-    val padH = d(12)
-    val padH14 = d(14)
-    val padV12 = d(12)
-    val padV14 = d(14)
-    val padStart10 = d(10)
-    val radiusSm = d(10)
-    val radiusMd = d(12)
-    val radiusLg = d(14)
-    val iconSm = d(20)
-    val iconMd = d(22)
-    val iconLg = d(24)
-    val tile = d(44)
-    val thumb = d(52)
-    val avatar = d(48)
-    val checkBadge = d(36)
+    val gapSm = d(3)
+    val gapMd = d(5)
+    val gapLg = d(6)
+    val padH = d(10)
+    val padH14 = d(11)
+    val padV12 = d(9)
+    val padV14 = d(10)
+    val padStart10 = d(8)
+    val radiusSm = d(8)
+    val radiusMd = d(10)
+    val radiusLg = d(12)
+    val iconSm = d(16)
+    val iconMd = d(18)
+    val iconLg = d(20)
+    val tile = d(36)
+    val thumb = d(42)
+    val avatar = d(40)
+    val checkBadge = d(28)
     val border = d(1)
 
-    val title = s(20)
-    val sectionLabel = s(11)
-    val sectionLabelTracking = s(0.8)
-    val statusTitle = s(17)
-    val statusSubtitle = s(14)
-    val statusTitleLine = s(19)
-    val statusSubtitleLine = s(16)
-    val body = s(15)
-    val bodySm = s(13)
-    val bodyLine = s(17)
-    val bodySmLine = s(15)
-    val caption = s(12)
-    val price = s(14)
-    val priceLine = s(16)
-    val total = s(17)
+    val title = s(17)
+    val sectionLabel = s(10)
+    val sectionLabelTracking = s(0.6)
+    val statusTitle = s(14)
+    val statusSubtitle = s(12)
+    val statusTitleLine = s(17)
+    val statusSubtitleLine = s(14)
+    val body = s(13)
+    val bodySm = s(11)
+    val bodyLine = s(15)
+    val bodySmLine = s(13)
+    val caption = s(11)
+    val price = s(12)
+    val priceLine = s(14)
+    val total = s(14)
+    val deliveryCode = 36.sp
 }
 
 @Composable
@@ -716,12 +717,12 @@ private fun OrderTrackingDeliveryCodePendingCard() {
             .background(OrderTrackingSheetPalette.StatusBackground, RoundedCornerShape(OrderTrackingSheetDim.radiusLg))
             .padding(horizontal = OrderTrackingSheetDim.padH14, vertical = OrderTrackingSheetDim.padV14),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.gapMd),
     ) {
         CircularProgressIndicator(
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(OrderTrackingSheetDim.iconLg),
             color = OrderTrackingSheetPalette.Primary,
-            strokeWidth = 2.5.dp,
+            strokeWidth = 2.dp,
         )
         Text(
             text = "Tu código de entrega",
@@ -748,7 +749,7 @@ private fun OrderTrackingDeliveryCodeCard(code: String) {
             .background(OrderTrackingSheetPalette.StatusBackground, RoundedCornerShape(OrderTrackingSheetDim.radiusLg))
             .padding(horizontal = OrderTrackingSheetDim.padH14, vertical = OrderTrackingSheetDim.padV14),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.gapMd),
     ) {
         Text(
             text = "Tu código de entrega",
@@ -759,9 +760,9 @@ private fun OrderTrackingDeliveryCodeCard(code: String) {
         )
         Text(
             text = code,
-            fontSize = 36.sp,
+            fontSize = OrderTrackingSheetDim.deliveryCode,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 6.sp,
+            letterSpacing = 3.sp,
             color = OrderTrackingSheetPalette.Primary,
         )
         Text(
@@ -779,7 +780,7 @@ private fun trackingStatusTitle(tracking: OrderTracking): String {
         val name = tracking.deliveryMan?.name?.trim().orEmpty()
         return if (name.isNotEmpty()) "$name está afuera" else "Repartidor afuera"
     }
-    return statusLabel(tracking.status, tracking.isServicePayment)
+    return statusLabel(tracking.status, tracking.isServicePayment, tracking.isCarWash)
 }
 
 private fun trackingStatusSubtitle(tracking: OrderTracking): String {
@@ -791,16 +792,17 @@ private fun trackingStatusSubtitle(tracking: OrderTracking): String {
         }
     }
     val service = tracking.isServicePayment
+    val carWash = tracking.isCarWash
     return when (tracking.status.uppercase()) {
         "PENDING" -> if (service) "Procesando tu pago de servicios" else "Esperando confirmación de la tienda"
         "CONFIRMED" -> if (service) "Tu solicitud fue confirmada" else "Gracias por tu compra"
         "PREPARING" -> tracking.estimatedPreparationMinutes?.let { mins ->
-            "Tiempo estimado de preparación: $mins min"
-        } ?: "Tu pedido se está preparando"
-        "READY_FOR_PICKUP" -> if (service) {
-            "Estamos buscando un repartidor para pagar tus servicios"
-        } else {
-            "Listo para que el repartidor lo recoja"
+            if (carWash) "Tiempo estimado de lavado: $mins min" else "Tiempo estimado de preparación: $mins min"
+        } ?: if (carWash) "Tu vehículo se está lavando" else "Tu pedido se está preparando"
+        "READY_FOR_PICKUP" -> when {
+            service -> "Estamos buscando un repartidor para pagar tus servicios"
+            carWash -> "Secado y aspirado en proceso"
+            else -> "Listo para que el repartidor lo recoja"
         }
         "ASSIGNED" -> if (service) {
             tracking.estimatedDeliveryMinutes?.let { mins ->
@@ -813,21 +815,29 @@ private fun trackingStatusSubtitle(tracking: OrderTracking): String {
                     "El repartidor va en camino a pagar tus servicios"
                 }
             }
+        } else if (carWash) {
+            tracking.estimatedDeliveryMinutes?.let { mins ->
+                "Detallado en proceso · llegada estimada: ~$mins min"
+            } ?: "Detallado en proceso"
         } else {
             tracking.estimatedDeliveryMinutes?.let { mins ->
                 "Llegada estimada al recoger: ~$mins min"
             } ?: "Un repartidor irá por tu pedido pronto"
         }
-        "ON_DELIVERY" -> if (service) {
-            tracking.estimatedDeliveryMinutes?.let { mins ->
-                "Llegada estimada: ~$mins min"
-            } ?: "Tus servicios ya fueron pagados y van rumbo a tu domicilio"
+        "ON_DELIVERY" -> tracking.estimatedDeliveryMinutes?.let { mins ->
+            "Llegada estimada: ~$mins min"
+        } ?: if (service) {
+            "Tus servicios ya fueron pagados y van rumbo a tu domicilio"
+        } else if (carWash) {
+            "Tu vehículo va en camino a tu domicilio"
         } else {
-            tracking.estimatedDeliveryMinutes?.let { mins ->
-                "Llegada estimada: ~$mins min"
-            } ?: "Tu pedido va en camino a tu domicilio"
+            "Tu pedido va en camino a tu domicilio"
         }
-        "DELIVERED" -> if (service) "Tu pago de servicios fue entregado" else "¡Buen provecho!"
+        "DELIVERED" -> when {
+            service -> "Tu pago de servicios fue entregado"
+            carWash -> "¡Servicio completado!"
+            else -> "¡Buen provecho!"
+        }
         "CANCELLED" -> "Este pedido fue cancelado"
         else -> ""
     }
@@ -841,12 +851,20 @@ private fun statusCardIcon(status: String) = when (status.uppercase()) {
     else -> Icons.Default.ShoppingBag
 }
 
-private fun statusLabel(status: String, servicePayment: Boolean = false): String = when (status.uppercase()) {
+private fun statusLabel(
+    status: String,
+    servicePayment: Boolean = false,
+    carWash: Boolean = false,
+): String = when (status.uppercase()) {
     "PENDING" -> "Pendiente"
     "CONFIRMED" -> "Confirmado"
-    "PREPARING" -> "En preparación"
-    "READY_FOR_PICKUP" -> if (servicePayment) "Buscando repartidor" else "Listo para recoger"
-    "ASSIGNED" -> "Asignado a repartidor"
+    "PREPARING" -> if (carWash) "Lavando" else "En preparación"
+    "READY_FOR_PICKUP" -> when {
+        servicePayment -> "Buscando repartidor"
+        carWash -> "Secado y Aspirado"
+        else -> "Listo para recoger"
+    }
+    "ASSIGNED" -> if (carWash) "Detallado" else "Asignado a repartidor"
     "ON_DELIVERY" -> "En camino"
     "DELIVERED" -> "Entregado"
     "CANCELLED" -> "Cancelado"

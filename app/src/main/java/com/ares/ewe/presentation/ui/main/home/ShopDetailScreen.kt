@@ -110,6 +110,12 @@ fun ShopDetailScreen(
                         ShopDetailSearchBar(
                             query = uiState.searchQuery,
                             onQueryChange = viewModel::onSearchQueryChange,
+                            placeholder = if (uiState.isCarWash) "Buscar servicios..." else "Buscar productos...",
+                            modifier = if (uiState.isCarWash) {
+                                Modifier.padding(bottom = 12.dp)
+                            } else {
+                                Modifier
+                            },
                         )
                         if (uiState.showShopClosedBanner) {
                             ShopClosedBanner(
@@ -117,10 +123,12 @@ fun ShopDetailScreen(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                         }
-                        ShopDetailCategoryRow(
-                            selectedCategoryId = uiState.selectedCategoryId,
-                            onCategorySelected = viewModel::onCategorySelected,
-                        )
+                        if (!uiState.isCarWash) {
+                            ShopDetailCategoryRow(
+                                selectedCategoryId = uiState.selectedCategoryId,
+                                onCategorySelected = viewModel::onCategorySelected,
+                            )
+                        }
 
                         if (filteredProducts.isEmpty()) {
                             Box(
@@ -132,9 +140,14 @@ fun ShopDetailScreen(
                                 Text(
                                     text = when {
                                         uiState.searchQuery.isNotBlank() ->
-                                            "Ningún producto coincide con la búsqueda"
+                                            if (uiState.isCarWash) {
+                                                "Ningún servicio coincide con la búsqueda"
+                                            } else {
+                                                "Ningún producto coincide con la búsqueda"
+                                            }
                                         uiState.selectedCategoryId != null ->
                                             "No hay productos en esta categoría"
+                                        uiState.isCarWash -> "Este carwash aún no tiene servicios"
                                         else -> "Este restaurante aún no tiene productos"
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
@@ -158,6 +171,7 @@ fun ShopDetailScreen(
                                     ShopDetailProductCard(
                                         product = product,
                                         isProductAvailable = uiState.isShopAvailableForOrders,
+                                        isCarWash = uiState.isCarWash,
                                         onClick = {
                                             onProductClick(
                                                 product.id,

@@ -13,6 +13,8 @@ data class ActiveOrderDto(
     @SerializedName("total") val total: Double = 0.0,
     @SerializedName("delivery_address") val deliveryAddress: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("order_type") val orderType: String? = null,
+    @SerializedName("shop_type") val shopType: String? = null,
     @SerializedName("items") val items: List<ActiveOrderItemDto>? = null,
 )
 
@@ -58,6 +60,7 @@ data class OrderTrackingDto(
     @SerializedName("id") val id: String,
     @SerializedName("status") val status: String,
     @SerializedName("order_type") val orderType: String? = null,
+    @SerializedName("shop_type") val shopType: String? = null,
     @SerializedName("total") val total: Double = 0.0,
     @SerializedName("service_fee") val serviceFee: Double = 0.0,
     @SerializedName("delivery_fee") val deliveryFee: Double = 0.0,

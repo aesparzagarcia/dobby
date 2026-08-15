@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.RoomService
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
@@ -67,6 +68,7 @@ fun ShopDetailSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    placeholder: String = "Buscar productos...",
 ) {
     Row(
         modifier = modifier
@@ -102,7 +104,7 @@ fun ShopDetailSearchBar(
                     Box {
                         if (query.isEmpty()) {
                             Text(
-                                text = "Buscar productos...",
+                                text = placeholder,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MutedText,
                             )
@@ -294,6 +296,7 @@ fun ShopDetailProductCard(
     onClick: () -> Unit,
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isCarWash: Boolean = false,
 ) {
     val validDiscount = product.discount.coerceIn(0, 100)
     val showPromotion = product.hasPromotion && validDiscount > 0
@@ -434,7 +437,7 @@ fun ShopDetailProductCard(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Icon(
-                        imageVector = Icons.Default.RoomService,
+                        imageVector = if (isCarWash) Icons.Default.DirectionsCar else Icons.Default.RoomService,
                         contentDescription = null,
                         tint = statusColor,
                         modifier = Modifier.size((16 * scale).dp),

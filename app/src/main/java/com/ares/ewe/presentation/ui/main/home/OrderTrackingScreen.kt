@@ -4,14 +4,17 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.core.content.ContextCompat
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,9 +42,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
@@ -86,7 +93,7 @@ private const val MAP_BOUNDS_EXPANSION_FACTOR = 1.35f
 private const val MIN_BOUNDS_SPAN_DEGREES = 0.004
 private const val MARKER_ICON_SIZE_DP = 48
 private val FALLBACK_LATLNG = LatLng(20.6507582, -103.7029606)
-private val RoutePolylineColor = Color(0xFF1976D2)
+private val RoutePolylineColor = Color(0xFF0D0D0D)
 /** Brand green aligned with PhoneScreen (~#2ECC71). */
 private fun isValidMapCoordinate(lat: Double, lng: Double): Boolean {
     if (lat !in -90.0..90.0 || lng !in -180.0..180.0) return false
@@ -135,7 +142,7 @@ private fun bitmapDescriptorFromRes(context: Context, resId: Int, sizeDp: Int = 
 }
 
 /** Max height for in-progress order detail panel (map stays visible above). */
-private const val ORDER_TRACKING_SHEET_MAX_HEIGHT_FRACTION = 0.88f
+private const val ORDER_TRACKING_SHEET_MAX_HEIGHT_FRACTION = 0.78f
 
 @Composable
 fun OrderTrackingScreen(
@@ -146,13 +153,15 @@ fun OrderTrackingScreen(
     val uiState by viewModel.uiState.collectAsState()
     val routePoints = uiState.routePoints
     val usingStraightLineRoute = uiState.usingStraightLineRoute
-    var sheetVisible by remember { mutableStateOf(true) }
+    var sheetCollapsed by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val deliveryIcon = remember(context) { bitmapDescriptorFromRes(context, R.drawable.ic_delivery) }
 
     val tracking = uiState.tracking
-    val shopMarkerIcon = remember(context) {
-        bitmapDescriptorFromRes(context, R.drawable.ic_shop)
+    val isCarWash = tracking?.isCarWash == true
+    val shopMarkerIcon = remember(context, isCarWash) {
+        val resId = if (isCarWash) R.drawable.ic_car_wash else R.drawable.ic_shop
+        bitmapDescriptorFromRes(context, resId)
             ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
     }
     val houseMarkerIcon = remember(context) {
@@ -177,7 +186,7 @@ fun OrderTrackingScreen(
     }
     val destinationMarkerIcon = if (tracking?.isAssignedToCourier == true) shopMarkerIcon else houseMarkerIcon
     val destinationMarkerTitle = if (tracking?.isAssignedToCourier == true) {
-        "Restaurante"
+        if (isCarWash) "Autolavado" else "Restaurante"
     } else {
         "Tu dirección de entrega"
     }
@@ -327,8 +336,8 @@ fun OrderTrackingScreen(
                         deliveryIcon = deliveryIcon,
                         cameraPositionState = cameraPositionState,
                         onMapLoaded = { mapLoaded = true },
-                        sheetVisible = sheetVisible,
-                        onSheetVisibleChange = { sheetVisible = it },
+                        sheetCollapsed = sheetCollapsed,
+                        onSheetCollapsedChange = { sheetCollapsed = it },
                         uiState = uiState,
                         viewModel = viewModel,
                         onFinish = onFinish,
@@ -429,12 +438,16 @@ private fun InProgressOrderTrackingLayout(
     deliveryIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
     cameraPositionState: com.google.maps.android.compose.CameraPositionState,
     onMapLoaded: () -> Unit,
-    sheetVisible: Boolean,
-    onSheetVisibleChange: (Boolean) -> Unit,
+    sheetCollapsed: Boolean,
+    onSheetCollapsedChange: (Boolean) -> Unit,
     uiState: com.ares.ewe.presentation.viewmodel.main.home.OrderTrackingUiState,
     viewModel: OrderTrackingViewModel,
     onFinish: () -> Unit,
 ) {
+    var dragAccum by remember { mutableFloatStateOf(0f) }
+    val maxSheetHeight = (LocalConfiguration.current.screenHeightDp *
+        ORDER_TRACKING_SHEET_MAX_HEIGHT_FRACTION).dp
+
     Box(Modifier.fillMaxSize()) {
         OrderTrackingMapContent(
             modifier = Modifier.fillMaxSize(),
@@ -443,6 +456,7 @@ private fun InProgressOrderTrackingLayout(
             customerLatLng = customerLatLng,
             shopMarkerIcon = shopMarkerIcon,
             houseMarkerIcon = houseMarkerIcon,
+            shopMarkerTitle = if (tracking.isCarWash) "Autolavado" else "Restaurante",
             shopMarkerSnippet = tracking.shopName,
             customerMarkerSnippet = tracking.deliveryAddress,
             destinationLatLng = destinationLatLng,
@@ -478,42 +492,85 @@ private fun InProgressOrderTrackingLayout(
             }
         }
 
-        if (sheetVisible) {
-            val maxSheetHeight = (LocalConfiguration.current.screenHeightDp *
-                ORDER_TRACKING_SHEET_MAX_HEIGHT_FRACTION).dp
+        if (!sheetCollapsed) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
-                        onClick = { onSheetVisibleChange(false) },
+                        onClick = { onSheetCollapsedChange(true) },
                     ),
             )
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .heightIn(max = maxSheetHeight),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                shadowElevation = 12.dp,
-                color = MaterialTheme.colorScheme.surface,
-            ) {
-                Column(Modifier.fillMaxWidth()) {
+        }
+
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .animateContentSize()
+                .then(
+                    if (sheetCollapsed) Modifier else Modifier
+                        .wrapContentHeight()
+                        .heightIn(max = maxSheetHeight),
+                ),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            shadowElevation = 12.dp,
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pointerInput(sheetCollapsed) {
+                            detectVerticalDragGestures(
+                                onDragEnd = {
+                                    when {
+                                        dragAccum > 48f -> onSheetCollapsedChange(true)
+                                        dragAccum < -48f -> onSheetCollapsedChange(false)
+                                    }
+                                    dragAccum = 0f
+                                },
+                                onVerticalDrag = { _, dragAmount ->
+                                    dragAccum += dragAmount
+                                },
+                            )
+                        }
+                        .clickable { onSheetCollapsedChange(!sheetCollapsed) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(28.dp),
-                        contentAlignment = Alignment.Center,
+                            .width(36.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(width = 40.dp, height = 5.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
+                        Text(
+                            text = if (sheetCollapsed) "Mostrar detalles" else "Ocultar detalles",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Icon(
+                            imageVector = if (sheetCollapsed) {
+                                Icons.Default.KeyboardArrowUp
+                            } else {
+                                Icons.Default.KeyboardArrowDown
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
                         )
                     }
+                }
+
+                if (!sheetCollapsed) {
                     OrderTrackingBottomSheetContent(
                         tracking = tracking,
                         rateSubmitting = uiState.rateSubmitting,
@@ -528,45 +585,9 @@ private fun InProgressOrderTrackingLayout(
                         fullScreen = false,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = maxSheetHeight - 28.dp)
-                            .padding(horizontal = 20.dp)
-                            .padding(bottom = 12.dp),
-                    )
-                }
-            }
-        } else {
-            Button(
-                onClick = { onSheetVisibleChange(true) },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 12.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White,
-                ),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 15.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Default.KeyboardArrowUp,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 6.dp),
-                    )
-                    Text(
-                        text = "Ver detalles del pedido",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White,
-                            fontSize = 18.sp
-                        ),
+                            .heightIn(max = maxSheetHeight - 48.dp)
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 10.dp),
                     )
                 }
             }
@@ -582,6 +603,7 @@ private fun OrderTrackingMapContent(
     customerLatLng: LatLng? = null,
     shopMarkerIcon: BitmapDescriptor? = null,
     houseMarkerIcon: BitmapDescriptor? = null,
+    shopMarkerTitle: String = "Restaurante",
     shopMarkerSnippet: String? = null,
     customerMarkerSnippet: String? = null,
     destinationLatLng: LatLng? = null,
@@ -608,7 +630,7 @@ private fun OrderTrackingMapContent(
         shopLatLng?.let { latLng ->
             Marker(
                 state = MarkerState(position = latLng),
-                title = "Restaurante",
+                title = shopMarkerTitle,
                 snippet = shopMarkerSnippet,
                 icon = shopMarkerIcon,
             )

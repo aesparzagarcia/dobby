@@ -67,9 +67,13 @@ fun CartScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState.orderPlaced) {
-        if (uiState.orderPlaced) {
-            viewModel.clearOrderPlaced()
+        if (!uiState.orderPlaced) return@LaunchedEffect
+        // No limpiar orderPlaced antes de navegar: eso cancela este LaunchedEffect
+        // (cambia la key) y el usuario se queda en el carrito vacío.
+        try {
             onCheckoutComplete()
+        } finally {
+            viewModel.clearOrderPlaced()
         }
     }
 

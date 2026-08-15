@@ -5,6 +5,8 @@ data class OrderTracking(
     val status: String,
     /** SHOP | SERVICE_PAYMENT */
     val orderType: String = "SHOP",
+    /** RESTAURANT | SHOP | CAR_WASH | … */
+    val shopType: String? = null,
     val total: Double,
     val serviceFee: Double = 0.0,
     val deliveryFee: Double = 0.0,
@@ -35,6 +37,9 @@ data class OrderTracking(
 ) {
     val isServicePayment: Boolean
         get() = orderType.equals("SERVICE_PAYMENT", ignoreCase = true)
+
+    val isCarWash: Boolean
+        get() = shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
 
     val isDelivered: Boolean get() = status.equals("DELIVERED", ignoreCase = true)
 
