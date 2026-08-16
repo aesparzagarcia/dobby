@@ -21,6 +21,8 @@ data class OrderHistoryItem(
 fun orderStatusLabelEs(status: String): String = when (status.uppercase()) {
     "PENDING" -> "Pendiente"
     "CONFIRMED" -> "Confirmado"
+    "OUT_FOR_PICKUP" -> "En camino"
+    "PICKED_UP" -> "Recogido"
     "PREPARING" -> "En preparación"
     "READY_FOR_PICKUP" -> "Listo para recoger"
     "ASSIGNED" -> "Asignado"

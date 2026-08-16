@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
@@ -65,17 +66,31 @@ private data class TrackingStage(
     val icon: ImageVector,
 )
 
-private fun trackingStages(isCarWash: Boolean): List<TrackingStage> = listOf(
-    TrackingStage("Pendiente", Icons.Default.Check),
-    TrackingStage("Confirmado", Icons.Default.ShoppingBag),
-    TrackingStage(if (isCarWash) "Lavando" else "En preparación", Icons.Default.Inventory2),
-    TrackingStage(if (isCarWash) "Secado y Aspirado" else "Listo para recoger", Icons.Default.Store),
-    TrackingStage(if (isCarWash) "Detallado" else "Asignado", Icons.Default.Person),
-    TrackingStage("En camino", Icons.Default.TwoWheeler),
-    TrackingStage("Entregado", Icons.Default.Check),
-)
+private fun trackingStages(isCarWash: Boolean): List<TrackingStage> =
+    if (isCarWash) {
+        listOf(
+            TrackingStage("Pendiente", Icons.Default.Check),
+            TrackingStage("Confirmado", Icons.Default.ShoppingBag),
+            TrackingStage("En camino", Icons.Default.DirectionsCar),
+            TrackingStage("Recogido", Icons.Default.DirectionsCar),
+            TrackingStage("Lavando", Icons.Default.Inventory2),
+            TrackingStage("Secado y Aspirado", Icons.Default.Store),
+            TrackingStage("Detallado", Icons.Default.Person),
+            TrackingStage("En entrega", Icons.Default.TwoWheeler),
+            TrackingStage("Entregado", Icons.Default.Check),
+        )
+    } else {
+        listOf(
+            TrackingStage("Pendiente", Icons.Default.Check),
+            TrackingStage("Confirmado", Icons.Default.ShoppingBag),
+            TrackingStage("En preparación", Icons.Default.Inventory2),
+            TrackingStage("Listo para recoger", Icons.Default.Store),
+            TrackingStage("Asignado", Icons.Default.Person),
+            TrackingStage("En camino", Icons.Default.TwoWheeler),
+            TrackingStage("Entregado", Icons.Default.Check),
+        )
+    }
 
-private const val TRACKING_LAST_STEP = 6
 private val StageColumnWidth = 72.dp
 private val ConnectorWidth = 14.dp
 private val StageIconSlotSize = 48.dp
@@ -97,8 +112,9 @@ fun OrderTrackingSection(
     modifier: Modifier = Modifier,
     headerTitle: String = "Tu pedido",
 ) {
-    val stepIndex = activeOrder.stepIndex.coerceIn(0, TRACKING_LAST_STEP)
     val stages = trackingStages(activeOrder.isCarWash)
+    val lastStep = stages.lastIndex
+    val stepIndex = activeOrder.stepIndex.coerceIn(0, lastStep)
     val scroll = rememberScrollState()
     val density = LocalDensity.current
     val primary = MaterialTheme.colorScheme.primary

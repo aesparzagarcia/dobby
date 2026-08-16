@@ -8,7 +8,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
@@ -143,6 +142,8 @@ private fun bitmapDescriptorFromRes(context: Context, resId: Int, sizeDp: Int = 
 
 /** Max height for in-progress order detail panel (map stays visible above). */
 private const val ORDER_TRACKING_SHEET_MAX_HEIGHT_FRACTION = 0.78f
+/** Delivered sheet: wrap content, cap height so the map stays visible without empty white space. */
+private const val ORDER_TRACKING_DELIVERED_SHEET_MAX_HEIGHT_FRACTION = 0.68f
 
 @Composable
 fun OrderTrackingScreen(
@@ -175,9 +176,67 @@ fun OrderTrackingScreen(
     val customerLatLng = tracking?.customerLatLngPair()?.let { (lat, lng) ->
         LatLng(lat, lng).takeIfValid()
     }
-    val shopLatLngForMap = if (showsRestaurantAndCustomer) shopLatLng else null
-    val customerLatLngForMap = if (showsRestaurantAndCustomer) customerLatLng else null
-    val destinationLatLng = if (tracking != null && !showsRestaurantAndCustomer) {
+    // Carwash: siempre mostrar el local (origen del vehículo) cuando hay coordenadas.
+    // En ruta, el marcador del vehículo (deliveryMan) es la posición en vivo / del local.
+    val deliveryManLatLng = tracking?.deliveryMan?.let { dm ->
+        if (dm.lat != null && dm.lng != null) LatLng(dm.lat, dm.lng).takeIfValid() else null
+    } ?: if (isCarWash && (
+            tracking?.isOnDelivery == true ||
+                tracking?.isAssignedToCourier == true ||
+                tracking?.isOutForPickup == true ||
+                tracking?.isPickedUp == true
+            )
+    ) {
+        if (tracking?.isPickedUp == true) customerLatLng else shopLatLng
+    } else {
+        null
+    }
+    // Carwash: keep the shop pin visible; the vehicle pin is separate ("Tu vehículo").
+    // Only hide the shop pin when it would stack exactly on the live vehicle.
+    val shopLatLngForMap = when {
+        isCarWash && deliveryManLatLng != null -> {
+            val shop = shopLatLng
+            val vehicle = deliveryManLatLng
+            if (
+                shop != null &&
+                (
+                    abs(shop.latitude - vehicle.latitude) > 1e-4 ||
+                    abs(shop.longitude - vehicle.longitude) > 1e-4
+                )
+            ) {
+                shop
+            } else if (
+                shop != null &&
+                tracking?.isOnDelivery != true &&
+                tracking?.isAssignedToCourier != true &&
+                tracking?.isOutForPickup != true &&
+                tracking?.isPickedUp != true
+            ) {
+                // Before En camino / Recogido: shop pin alone is the origin (no separate vehicle yet).
+                shop
+            } else {
+                // Same spot as vehicle while in route — show only "Tu vehículo".
+                null
+            }
+        }
+        isCarWash -> shopLatLng
+        showsRestaurantAndCustomer -> shopLatLng
+        else -> null
+    }
+    val customerLatLngForMap = when {
+        // Durante recolección no mostramos la casa; sí desde Recogido en adelante.
+        isCarWash && tracking?.isOutForPickup == true -> null
+        isCarWash && (
+            showsRestaurantAndCustomer ||
+                tracking?.isOnDelivery == true ||
+                tracking?.isAssignedToCourier == true ||
+                tracking?.isPickedUp == true
+            ) ->
+            customerLatLng
+        showsRestaurantAndCustomer -> customerLatLng
+        else -> null
+    }
+    val destinationLatLng = if (tracking != null && !showsRestaurantAndCustomer && !isCarWash) {
         tracking.routeDestinationLatLng()?.let { (lat, lng) ->
             LatLng(lat, lng).takeIfValid()
         }
@@ -195,14 +254,17 @@ fun OrderTrackingScreen(
     } else {
         tracking?.deliveryAddress
     }
-    val deliveryManLatLng = tracking?.deliveryMan?.let { dm ->
-        if (dm.lat != null && dm.lng != null) LatLng(dm.lat, dm.lng).takeIfValid() else null
+    val carMarkerIcon = remember(context) {
+        bitmapDescriptorFromRes(context, R.drawable.ic_car)
+            ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
     }
+    val vehicleMarkerIcon = if (isCarWash) carMarkerIcon else deliveryIcon
+    val vehicleMarkerTitle = if (isCarWash) "Tu vehículo" else "Repartidor"
 
-    val deliveryManMarkerState = remember { MarkerState(FALLBACK_LATLNG) }
-    LaunchedEffect(deliveryManLatLng?.latitude, deliveryManLatLng?.longitude) {
-        deliveryManLatLng?.let { deliveryManMarkerState.position = it }
-    }
+    // Sync position during composition — LaunchedEffect alone left the pin at FALLBACK
+    // (off-camera) until the next frame, so the vehicle never appeared near the route.
+    val deliveryManMarkerState = remember { MarkerState(deliveryManLatLng ?: FALLBACK_LATLNG) }
+    deliveryManLatLng?.let { deliveryManMarkerState.position = it }
 
     var mapLoaded by remember { mutableStateOf(false) }
     var lastCameraFitKey by remember { mutableStateOf<String?>(null) }
@@ -311,7 +373,7 @@ fun OrderTrackingScreen(
                             deliveryManLatLng = deliveryManLatLng,
                             deliveryManMarkerState = deliveryManMarkerState,
                             destinationMarkerIcon = destinationMarkerIcon,
-                            deliveryIcon = deliveryIcon,
+                            deliveryIcon = vehicleMarkerIcon,
                             cameraPositionState = cameraPositionState,
                             onMapLoaded = { mapLoaded = true },
                             uiState = uiState,
@@ -333,7 +395,8 @@ fun OrderTrackingScreen(
                         deliveryManLatLng = deliveryManLatLng,
                         deliveryManMarkerState = deliveryManMarkerState,
                         destinationMarkerIcon = destinationMarkerIcon,
-                        deliveryIcon = deliveryIcon,
+                        deliveryIcon = vehicleMarkerIcon,
+                        vehicleMarkerTitle = vehicleMarkerTitle,
                         cameraPositionState = cameraPositionState,
                         onMapLoaded = { mapLoaded = true },
                         sheetCollapsed = sheetCollapsed,
@@ -348,7 +411,11 @@ fun OrderTrackingScreen(
         }
 
         FloatingScreenHeader(
-            title = "Seguimiento del pedido",
+            title = if (uiState.tracking?.isCarWash == true) {
+                "Seguimiento del servicio"
+            } else {
+                "Seguimiento del pedido"
+            },
             onBack = onBack,
             modifier = Modifier.align(Alignment.TopCenter),
         )
@@ -377,29 +444,41 @@ private fun DeliveredOrderTrackingLayout(
     viewModel: OrderTrackingViewModel,
     onFinish: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize()) {
-        Box(Modifier.height(112.dp).fillMaxWidth()) {
-            OrderTrackingMapContent(
-                modifier = Modifier.fillMaxSize(),
-                routePoints = routePoints,
-                destinationLatLng = destinationLatLng,
-                destinationMarkerTitle = destinationMarkerTitle,
-                destinationMarkerSnippet = destinationMarkerSnippet,
-                destinationMarkerIcon = destinationMarkerIcon,
-                deliveryManLatLng = deliveryManLatLng,
-                deliveryManMarkerState = deliveryManMarkerState,
-                deliveryIcon = deliveryIcon,
-                deliveryManName = tracking.deliveryMan?.name,
-                cameraPositionState = cameraPositionState,
-                onMapLoaded = onMapLoaded,
-            )
-        }
+    val maxSheetHeight = (LocalConfiguration.current.screenHeightDp *
+        ORDER_TRACKING_DELIVERED_SHEET_MAX_HEIGHT_FRACTION).dp
+
+    Box(Modifier.fillMaxSize()) {
+        OrderTrackingMapContent(
+            modifier = Modifier.fillMaxSize(),
+            routePoints = routePoints,
+            shopLatLng = shopLatLng,
+            customerLatLng = customerLatLng,
+            shopMarkerIcon = shopMarkerIcon,
+            houseMarkerIcon = houseMarkerIcon,
+            shopMarkerTitle = if (tracking.isCarWash) "Autolavado" else "Restaurante",
+            shopMarkerSnippet = tracking.shopName,
+            customerMarkerSnippet = tracking.deliveryAddress,
+            destinationLatLng = destinationLatLng,
+            destinationMarkerTitle = destinationMarkerTitle,
+            destinationMarkerSnippet = destinationMarkerSnippet,
+            destinationMarkerIcon = destinationMarkerIcon,
+            deliveryManLatLng = deliveryManLatLng,
+            deliveryManMarkerState = deliveryManMarkerState,
+            deliveryIcon = deliveryIcon,
+            deliveryManName = tracking.deliveryMan?.name,
+            cameraPositionState = cameraPositionState,
+            onMapLoaded = onMapLoaded,
+        )
+
         Surface(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .heightIn(max = maxSheetHeight),
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+            shadowElevation = 12.dp,
         ) {
             OrderTrackingBottomSheetContent(
                 tracking = tracking,
@@ -410,11 +489,12 @@ private fun DeliveredOrderTrackingLayout(
                 onSubmitProductRating = { productId, stars -> viewModel.submitProductRating(productId, stars) },
                 onClearRateError = { viewModel.clearRateError() },
                 onFinish = onFinish,
-                fullScreen = true,
+                fullScreen = false,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = maxSheetHeight)
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 24.dp),
+                    .padding(top = 22.dp, bottom = 24.dp),
             )
         }
     }
@@ -436,6 +516,7 @@ private fun InProgressOrderTrackingLayout(
     deliveryManMarkerState: MarkerState,
     destinationMarkerIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
     deliveryIcon: com.google.android.gms.maps.model.BitmapDescriptor?,
+    vehicleMarkerTitle: String = "Repartidor",
     cameraPositionState: com.google.maps.android.compose.CameraPositionState,
     onMapLoaded: () -> Unit,
     sheetCollapsed: Boolean,
@@ -466,43 +547,13 @@ private fun InProgressOrderTrackingLayout(
             deliveryManMarkerState = deliveryManMarkerState,
             destinationMarkerIcon = destinationMarkerIcon,
             deliveryIcon = deliveryIcon,
-            deliveryManName = tracking.deliveryMan?.name,
+            deliveryManName = vehicleMarkerTitle,
             cameraPositionState = cameraPositionState,
             onMapLoaded = onMapLoaded,
         )
 
-        if (usingStraightLineRoute && destinationLatLng != null && deliveryManLatLng != null) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
-                tonalElevation = 2.dp,
-            ) {
-                Text(
-                    text = "La ruta por calles no está disponible (solo línea recta). " +
-                        "Habilita Directions API y facturación en Google Cloud, y en local.properties " +
-                        "define DIRECTIONS_API_KEY con una clave apta para el servicio web " +
-                        "(no uses solo restricción «aplicaciones Android»).",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.padding(12.dp),
-                )
-            }
-        }
-
-        if (!sheetCollapsed) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() },
-                        onClick = { onSheetCollapsedChange(true) },
-                    ),
-            )
-        }
+        // El mapa debe recibir gestos arriba del sheet (como DobbyShop).
+        // Colapsar solo con la cejilla / "Ocultar detalles".
 
         Surface(
             modifier = Modifier
@@ -624,9 +675,6 @@ private fun OrderTrackingMapContent(
         uiSettings = MapUiSettings(zoomControlsEnabled = false),
         onMapLoaded = onMapLoaded,
     ) {
-        if (routePoints.size >= 2) {
-            Polyline(points = routePoints, color = RoutePolylineColor, width = 10f)
-        }
         shopLatLng?.let { latLng ->
             Marker(
                 state = MarkerState(position = latLng),
@@ -654,9 +702,10 @@ private fun OrderTrackingMapContent(
         deliveryManLatLng?.let {
             Marker(
                 state = deliveryManMarkerState,
-                title = "Repartidor",
+                title = deliveryManName ?: "Repartidor",
                 snippet = deliveryManName,
                 icon = deliveryIcon ?: BitmapDescriptorFactory.fromResource(R.drawable.ic_delivery),
+                zIndex = 2f,
             )
         }
     }

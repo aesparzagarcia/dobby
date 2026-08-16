@@ -82,7 +82,7 @@ class OrderTrackingViewModel @Inject constructor(
                 }
                 delay(interval)
                 val status = _uiState.value.tracking?.status?.uppercase()
-                if (status == "ASSIGNED" || status == "ON_DELIVERY") {
+                if (status == "ASSIGNED" || status == "ON_DELIVERY" || status == "OUT_FOR_PICKUP" || status == "PICKED_UP") {
                     orderRepository.getOrderTracking(orderId).onSuccess { tracking ->
                         if (tracking != null) {
                             onTrackingRefreshed(tracking)
@@ -118,51 +118,12 @@ class OrderTrackingViewModel @Inject constructor(
     }
 
     private fun maybeRefreshRoute(tracking: OrderTracking) {
-        val statusKey = tracking.status.uppercase()
-        if (lastRouteStatus != statusKey) {
-            lastRouteStatus = statusKey
-            lastRouteFetchAt = 0L
-            if (_uiState.value.routePoints.isNotEmpty()) {
-                _uiState.value = _uiState.value.copy(
-                    routePoints = emptyList(),
-                    usingStraightLineRoute = false,
-                )
-            }
-        }
-        val (destLat, destLng) = tracking.routeDestinationLatLng() ?: (null to null)
-        val dm = tracking.deliveryMan
-        val oLat = dm?.lat
-        val oLng = dm?.lng
-        if (destLat == null || destLng == null || oLat == null || oLng == null) {
-            if (_uiState.value.routePoints.isNotEmpty()) {
-                _uiState.value = _uiState.value.copy(
-                    routePoints = emptyList(),
-                    usingStraightLineRoute = false
-                )
-            }
-            return
-        }
-        val origin = LatLng(oLat, oLng)
-        val dest = LatLng(destLat, destLng)
-        val now = System.currentTimeMillis()
-        val hasRoute = _uiState.value.routePoints.isNotEmpty()
-        if (hasRoute && now - lastRouteFetchAt < ROUTE_MIN_INTERVAL_MS) return
-        lastRouteFetchAt = now
-        viewModelScope.launch {
-            directionsRepository.getRoutePoints(origin, dest)
-                .onSuccess { points ->
-                    val route = if (points.isNotEmpty()) points else listOf(origin, dest)
-                    _uiState.value = _uiState.value.copy(
-                        routePoints = route,
-                        usingStraightLineRoute = points.isEmpty()
-                    )
-                }
-                .onFailure {
-                    _uiState.value = _uiState.value.copy(
-                        routePoints = listOf(origin, dest),
-                        usingStraightLineRoute = true
-                    )
-                }
+        // Dobby no dibuja la ruta en el mapa de seguimiento.
+        if (_uiState.value.routePoints.isNotEmpty() || _uiState.value.usingStraightLineRoute) {
+            _uiState.value = _uiState.value.copy(
+                routePoints = emptyList(),
+                usingStraightLineRoute = false,
+            )
         }
     }
 

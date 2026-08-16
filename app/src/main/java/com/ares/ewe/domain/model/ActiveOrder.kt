@@ -1,8 +1,8 @@
 package com.ares.ewe.domain.model
 
 /**
- * Seven-step home tracking UI (see [orderStatusToTrackingStep]).
- * Backend: PENDING, CONFIRMED, PREPARING, READY_FOR_PICKUP, ASSIGNED, ON_DELIVERY, DELIVERED, CANCELLED.
+ * Home tracking UI steps (see [orderStatusToTrackingStep]).
+ * Food/shop: 7 stages. Carwash: 9 stages (En camino + Recogido before Lavando).
  */
 data class ActiveOrderProductLine(
     val name: String,
@@ -18,12 +18,12 @@ data class ActiveOrder(
     val shopType: String? = null,
     val productLines: List<ActiveOrderProductLine> = emptyList(),
 ) {
-    /** Step index 0–6 for the 7-stage home progress (6 = delivered). */
-    val stepIndex: Int
-        get() = orderStatusToTrackingStep(status)
-
     val isCarWash: Boolean
         get() = shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
+
+    /** Step index for the home progress UI (last = delivered). */
+    val stepIndex: Int
+        get() = orderStatusToTrackingStep(status, isCarWash)
 
     /** Etiqueta para listas con varios pedidos activos. */
     val productSummary: String
@@ -32,15 +32,32 @@ data class ActiveOrder(
         }
 }
 
-/** Maps each API status to its home tracker step (0 = first, 6 = delivered). */
-fun orderStatusToTrackingStep(status: String): Int = when (status.uppercase()) {
-    "PENDING" -> 0
-    "CONFIRMED" -> 1
-    "PREPARING" -> 2
-    "READY_FOR_PICKUP" -> 3
-    "ASSIGNED" -> 4
-    "ON_DELIVERY" -> 5
-    "DELIVERED" -> 6
-    "CANCELLED" -> 0
-    else -> 0
+/** Maps each API status to its home tracker step (0 = first, last = delivered). */
+fun orderStatusToTrackingStep(status: String, isCarWash: Boolean = false): Int {
+    if (isCarWash) {
+        return when (status.uppercase()) {
+            "PENDING" -> 0
+            "CONFIRMED" -> 1
+            "OUT_FOR_PICKUP" -> 2
+            "PICKED_UP" -> 3
+            "PREPARING" -> 4
+            "READY_FOR_PICKUP" -> 5
+            "ASSIGNED" -> 6
+            "ON_DELIVERY" -> 7
+            "DELIVERED" -> 8
+            "CANCELLED" -> 0
+            else -> 0
+        }
+    }
+    return when (status.uppercase()) {
+        "PENDING" -> 0
+        "CONFIRMED" -> 1
+        "PREPARING" -> 2
+        "READY_FOR_PICKUP" -> 3
+        "ASSIGNED" -> 4
+        "ON_DELIVERY" -> 5
+        "DELIVERED" -> 6
+        "CANCELLED" -> 0
+        else -> 0
+    }
 }

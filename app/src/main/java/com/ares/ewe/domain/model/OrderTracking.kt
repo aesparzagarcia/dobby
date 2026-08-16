@@ -51,8 +51,8 @@ data class OrderTracking(
 
     /** Route destination: shop while courier heads to restaurant; customer address on delivery. */
     fun routeDestinationLatLng(): Pair<Double, Double>? = when (status.uppercase()) {
-        "ASSIGNED" -> shopLatLngPair()
-        "ON_DELIVERY", "DELIVERED" -> customerLatLngPair()
+        "ASSIGNED", "PICKED_UP" -> shopLatLngPair()
+        "OUT_FOR_PICKUP", "ON_DELIVERY", "DELIVERED" -> customerLatLngPair()
         else -> null
     }
 
@@ -62,9 +62,24 @@ data class OrderTracking(
     val isOnDelivery: Boolean
         get() = status.equals("ON_DELIVERY", ignoreCase = true)
 
-    /** After shop confirmed: show restaurant + customer home on the map (no courier yet). */
+    /** Carwash: vehicle collected, returning to the shop. */
+    val isPickedUp: Boolean
+        get() = status.equals("PICKED_UP", ignoreCase = true)
+
+    /** Carwash going to the customer to pick up the vehicle. */
+    val isOutForPickup: Boolean
+        get() = status.equals("OUT_FOR_PICKUP", ignoreCase = true)
+
+    /** After shop confirmed: show shop + customer home on the map (no courier yet).
+     * Carwash: also while Detallado / En camino — the shop itself brings the vehicle. */
     val showsRestaurantAndCustomerOnMap: Boolean
-        get() = status.uppercase() in PRE_COURIER_BOTH_MARKERS
+        get() {
+            val s = status.uppercase()
+            if (isCarWash) {
+                return s in CAR_WASH_SHOP_AND_CUSTOMER_MARKERS
+            }
+            return s in PRE_COURIER_BOTH_MARKERS
+        }
 
     fun shopLatLngPair(): Pair<Double, Double>? {
         if (shopLat == null || shopLng == null) return null
@@ -74,6 +89,24 @@ data class OrderTracking(
     fun customerLatLngPair(): Pair<Double, Double>? {
         if (lat == null || lng == null) return null
         return lat to lng
+    }
+
+    /**
+     * Live courier when present; for carwash pickup/return without a DobbyGo courier,
+     * the vehicle originates at the shop.
+     */
+    fun routeOriginLatLng(): Pair<Double, Double>? {
+        val dm = deliveryMan
+        if (dm?.lat != null && dm.lng != null) {
+            return dm.lat to dm.lng
+        }
+        if (isCarWash && isPickedUp) {
+            return customerLatLngPair()
+        }
+        if (isCarWash && (isOnDelivery || isAssignedToCourier || isOutForPickup)) {
+            return shopLatLngPair()
+        }
+        return null
     }
 
     /** Coordinates used to fit the map camera (restaurant + home, or route + courier). */
@@ -94,6 +127,14 @@ data class OrderTracking(
 
     private companion object {
         val PRE_COURIER_BOTH_MARKERS = setOf("CONFIRMED", "PREPARING", "READY_FOR_PICKUP")
+        val CAR_WASH_SHOP_AND_CUSTOMER_MARKERS = setOf(
+            "CONFIRMED",
+            "PICKED_UP",
+            "PREPARING",
+            "READY_FOR_PICKUP",
+            "ASSIGNED",
+            "ON_DELIVERY",
+        )
     }
 }
 

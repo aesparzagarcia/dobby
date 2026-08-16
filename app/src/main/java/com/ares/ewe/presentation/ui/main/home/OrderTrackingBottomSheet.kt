@@ -2,6 +2,7 @@ package com.ares.ewe.presentation.ui.main.home
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ares.ewe.R
 import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.BuildConfig
 import com.ares.ewe.core.theme.DobbyColors
@@ -142,18 +145,24 @@ fun OrderTrackingBottomSheetContent(
         verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.sectionGap),
     ) {
         Text(
-            text = "Tu pedido",
+            text = if (tracking.isCarWash) "Tu servicio" else "Tu pedido",
             fontSize = OrderTrackingSheetDim.title,
             fontWeight = FontWeight.Bold,
             color = OrderTrackingSheetPalette.TitleDark,
+            modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
         )
 
         OrderTrackingStatusCard(tracking = tracking)
 
-        if (tracking.courierArrivedAtCustomer && tracking.isOnDelivery) {
+        if (tracking.courierArrivedAtCustomer &&
+            (tracking.isOnDelivery || tracking.isOutForPickup)
+        ) {
             val code = tracking.deliveryCode?.trim().orEmpty()
             if (code.isNotEmpty()) {
-                OrderTrackingDeliveryCodeCard(code = code)
+                OrderTrackingDeliveryCodeCard(
+                    code = code,
+                    isPickupHandoff = tracking.isOutForPickup,
+                )
             } else {
                 OrderTrackingDeliveryCodePendingCard()
             }
@@ -164,12 +173,13 @@ fun OrderTrackingBottomSheetContent(
                 OrderTrackingShopRow(
                     shopName = shopName,
                     shopAddress = tracking.shopAddress ?: tracking.deliveryAddress,
+                    isCarWash = tracking.isCarWash,
                 )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.productsInnerGap)) {
                 Text(
-                    text = "PRODUCTOS",
+                    text = if (tracking.isCarWash) "SERVICIOS" else "PRODUCTOS",
                     fontSize = OrderTrackingSheetDim.sectionLabel,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = OrderTrackingSheetDim.sectionLabelTracking,
@@ -189,7 +199,9 @@ fun OrderTrackingBottomSheetContent(
                 total = tracking.total,
             )
 
-            OrderTrackingCourierFooter(tracking = tracking)
+            if (!tracking.isCarWash) {
+                OrderTrackingCourierFooter(tracking = tracking)
+            }
         }
 
         if (tracking.isDelivered) {
@@ -298,7 +310,11 @@ private fun OrderTrackingStatusCard(tracking: OrderTracking) {
 }
 
 @Composable
-private fun OrderTrackingShopRow(shopName: String, shopAddress: String?) {
+private fun OrderTrackingShopRow(
+    shopName: String,
+    shopAddress: String?,
+    isCarWash: Boolean = false,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -310,12 +326,23 @@ private fun OrderTrackingShopRow(shopName: String, shopAddress: String?) {
                 .background(OrderTrackingSheetPalette.IconTileBackground),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.Store,
-                contentDescription = null,
-                tint = OrderTrackingSheetPalette.Primary,
-                modifier = Modifier.size(OrderTrackingSheetDim.iconMd),
-            )
+            if (isCarWash) {
+                Image(
+                    painter = painterResource(R.drawable.ic_car_wash),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(OrderTrackingSheetDim.tile)
+                        .clip(RoundedCornerShape(OrderTrackingSheetDim.radiusMd)),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Store,
+                    contentDescription = null,
+                    tint = OrderTrackingSheetPalette.Primary,
+                    modifier = Modifier.size(OrderTrackingSheetDim.iconMd),
+                )
+            }
         }
         Column(
             modifier = Modifier
@@ -324,7 +351,7 @@ private fun OrderTrackingShopRow(shopName: String, shopAddress: String?) {
             verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.textStackGap),
         ) {
             Text(
-                text = "Tienda: $shopName",
+                text = if (isCarWash) "Lavado: $shopName" else "Tienda: $shopName",
                 fontSize = OrderTrackingSheetDim.body,
                 lineHeight = OrderTrackingSheetDim.bodyLine,
                 fontWeight = FontWeight.SemiBold,
@@ -620,8 +647,8 @@ private fun OrderTrackingDeliveredRatings(
     )
     if (tracking.canRateShop || tracking.shopRating != null) {
         StarRatingBlock(
-            title = "Restaurante",
-            subtitle = tracking.shopName ?: "Tienda",
+            title = if (tracking.isCarWash) "Lavado" else "Restaurante",
+            subtitle = tracking.shopName ?: if (tracking.isCarWash) "Lavado" else "Tienda",
             existingRating = tracking.shopRating,
             canRate = tracking.canRateShop,
             rateSubmitting = rateSubmitting,
@@ -742,7 +769,7 @@ private fun OrderTrackingDeliveryCodePendingCard() {
 }
 
 @Composable
-private fun OrderTrackingDeliveryCodeCard(code: String) {
+private fun OrderTrackingDeliveryCodeCard(code: String, isPickupHandoff: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -752,7 +779,7 @@ private fun OrderTrackingDeliveryCodeCard(code: String) {
         verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.gapMd),
     ) {
         Text(
-            text = "Tu código de entrega",
+            text = if (isPickupHandoff) "Tu código de recolección" else "Tu código de entrega",
             fontSize = OrderTrackingSheetDim.sectionLabel,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = OrderTrackingSheetDim.sectionLabelTracking,
@@ -766,7 +793,11 @@ private fun OrderTrackingDeliveryCodeCard(code: String) {
             color = OrderTrackingSheetPalette.Primary,
         )
         Text(
-            text = "Muéstralo al repartidor para confirmar la entrega.",
+            text = if (isPickupHandoff) {
+                "Muéstralo al carwash para entregar tu carro."
+            } else {
+                "Muéstralo al repartidor para confirmar la entrega."
+            },
             fontSize = OrderTrackingSheetDim.statusSubtitle,
             lineHeight = OrderTrackingSheetDim.statusSubtitleLine,
             color = OrderTrackingSheetPalette.StatusSubtitle,
@@ -776,7 +807,12 @@ private fun OrderTrackingDeliveryCodeCard(code: String) {
 }
 
 private fun trackingStatusTitle(tracking: OrderTracking): String {
-    if (tracking.courierArrivedAtCustomer && tracking.status.equals("ON_DELIVERY", ignoreCase = true)) {
+    if (tracking.courierArrivedAtCustomer &&
+        (tracking.isOnDelivery || tracking.isOutForPickup)
+    ) {
+        if (tracking.isCarWash) {
+            return if (tracking.isOutForPickup) "El carwash llegó" else "Tu coche está afuera"
+        }
         val name = tracking.deliveryMan?.name?.trim().orEmpty()
         return if (name.isNotEmpty()) "$name está afuera" else "Repartidor afuera"
     }
@@ -784,18 +820,33 @@ private fun trackingStatusTitle(tracking: OrderTracking): String {
 }
 
 private fun trackingStatusSubtitle(tracking: OrderTracking): String {
-    if (tracking.courierArrivedAtCustomer && tracking.status.equals("ON_DELIVERY", ignoreCase = true)) {
-        return if (!tracking.deliveryCode.isNullOrBlank()) {
-            "Comparte tu código de entrega con el repartidor"
-        } else {
-            "Tu pedido te está esperando en la puerta"
+    if (tracking.courierArrivedAtCustomer &&
+        (tracking.isOnDelivery || tracking.isOutForPickup)
+    ) {
+        return when {
+            tracking.isCarWash && tracking.isOutForPickup ->
+                "Comparte tu código de 6 dígitos para entregar el carro"
+            tracking.isCarWash ->
+                "Abre la Dobbi y comparte tu código de entrega"
+            !tracking.deliveryCode.isNullOrBlank() ->
+                "Comparte tu código de entrega con el repartidor"
+            else ->
+                "Tu pedido te está esperando en la puerta"
         }
     }
     val service = tracking.isServicePayment
     val carWash = tracking.isCarWash
     return when (tracking.status.uppercase()) {
         "PENDING" -> if (service) "Procesando tu pago de servicios" else "Esperando confirmación de la tienda"
-        "CONFIRMED" -> if (service) "Tu solicitud fue confirmada" else "Gracias por tu compra"
+        "CONFIRMED" -> if (service) "Tu solicitud fue confirmada" else if (carWash) "El carwash aceptó tu servicio" else "Gracias por tu compra"
+        "OUT_FOR_PICKUP" -> tracking.estimatedDeliveryMinutes?.let { mins ->
+            "El carwash va a recoger tu carro · llegada estimada: ~$mins min"
+        } ?: tracking.estimatedPreparationMinutes?.let { mins ->
+            "Tiempo estimado para recoger carro: $mins min"
+        } ?: "El carwash va en camino a recoger tu carro"
+        "PICKED_UP" -> tracking.estimatedDeliveryMinutes?.let { mins ->
+            "Tu carro va al autolavado · llegada estimada: ~$mins min"
+        } ?: "Tu carro ya fue recogido y va en camino al autolavado"
         "PREPARING" -> tracking.estimatedPreparationMinutes?.let { mins ->
             if (carWash) "Tiempo estimado de lavado: $mins min" else "Tiempo estimado de preparación: $mins min"
         } ?: if (carWash) "Tu vehículo se está lavando" else "Tu pedido se está preparando"
@@ -858,6 +909,8 @@ private fun statusLabel(
 ): String = when (status.uppercase()) {
     "PENDING" -> "Pendiente"
     "CONFIRMED" -> "Confirmado"
+    "OUT_FOR_PICKUP" -> if (carWash) "En camino" else status
+    "PICKED_UP" -> if (carWash) "Recogido" else status
     "PREPARING" -> if (carWash) "Lavando" else "En preparación"
     "READY_FOR_PICKUP" -> when {
         servicePayment -> "Buscando repartidor"

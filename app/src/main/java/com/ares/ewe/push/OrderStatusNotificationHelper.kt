@@ -170,7 +170,13 @@ object OrderStatusNotificationHelper {
         val carWash = shopType.equals("CAR_WASH", ignoreCase = true)
         return when (status) {
             "PENDING" -> "Pedido recibido" to "Tu pedido está pendiente de confirmación."
-            "CONFIRMED" -> "Pedido confirmado" to "La tienda aceptó tu pedido."
+            "CONFIRMED" -> if (carWash) {
+                "Servicio confirmado" to "El carwash aceptó tu servicio."
+            } else {
+                "Pedido confirmado" to "La tienda aceptó tu pedido."
+            }
+            "OUT_FOR_PICKUP" -> "En camino" to "El carwash va en camino a recoger tu carro."
+            "PICKED_UP" -> "Recogido" to "Tu carro ya fue recogido y va en camino al autolavado."
             "PREPARING" -> {
                 var body = if (carWash) {
                     "Tu vehículo se está lavando."
@@ -207,10 +213,13 @@ object OrderStatusNotificationHelper {
                         "Repartidor asignado" to "Un repartidor va en camino a recoger tu pedido en la tienda."
                 }
             }
-            "ON_DELIVERY" -> if (servicePayment) {
-                "En camino" to "El repartidor va en camino a pagar tus servicios."
-            } else {
-                "En camino" to "Tu pedido va rumbo a tu domicilio."
+            "ON_DELIVERY" -> when {
+                carWash ->
+                    "En camino" to "Tu vehículo va en camino a tu domicilio."
+                servicePayment ->
+                    "En camino" to "El repartidor va en camino a pagar tus servicios."
+                else ->
+                    "En camino" to "Tu pedido va rumbo a tu domicilio."
             }
             "DELIVERED" -> if (servicePayment) {
                 "Entregado" to "Tu pago de servicios fue entregado."
@@ -222,7 +231,14 @@ object OrderStatusNotificationHelper {
         }
     }
 
-    fun titleAndBodyForCourierArrived(deliveryManName: String? = null): Pair<String, String> {
+    fun titleAndBodyForCourierArrived(
+        deliveryManName: String? = null,
+        shopType: String? = null,
+    ): Pair<String, String> {
+        if (shopType.equals("CAR_WASH", ignoreCase = true)) {
+            return "Tu coche está afuera" to
+                "Tu coche está afuera, abre la Dobbi y comparte tu código de entrega"
+        }
         val name = deliveryManName?.trim()
         return if (!name.isNullOrEmpty()) {
             "Repartidor afuera" to "$name está afuera con tu pedido."
