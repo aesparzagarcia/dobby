@@ -73,7 +73,7 @@ class OrderTrackingViewModel @Inject constructor(
                 val current = _uiState.value.tracking
                 val awaitingDeliveryCode =
                     current?.courierArrivedAtCustomer == true &&
-                        current.isOnDelivery &&
+                        (current.isOnDelivery || current.isOutForPickup) &&
                         current.deliveryCode.isNullOrBlank()
                 val interval = if (awaitingDeliveryCode) {
                     DELIVERY_CODE_POLL_INTERVAL_MS

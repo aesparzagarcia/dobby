@@ -175,18 +175,26 @@ object OrderStatusNotificationHelper {
             } else {
                 "Pedido confirmado" to "La tienda aceptó tu pedido."
             }
-            "OUT_FOR_PICKUP" -> "En camino" to "El carwash va en camino a recoger tu carro."
+            "OUT_FOR_PICKUP" -> {
+                val mins = estimatedPreparationMinutes?.takeIf { it > 0 }
+                if (mins != null) {
+                    "En camino" to
+                        "El carwash va en camino a recoger tu carro. Llegada estimada: ${formatPrepMinutes(mins)}."
+                } else {
+                    "En camino" to "El carwash va en camino a recoger tu carro."
+                }
+            }
             "PICKED_UP" -> "Recogido" to "Tu carro ya fue recogido y va en camino al autolavado."
             "PREPARING" -> {
-                var body = if (carWash) {
-                    "Tu vehículo se está lavando."
+                if (carWash) {
+                    "Lavando" to "Tu vehículo se está lavando."
                 } else {
-                    "Tu pedido se está preparando."
+                    var body = "Tu pedido se está preparando."
+                    estimatedPreparationMinutes?.takeIf { it > 0 }?.let { mins ->
+                        body += " Tiempo estimado: ${formatPrepMinutes(mins)}."
+                    }
+                    "En preparación" to body
                 }
-                estimatedPreparationMinutes?.takeIf { it > 0 }?.let { mins ->
-                    body += " Tiempo estimado: ${formatPrepMinutes(mins)}."
-                }
-                (if (carWash) "Lavando" else "En preparación") to body
             }
             "READY_FOR_PICKUP" -> when {
                 carWash ->
@@ -234,10 +242,17 @@ object OrderStatusNotificationHelper {
     fun titleAndBodyForCourierArrived(
         deliveryManName: String? = null,
         shopType: String? = null,
+        orderStatus: String? = null,
     ): Pair<String, String> {
         if (shopType.equals("CAR_WASH", ignoreCase = true)) {
-            return "Tu coche está afuera" to
-                "Tu coche está afuera, abre la Dobbi y comparte tu código de entrega"
+            val pickup = orderStatus.equals("OUT_FOR_PICKUP", ignoreCase = true)
+            return if (pickup) {
+                "El carwash llegó" to
+                    "El carwash llegó a recoger tu carro. Abre la Dobbi y comparte tu código de 6 dígitos."
+            } else {
+                "Tu coche está afuera" to
+                    "Tu coche está afuera, abre la Dobbi y comparte tu código de entrega"
+            }
         }
         val name = deliveryManName?.trim()
         return if (!name.isNullOrEmpty()) {

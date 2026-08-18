@@ -40,8 +40,12 @@ class DobbyFirebaseMessagingService : FirebaseMessagingService() {
                     message.data["order_type"],
                     message.data["shop_type"],
                 )
-                val title = message.notification?.title ?: fallback.first
-                val body = message.notification?.body ?: fallback.second
+                val title = message.notification?.title
+                    ?: message.data["title"]
+                    ?: fallback.first
+                val body = message.notification?.body
+                    ?: message.data["body"]
+                    ?: fallback.second
                 OrderStatusNotificationHelper.show(this, title, body, orderId)
                 orderRealtimeBus.notifyOrderChanged(orderId)
             }
@@ -49,12 +53,18 @@ class DobbyFirebaseMessagingService : FirebaseMessagingService() {
                 val orderId = message.data["order_id"]
                 val deliveryManName = message.data["delivery_man_name"]
                 val shopType = message.data["shop_type"]
+                val orderStatus = message.data["order_status"]
                 val fallback = OrderStatusNotificationHelper.titleAndBodyForCourierArrived(
                     deliveryManName,
                     shopType,
+                    orderStatus,
                 )
-                val title = message.notification?.title ?: fallback.first
-                val body = message.notification?.body ?: fallback.second
+                val title = message.notification?.title
+                    ?: message.data["title"]
+                    ?: fallback.first
+                val body = message.notification?.body
+                    ?: message.data["body"]
+                    ?: fallback.second
                 OrderStatusNotificationHelper.show(this, title, body, orderId)
                 orderRealtimeBus.notifyOrderChanged(orderId)
             }

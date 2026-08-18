@@ -81,19 +81,29 @@ import kotlin.math.max
  * Not used when both courier and destination exist — see [MAP_BOUNDS_EXPANSION_FACTOR].
  */
 private const val DEFAULT_ZOOM = 14.25f
+/** Slightly more zoomed out for Recogido / Lavando / Secado y Aspirado (single marker). */
+private const val WASH_PHASE_ZOOM = 13.2f
 /** Edge padding (px) when fitting courier + destination; larger = more zoom out. */
 private const val MAP_BOUNDS_PADDING_PX = 150
+private const val WASH_PHASE_BOUNDS_PADDING_PX = 220
 /**
  * Expands the fitted bounds before applying the camera (1.0 = tight fit).
  * Increase (e.g. 1.5) to zoom out more when repartidor + destino are visible.
  */
 private const val MAP_BOUNDS_EXPANSION_FACTOR = 1.35f
+/** Extra zoom-out while car is at the shop (Recogido / Lavando / Secado y Aspirado). */
+private const val WASH_PHASE_BOUNDS_EXPANSION_FACTOR = 1.85f
 /** Minimum lat/lng span so [CameraUpdateFactory.newLatLngBounds] does not zoom to world view. */
 private const val MIN_BOUNDS_SPAN_DEGREES = 0.004
 private const val MARKER_ICON_SIZE_DP = 48
 private val FALLBACK_LATLNG = LatLng(20.6507582, -103.7029606)
 private val RoutePolylineColor = Color(0xFF0D0D0D)
-/** Brand green aligned with PhoneScreen (~#2ECC71). */
+
+private fun isWashPhaseStatus(status: String?): Boolean =
+    when (status?.uppercase()) {
+        "PICKED_UP", "PREPARING", "READY_FOR_PICKUP" -> true
+        else -> false
+    }
 private fun isValidMapCoordinate(lat: Double, lng: Double): Boolean {
     if (lat !in -90.0..90.0 || lng !in -180.0..180.0) return false
     if (abs(lat) < 1e-4 && abs(lng) < 1e-4) return false
@@ -296,10 +306,19 @@ fun OrderTrackingScreen(
         val shouldFit = lastCameraFitKey == null || mapFitPoints.size > previousCount
         if (!shouldFit) return@LaunchedEffect
 
+        val washPhase = isWashPhaseStatus(tracking.status)
+        val expansion = if (washPhase) {
+            WASH_PHASE_BOUNDS_EXPANSION_FACTOR
+        } else {
+            MAP_BOUNDS_EXPANSION_FACTOR
+        }
+        val boundsPadding = if (washPhase) WASH_PHASE_BOUNDS_PADDING_PX else MAP_BOUNDS_PADDING_PX
+        val singleZoom = if (washPhase) WASH_PHASE_ZOOM else DEFAULT_ZOOM
+
         when (mapFitPoints.size) {
             1 -> {
                 cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(mapFitPoints.first(), DEFAULT_ZOOM),
+                    CameraUpdateFactory.newLatLngZoom(mapFitPoints.first(), singleZoom),
                     durationMs = 800,
                 )
             }
@@ -309,9 +328,9 @@ fun OrderTrackingScreen(
                     mapFitPoints.forEach { builder.include(it) }
                     val bounds = builder.build()
                         .withMinimumSpan()
-                        .expandForZoomOut(MAP_BOUNDS_EXPANSION_FACTOR)
+                        .expandForZoomOut(expansion)
                     cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngBounds(bounds, MAP_BOUNDS_PADDING_PX),
+                        CameraUpdateFactory.newLatLngBounds(bounds, boundsPadding),
                         durationMs = 800,
                     )
                 } catch (_: Exception) {
@@ -320,7 +339,7 @@ fun OrderTrackingScreen(
                         mapFitPoints.map { it.longitude }.average(),
                     )
                     cameraPositionState.animate(
-                        CameraUpdateFactory.newLatLngZoom(center, DEFAULT_ZOOM),
+                        CameraUpdateFactory.newLatLngZoom(center, singleZoom),
                         durationMs = 800,
                     )
                 }

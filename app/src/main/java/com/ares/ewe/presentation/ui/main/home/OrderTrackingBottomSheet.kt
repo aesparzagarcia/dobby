@@ -847,9 +847,14 @@ private fun trackingStatusSubtitle(tracking: OrderTracking): String {
         "PICKED_UP" -> tracking.estimatedDeliveryMinutes?.let { mins ->
             "Tu carro va al autolavado · llegada estimada: ~$mins min"
         } ?: "Tu carro ya fue recogido y va en camino al autolavado"
-        "PREPARING" -> tracking.estimatedPreparationMinutes?.let { mins ->
-            if (carWash) "Tiempo estimado de lavado: $mins min" else "Tiempo estimado de preparación: $mins min"
-        } ?: if (carWash) "Tu vehículo se está lavando" else "Tu pedido se está preparando"
+        // Carwash wash phases: never show estimatedPreparationMinutes (that ETA is only for pickup).
+        "PREPARING" -> if (carWash) {
+            "Tu vehículo se está lavando"
+        } else {
+            tracking.estimatedPreparationMinutes?.let { mins ->
+                "Tiempo estimado de preparación: $mins min"
+            } ?: "Tu pedido se está preparando"
+        }
         "READY_FOR_PICKUP" -> when {
             service -> "Estamos buscando un repartidor para pagar tus servicios"
             carWash -> "Secado y aspirado en proceso"
