@@ -80,22 +80,27 @@ import kotlin.math.max
  * Zoom level when only one marker is shown (Google Maps: ~1 world … ~21 building).
  * Not used when both courier and destination exist — see [MAP_BOUNDS_EXPANSION_FACTOR].
  */
-private const val DEFAULT_ZOOM = 14.25f
+private const val DEFAULT_ZOOM = 14.3f
 /** Slightly more zoomed out for Recogido / Lavando / Secado y Aspirado (single marker). */
-private const val WASH_PHASE_ZOOM = 13.2f
+private const val WASH_PHASE_ZOOM = 13.5f
 /** Edge padding (px) when fitting courier + destination; larger = more zoom out. */
 private const val MAP_BOUNDS_PADDING_PX = 150
-private const val WASH_PHASE_BOUNDS_PADDING_PX = 220
+private const val WASH_PHASE_BOUNDS_PADDING_PX = 190
 /**
  * Expands the fitted bounds before applying the camera (1.0 = tight fit).
- * Increase (e.g. 1.5) to zoom out more when repartidor + destino are visible.
+ * Lower = more zoom in; keep a bit of margin so markers stay above the bottom sheet.
  */
-private const val MAP_BOUNDS_EXPANSION_FACTOR = 1.35f
+private const val MAP_BOUNDS_EXPANSION_FACTOR = 1.7f
 /** Extra zoom-out while car is at the shop (Recogido / Lavando / Secado y Aspirado). */
-private const val WASH_PHASE_BOUNDS_EXPANSION_FACTOR = 1.85f
+private const val WASH_PHASE_BOUNDS_EXPANSION_FACTOR = 2.05f
 /** Minimum lat/lng span so [CameraUpdateFactory.newLatLngBounds] does not zoom to world view. */
-private const val MIN_BOUNDS_SPAN_DEGREES = 0.004
-private const val MARKER_ICON_SIZE_DP = 48
+private const val MIN_BOUNDS_SPAN_DEGREES = 0.0048
+/** Casa / tienda / auto: −10% extra sobre 43dp. */
+private const val MARKER_ICON_SIZE_DP = 39
+/** Repartidor (scooter): −5% extra sobre 41dp. */
+private const val DELIVERY_MARKER_ICON_SIZE_DP = 39
+/** Carro negro (hacia el carwash): 25% más chico que [MARKER_ICON_SIZE_DP]. */
+private const val CAR_MARKER_ICON_SIZE_DP = 29
 private val FALLBACK_LATLNG = LatLng(20.6507582, -103.7029606)
 private val RoutePolylineColor = Color(0xFF0D0D0D)
 
@@ -166,7 +171,9 @@ fun OrderTrackingScreen(
     val usingStraightLineRoute = uiState.usingStraightLineRoute
     var sheetCollapsed by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val deliveryIcon = remember(context) { bitmapDescriptorFromRes(context, R.drawable.ic_delivery) }
+    val deliveryIcon = remember(context) {
+        bitmapDescriptorFromRes(context, R.drawable.ic_delivery, DELIVERY_MARKER_ICON_SIZE_DP)
+    }
 
     val tracking = uiState.tracking
     val isCarWash = tracking?.isCarWash == true
@@ -201,45 +208,18 @@ fun OrderTrackingScreen(
     } else {
         null
     }
-    // Carwash: keep the shop pin visible; the vehicle pin is separate ("Tu vehículo").
-    // Only hide the shop pin when it would stack exactly on the live vehicle.
+    // Carwash: siempre mostrar el local; el vehículo es un pin aparte ("Tu vehículo").
     val shopLatLngForMap = when {
-        isCarWash && deliveryManLatLng != null -> {
-            val shop = shopLatLng
-            val vehicle = deliveryManLatLng
-            if (
-                shop != null &&
-                (
-                    abs(shop.latitude - vehicle.latitude) > 1e-4 ||
-                    abs(shop.longitude - vehicle.longitude) > 1e-4
-                )
-            ) {
-                shop
-            } else if (
-                shop != null &&
-                tracking?.isOnDelivery != true &&
-                tracking?.isAssignedToCourier != true &&
-                tracking?.isOutForPickup != true &&
-                tracking?.isPickedUp != true
-            ) {
-                // Before En camino / Recogido: shop pin alone is the origin (no separate vehicle yet).
-                shop
-            } else {
-                // Same spot as vehicle while in route — show only "Tu vehículo".
-                null
-            }
-        }
         isCarWash -> shopLatLng
         showsRestaurantAndCustomer -> shopLatLng
         else -> null
     }
     val customerLatLngForMap = when {
-        // Durante recolección no mostramos la casa; sí desde Recogido en adelante.
-        isCarWash && tracking?.isOutForPickup == true -> null
         isCarWash && (
             showsRestaurantAndCustomer ||
                 tracking?.isOnDelivery == true ||
                 tracking?.isAssignedToCourier == true ||
+                tracking?.isOutForPickup == true ||
                 tracking?.isPickedUp == true
             ) ->
             customerLatLng
@@ -265,11 +245,21 @@ fun OrderTrackingScreen(
         tracking?.deliveryAddress
     }
     val carMarkerIcon = remember(context) {
-        bitmapDescriptorFromRes(context, R.drawable.ic_car)
+        bitmapDescriptorFromRes(context, R.drawable.ic_car, CAR_MARKER_ICON_SIZE_DP)
             ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
     }
-    val vehicleMarkerIcon = if (isCarWash) carMarkerIcon else deliveryIcon
-    val vehicleMarkerTitle = if (isCarWash) "Tu vehículo" else "Repartidor"
+    // En camino (recolección): scooter de delivery. Con el carro ya recogido: icono de auto.
+    val isCarWashPickupTrip = isCarWash && tracking?.isOutForPickup == true
+    val vehicleMarkerIcon = when {
+        isCarWashPickupTrip -> deliveryIcon
+        isCarWash -> carMarkerIcon
+        else -> deliveryIcon
+    }
+    val vehicleMarkerTitle = when {
+        isCarWashPickupTrip -> "Repartidor"
+        isCarWash -> "Tu vehículo"
+        else -> "Repartidor"
+    }
 
     // Sync position during composition — LaunchedEffect alone left the pin at FALLBACK
     // (off-camera) until the next frame, so the vehicle never appeared near the route.

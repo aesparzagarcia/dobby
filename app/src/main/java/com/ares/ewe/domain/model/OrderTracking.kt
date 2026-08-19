@@ -71,7 +71,7 @@ data class OrderTracking(
         get() = status.equals("OUT_FOR_PICKUP", ignoreCase = true)
 
     /** After shop confirmed: show shop + customer home on the map (no courier yet).
-     * Carwash: also while Detallado / En camino — the shop itself brings the vehicle. */
+     * Carwash: shop + house also while En camino / Recogido / En entrega. */
     val showsRestaurantAndCustomerOnMap: Boolean
         get() {
             val s = status.uppercase()
@@ -121,6 +121,9 @@ data class OrderTracking(
         val dm = deliveryMan
         if (dm?.lat != null && dm.lng != null) {
             points.add(dm.lat to dm.lng)
+        } else if (isCarWash) {
+            // Sin GPS en vivo: origen del vehículo (local o domicilio según fase).
+            routeOriginLatLng()?.let { points.add(it) }
         }
         return points
     }
@@ -129,6 +132,7 @@ data class OrderTracking(
         val PRE_COURIER_BOTH_MARKERS = setOf("CONFIRMED", "PREPARING", "READY_FOR_PICKUP")
         val CAR_WASH_SHOP_AND_CUSTOMER_MARKERS = setOf(
             "CONFIRMED",
+            "OUT_FOR_PICKUP",
             "PICKED_UP",
             "PREPARING",
             "READY_FOR_PICKUP",

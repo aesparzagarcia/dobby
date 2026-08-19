@@ -229,10 +229,13 @@ object OrderStatusNotificationHelper {
                 else ->
                     "En camino" to "Tu pedido va rumbo a tu domicilio."
             }
-            "DELIVERED" -> if (servicePayment) {
-                "Entregado" to "Tu pago de servicios fue entregado."
-            } else {
-                "Entregado" to "Tu pedido fue entregado."
+            "DELIVERED" -> when {
+                servicePayment ->
+                    "Entregado" to "Tu pago de servicios fue entregado."
+                carWash ->
+                    "Servicio entregado" to "El coche ha sido entregado."
+                else ->
+                    "Entregado" to "Tu pedido fue entregado."
             }
             "CANCELLED" -> "Pedido cancelado" to "Tu pedido fue cancelado."
             else -> "Actualización de pedido" to (status?.let { "Estado: $it" } ?: "Hay novedades en tu pedido.")
