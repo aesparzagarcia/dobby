@@ -19,6 +19,7 @@ internal object DobbyConsumerHttpAuthPolicy {
         return u.contains("auth/request-otp") ||
             u.contains("auth/verify-otp") ||
             u.contains("auth/complete-registration") ||
-            u.contains("/auth/refresh")
+            u.contains("/auth/refresh") ||
+            u.contains("auth/session/logout")
     }
 }

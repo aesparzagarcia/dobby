@@ -1,8 +1,9 @@
 package com.ares.ewe.data.remote.api
 
-import com.ares.ewe.data.remote.model.AddressDto
-import com.ares.ewe.data.remote.model.AdDto
 import com.ares.ewe.data.remote.model.ActiveOrderDto
+import com.ares.ewe.data.remote.model.AdDto
+import com.ares.ewe.data.remote.model.AddressDto
+import com.ares.ewe.data.remote.model.AppRefreshRequest
 import com.ares.ewe.data.remote.model.OrderHistoryDto
 import com.ares.ewe.data.remote.model.CreateOrderRequest
 import com.ares.ewe.data.remote.model.CreateOrderResponse
@@ -47,6 +48,10 @@ interface DobbyApi {
 
     @POST("auth/complete-registration")
     suspend fun completeRegistration(@Body request: CompleteRegistrationRequest): CompleteRegistrationResponse
+
+    /** Server-side revoke of refresh_sessions (best-effort before local clear). */
+    @POST("auth/session/logout")
+    suspend fun logoutSession(@Body request: AppRefreshRequest): Unit
 
     @GET("app/places")
     suspend fun getPlaces(): PlacesResponse

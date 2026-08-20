@@ -4,6 +4,7 @@ import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.data.session.SessionEventBus
 import com.ares.ewe.data.remote.api.DobbyApi
+import com.ares.ewe.data.remote.model.AppRefreshRequest
 import com.ares.ewe.data.remote.model.CompleteRegistrationRequest
 import com.ares.ewe.data.remote.model.RequestOtpRequest
 import com.ares.ewe.data.remote.model.VerifyOtpRequest
@@ -106,6 +107,14 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
+        try {
+            val refresh = sessionManager.refreshToken.first()?.trim().orEmpty()
+            if (refresh.isNotEmpty()) {
+                api.logoutSession(AppRefreshRequest(refresh))
+            }
+        } catch (_: Exception) {
+            // Best-effort server revoke; always clear local session.
+        }
         consumerRealtimeCoordinator.onLogout()
         sessionManager.clearSession()
     }
