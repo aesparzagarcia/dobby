@@ -74,7 +74,7 @@ fun Throwable.toUserFacingApiError(): UserFacingApiError {
         is SocketTimeoutException -> UserFacingApiError(
             ApiErrorKind.CONNECTION,
             "Tiempo de espera agotado",
-            "La conexión tardó demasiado. Comprueba tu red e inténtalo de nuevo."
+            "El servidor no respondió. Intenta de nuevo."
         )
         is UnknownHostException -> UserFacingApiError(
             ApiErrorKind.CONNECTION,
