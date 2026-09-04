@@ -23,7 +23,11 @@ import kotlinx.coroutines.delay
  * Without this, [isPlaceOpenNow] is frozen at first composition (e.g. "Cerrado" after unlocking the phone the next day).
  */
 @Composable
-fun rememberIsPlaceOpenNow(openingHour: String?, closingHour: String?): Boolean? {
+fun rememberIsPlaceOpenNow(
+    openingHour: String?,
+    closingHour: String?,
+    openingDays: List<String> = emptyList(),
+): Boolean? {
     val lifecycleOwner = LocalLifecycleOwner.current
     var refreshKey by remember { mutableIntStateOf(0) }
 
@@ -44,22 +48,69 @@ fun rememberIsPlaceOpenNow(openingHour: String?, closingHour: String?): Boolean?
         }
     }
 
-    return remember(openingHour, closingHour, refreshKey) {
-        isPlaceOpenNow(openingHour, closingHour)
+    return remember(openingHour, closingHour, openingDays, refreshKey) {
+        isPlaceOpenNow(openingHour, closingHour, openingDays)
     }
 }
 
-/** Whether the place is open now; `null` if hours are unknown. */
-fun isPlaceOpenNow(openingHour: String?, closingHour: String?): Boolean? {
-    val open = parseHour(openingHour) ?: return null
-    val close = parseHour(closingHour) ?: return null
-    val now = LocalTime.now()
-    return if (close.isAfter(open) || close == open) {
-        !now.isBefore(open) && now.isBefore(close)
-    } else {
-        // Overnight window (e.g. 22:00 – 02:00)
-        !now.isBefore(open) || now.isBefore(close)
+private val WEEKDAY_CODES = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+
+private fun normalizedDays(raw: List<String>?): Set<String> {
+    val cleaned = raw.orEmpty()
+        .map { it.trim().uppercase(Locale.US) }
+        .filter { it in WEEKDAY_CODES }
+        .toSet()
+    return if (cleaned.isEmpty()) WEEKDAY_CODES.toSet() else cleaned
+}
+
+private fun weekdayCode(date: java.time.LocalDate = java.time.LocalDate.now()): String =
+    when (date.dayOfWeek) {
+        java.time.DayOfWeek.MONDAY -> "MON"
+        java.time.DayOfWeek.TUESDAY -> "TUE"
+        java.time.DayOfWeek.WEDNESDAY -> "WED"
+        java.time.DayOfWeek.THURSDAY -> "THU"
+        java.time.DayOfWeek.FRIDAY -> "FRI"
+        java.time.DayOfWeek.SATURDAY -> "SAT"
+        java.time.DayOfWeek.SUNDAY -> "SUN"
     }
+
+private fun weekdayNameEs(code: String): String =
+    when (code) {
+        "MON" -> "lunes"
+        "TUE" -> "martes"
+        "WED" -> "miércoles"
+        "THU" -> "jueves"
+        "FRI" -> "viernes"
+        "SAT" -> "sábado"
+        "SUN" -> "domingo"
+        else -> code.lowercase(Locale.getDefault())
+    }
+
+/** Whether the place is open now; `null` if hours are unknown. */
+fun isPlaceOpenNow(
+    openingHour: String?,
+    closingHour: String?,
+    openingDays: List<String> = emptyList(),
+): Boolean? {
+    val days = normalizedDays(openingDays)
+    val today = weekdayCode()
+    val open = parseHour(openingHour)
+    val close = parseHour(closingHour)
+    if (open == null || close == null) {
+        if (days.size < 7 && today !in days) return false
+        return null
+    }
+    val now = LocalTime.now()
+    val overnight = close.isBefore(open)
+    if (overnight) {
+        return if (!now.isBefore(open)) {
+            today in days
+        } else {
+            weekdayCode(java.time.LocalDate.now().minusDays(1)) in days
+        }
+    }
+    if (today !in days) return false
+    return !now.isBefore(open) && now.isBefore(close)
 }
 
 fun formatPlaceHoursRange(openingHour: String?, closingHour: String?): String? {
@@ -74,21 +125,41 @@ fun isShopAvailableForOrders(
     shopStatus: String?,
     openingHour: String?,
     closingHour: String?,
+    openingDays: List<String> = emptyList(),
 ): Boolean {
     if (shopStatus != null && shopStatus != "ACTIVE") return false
-    return isPlaceOpenNow(openingHour, closingHour) != false
+    return isPlaceOpenNow(openingHour, closingHour, openingDays) != false
 }
 
 /** e.g. "Abre hoy a las 8:00 AM" when closed outside hours; null if inactive or hours unknown. */
 fun formatShopReopensLabel(
     shopStatus: String?,
     openingHour: String?,
+    openingDays: List<String> = emptyList(),
 ): String? {
     if (shopStatus != null && shopStatus != "ACTIVE") return null
     val openRaw = openingHour?.trim().orEmpty()
     if (openRaw.isEmpty()) return null
     parseHour(openRaw) ?: return null
-    return "Abre hoy a las ${formatHour12(openRaw)}"
+    val days = normalizedDays(openingDays)
+    val today = weekdayCode()
+    val now = LocalTime.now()
+    val open = parseHour(openRaw)
+    if (open != null && today in days && now.isBefore(open)) {
+        return "Abre hoy a las ${formatHour12(openRaw)}"
+    }
+    for (offset in 1..7) {
+        val date = java.time.LocalDate.now().plusDays(offset.toLong())
+        val code = weekdayCode(date)
+        if (code in days) {
+            return if (offset == 1) {
+                "Abre mañana a las ${formatHour12(openRaw)}"
+            } else {
+                "Abre el ${weekdayNameEs(code)} a las ${formatHour12(openRaw)}"
+            }
+        }
+    }
+    return "Abre a las ${formatHour12(openRaw)}"
 }
 
 /** Home/promotions list items: match shop hours from featured places (ACTIVE shops on /home). */
@@ -103,12 +174,13 @@ fun isProductShopAvailableForOrders(
         shopStatus = "ACTIVE",
         openingHour = shop.openingHour,
         closingHour = shop.closingHour,
+        openingDays = shop.openingDays,
     )
 }
 
 /** Open/available featured places first; preserves API order within each group. */
 fun isFeaturedPlaceAvailable(place: FeaturedPlace): Boolean =
-    isPlaceOpenNow(place.openingHour, place.closingHour) != false
+    isPlaceOpenNow(place.openingHour, place.closingHour, place.openingDays) != false
 
 fun sortFeaturedPlacesByAvailability(places: List<FeaturedPlace>): List<FeaturedPlace> =
     places

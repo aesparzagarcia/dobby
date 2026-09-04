@@ -18,6 +18,7 @@ data class FeaturedPlaceDto(
     @SerializedName("rating_count") val ratingCount: Int = 0,
     @SerializedName("opening_hour") val openingHour: String? = null,
     @SerializedName("closing_hour") val closingHour: String? = null,
+    @SerializedName("opening_days") val openingDays: List<String> = emptyList(),
     @SerializedName("lat") val lat: Double? = null,
     @SerializedName("lng") val lng: Double? = null,
 )
@@ -66,6 +67,7 @@ data class ShopInfoDto(
     @SerializedName("status") val status: String,
     @SerializedName("opening_hour") val openingHour: String? = null,
     @SerializedName("closing_hour") val closingHour: String? = null,
+    @SerializedName("opening_days") val openingDays: List<String> = emptyList(),
     @SerializedName("id") val id: String? = null,
     @SerializedName("name") val name: String? = null,
     @SerializedName("type") val type: String? = null,

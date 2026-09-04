@@ -104,6 +104,7 @@ class PlacesRepositoryImpl @Inject constructor(
             ratingCount = p.ratingCount,
             openingHour = p.openingHour,
             closingHour = p.closingHour,
+            openingDays = p.openingDays ?: emptyList(),
             latitude = p.lat,
             longitude = p.lng,
         )
@@ -189,6 +190,7 @@ class PlacesRepositoryImpl @Inject constructor(
             shopStatus = response.shop.status,
             openingHour = response.shop.openingHour,
             closingHour = response.shop.closingHour,
+            openingDays = response.shop.openingDays ?: emptyList(),
             products = products,
             shopName = response.shop.name,
             shopType = response.shop.type,

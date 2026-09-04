@@ -33,6 +33,7 @@ data class ShopDetailUiState(
     val shopStatus: String? = null,
     val openingHour: String? = null,
     val closingHour: String? = null,
+    val openingDays: List<String> = emptyList(),
     val isShopAvailableForOrders: Boolean = true,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -45,7 +46,7 @@ data class ShopDetailUiState(
         get() = !isShopAvailableForOrders
 
     val shopReopensLabel: String?
-        get() = formatShopReopensLabel(shopStatus, openingHour)
+        get() = formatShopReopensLabel(shopStatus, openingHour, openingDays)
     val filteredProducts: List<ShopProduct>
         get() {
             val query = searchQuery.trim()
@@ -102,10 +103,12 @@ class ShopDetailViewModel @Inject constructor(
                             shopStatus = page.shopStatus,
                             openingHour = page.openingHour,
                             closingHour = page.closingHour,
+                            openingDays = page.openingDays,
                         ),
                         shopStatus = page.shopStatus,
                         openingHour = page.openingHour,
                         closingHour = page.closingHour,
+                        openingDays = page.openingDays,
                         isLoading = false,
                         errorMessage = null,
                     )

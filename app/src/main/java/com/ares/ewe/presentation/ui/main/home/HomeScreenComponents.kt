@@ -473,7 +473,7 @@ fun HomeFeaturedPlaceCard(
     onClick: () -> Unit = {},
     cardScale: Float = FeaturedPlaceCardScale,
 ) {
-    val isOpen = rememberIsPlaceOpenNow(place.openingHour, place.closingHour)
+    val isOpen = rememberIsPlaceOpenNow(place.openingHour, place.closingHour, place.openingDays)
     val hoursLabel = formatPlaceHoursRange(place.openingHour, place.closingHour)
     val subtitle = placeSubtitle(place)
     val corner = featuredPlaceCardCorner(cardScale)

@@ -12,6 +12,7 @@ data class FeaturedPlace(
     val ratingCount: Int = 0,
     val openingHour: String? = null,
     val closingHour: String? = null,
+    val openingDays: List<String> = emptyList(),
     val latitude: Double? = null,
     val longitude: Double? = null,
 )
@@ -52,6 +53,7 @@ data class ShopProductsPage(
     val shopStatus: String,
     val openingHour: String?,
     val closingHour: String?,
+    val openingDays: List<String> = emptyList(),
     val products: List<ShopProduct>,
     val shopName: String? = null,
     val shopType: String? = null,
