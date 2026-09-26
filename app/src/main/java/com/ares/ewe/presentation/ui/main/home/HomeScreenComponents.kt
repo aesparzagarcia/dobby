@@ -58,6 +58,8 @@ private val HomeBg = DobbyPureScale.Pure
 private val SearchBg = DobbyColors.SurfaceMuted
 private val CardBorder = Color(0xFFE8E8ED)
 private val OpenGreen = Color(0xFF22C55E)
+private val SlowYellow = Color(0xFFF59E0B)
+private val HighDemandRed = Color(0xFFEF4444)
 private val ClosedGray = Color(0xFF6B7280)
 private val MutedText = DobbyColors.TextSecondary
 
@@ -517,10 +519,24 @@ fun HomeFeaturedPlaceCard(
                         .align(Alignment.TopStart)
                         .padding((8 * cardScale).dp),
                 ) {
-                    when (isOpen) {
-                        true -> StatusPill(text = "Abierto", color = OpenGreen, scale = cardScale)
-                        false -> StatusPill(text = "Cerrado", color = ClosedGray, scale = cardScale)
-                        null -> {}
+                    if (place.isService) {
+                        when (isOpen) {
+                            true -> StatusPill(text = "Abierto", color = OpenGreen, scale = cardScale)
+                            false -> StatusPill(text = "Cerrado", color = ClosedGray, scale = cardScale)
+                            null -> {}
+                        }
+                    } else {
+                        val ops = normalizedOpsStatus(place.shopStatus)
+                        val color = when (ops) {
+                            "SLOW" -> SlowYellow
+                            "HIGH_DEMAND" -> HighDemandRed
+                            else -> OpenGreen
+                        }
+                        StatusPill(
+                            text = shopOpsLabel(place.shopStatus),
+                            color = color,
+                            scale = cardScale,
+                        )
                     }
                 }
             }

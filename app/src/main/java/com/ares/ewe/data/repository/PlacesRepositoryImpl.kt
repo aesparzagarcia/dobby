@@ -107,6 +107,7 @@ class PlacesRepositoryImpl @Inject constructor(
             openingDays = p.openingDays ?: emptyList(),
             latitude = p.lat,
             longitude = p.lng,
+            shopStatus = if (isService) null else p.status,
         )
     }
 

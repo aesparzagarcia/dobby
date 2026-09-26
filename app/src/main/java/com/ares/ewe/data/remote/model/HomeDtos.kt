@@ -21,6 +21,7 @@ data class FeaturedPlaceDto(
     @SerializedName("opening_days") val openingDays: List<String> = emptyList(),
     @SerializedName("lat") val lat: Double? = null,
     @SerializedName("lng") val lng: Double? = null,
+    @SerializedName("status") val status: String? = null,
 )
 
 data class BestSellerProductDto(

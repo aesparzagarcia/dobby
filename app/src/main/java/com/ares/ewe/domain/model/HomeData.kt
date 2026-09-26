@@ -15,6 +15,7 @@ data class FeaturedPlace(
     val openingDays: List<String> = emptyList(),
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val shopStatus: String? = null,
 )
 
 data class BestSellerProduct(
@@ -109,12 +110,16 @@ data class AdCarouselSlide(
     val ad: Ad,
 )
 
-/** Prioridad 3 → 4 slides, 0 → 1 slide; orden descendente por prioridad. */
-fun buildWeightedAdCarouselSlides(ads: List<Ad>): List<AdCarouselSlide> =
-    ads.sortedWith(compareByDescending<Ad> { it.priority }.thenByDescending { it.id })
+/** Un anuncio → un slide fijo. Varios → más slides según prioridad (3 premium = 4 apariciones). */
+fun buildWeightedAdCarouselSlides(ads: List<Ad>): List<AdCarouselSlide> {
+    if (ads.size <= 1) {
+        return ads.map { AdCarouselSlide(key = it.id, ad = it) }
+    }
+    return ads.sortedWith(compareByDescending<Ad> { it.priority }.thenByDescending { it.id })
         .flatMap { ad ->
             val weight = ad.priority.coerceIn(0, 3) + 1
             (0 until weight).map { index ->
                 AdCarouselSlide(key = "${ad.id}-$index", ad = ad)
             }
         }
+}

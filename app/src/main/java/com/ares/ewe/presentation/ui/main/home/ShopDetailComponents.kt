@@ -120,10 +120,12 @@ fun ShopDetailSearchBar(
 @Composable
 fun ShopClosedBanner(
     reopensLabel: String?,
+    shopStatus: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val closedRed = Color(0xFFEF4444)
     val bannerBg = Color(0xFFFFF1F2)
+    val isHighDemand = normalizedOpsStatus(shopStatus) == "HIGH_DEMAND"
 
     Row(
         modifier = modifier
@@ -154,12 +156,12 @@ fun ShopClosedBanner(
                 .padding(horizontal = 12.dp),
         ) {
             Text(
-                text = "Tienda cerrada",
+                text = if (isHighDemand) "Alta demanda" else "Tienda cerrada",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = closedRed,
             )
-            if (reopensLabel != null) {
+            if (!isHighDemand && reopensLabel != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 val timePrefix = "Abre hoy a las "
                 val opensText = buildAnnotatedString {
@@ -180,7 +182,11 @@ fun ShopClosedBanner(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Los productos estarán disponibles cuando la tienda abra.",
+                text = if (isHighDemand) {
+                    "La tienda no puede recibir pedidos ahora."
+                } else {
+                    "Los productos estarán disponibles cuando la tienda abra."
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MutedText,
             )

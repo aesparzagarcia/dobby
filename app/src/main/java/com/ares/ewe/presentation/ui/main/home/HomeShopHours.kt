@@ -120,14 +120,38 @@ fun formatPlaceHoursRange(openingHour: String?, closingHour: String?): String? {
     return "${formatHour12(open)} - ${formatHour12(close)}"
 }
 
-/** Orders allowed when shop is ACTIVE and within opening hours (unknown hours → treat as open). */
+/** AVAILABLE / SLOW can receive orders; HIGH_DEMAND is listed but blocked. */
+fun normalizedOpsStatus(shopStatus: String?): String {
+    val raw = shopStatus?.trim()?.uppercase().orEmpty()
+    if (raw == "SLOW" || raw == "LENTO") return "SLOW"
+    if (raw == "HIGH_DEMAND" || raw == "ALTA_DEMANDA" || raw == "ALTADEMANDA") return "HIGH_DEMAND"
+    if (raw == "INACTIVE") return "INACTIVE"
+    return "AVAILABLE"
+}
+
+fun isOrderableOpsStatus(shopStatus: String?): Boolean {
+    return when (normalizedOpsStatus(shopStatus)) {
+        "HIGH_DEMAND", "INACTIVE" -> false
+        else -> true
+    }
+}
+
+fun shopOpsLabel(shopStatus: String?): String {
+    return when (normalizedOpsStatus(shopStatus)) {
+        "SLOW" -> "Lento"
+        "HIGH_DEMAND" -> "Alta demanda"
+        else -> "Disponible"
+    }
+}
+
+/** Orders allowed when shop is Disponible/Lento and within opening hours (unknown hours → treat as open). */
 fun isShopAvailableForOrders(
     shopStatus: String?,
     openingHour: String?,
     closingHour: String?,
     openingDays: List<String> = emptyList(),
 ): Boolean {
-    if (shopStatus != null && shopStatus != "ACTIVE") return false
+    if (!isOrderableOpsStatus(shopStatus)) return false
     return isPlaceOpenNow(openingHour, closingHour, openingDays) != false
 }
 
@@ -137,7 +161,7 @@ fun formatShopReopensLabel(
     openingHour: String?,
     openingDays: List<String> = emptyList(),
 ): String? {
-    if (shopStatus != null && shopStatus != "ACTIVE") return null
+    if (!isOrderableOpsStatus(shopStatus)) return null
     val openRaw = openingHour?.trim().orEmpty()
     if (openRaw.isEmpty()) return null
     parseHour(openRaw) ?: return null
@@ -171,7 +195,7 @@ fun isProductShopAvailableForOrders(
     if (id.isEmpty()) return false
     val shop = featuredPlaces.find { it.id == id && !it.isService } ?: return false
     return isShopAvailableForOrders(
-        shopStatus = "ACTIVE",
+        shopStatus = shop.shopStatus,
         openingHour = shop.openingHour,
         closingHour = shop.closingHour,
         openingDays = shop.openingDays,
@@ -179,8 +203,12 @@ fun isProductShopAvailableForOrders(
 }
 
 /** Open/available featured places first; preserves API order within each group. */
-fun isFeaturedPlaceAvailable(place: FeaturedPlace): Boolean =
-    isPlaceOpenNow(place.openingHour, place.closingHour, place.openingDays) != false
+fun isFeaturedPlaceAvailable(place: FeaturedPlace): Boolean {
+    if (place.isService) {
+        return isPlaceOpenNow(place.openingHour, place.closingHour, place.openingDays) != false
+    }
+    return isOrderableOpsStatus(place.shopStatus)
+}
 
 fun sortFeaturedPlacesByAvailability(places: List<FeaturedPlace>): List<FeaturedPlace> =
     places

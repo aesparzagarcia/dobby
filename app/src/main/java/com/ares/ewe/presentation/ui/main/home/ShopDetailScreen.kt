@@ -120,6 +120,7 @@ fun ShopDetailScreen(
                         if (uiState.showShopClosedBanner) {
                             ShopClosedBanner(
                                 reopensLabel = uiState.shopReopensLabel,
+                                shopStatus = uiState.shopStatus,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                         }
