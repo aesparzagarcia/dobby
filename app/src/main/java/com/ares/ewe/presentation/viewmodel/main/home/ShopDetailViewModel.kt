@@ -87,23 +87,22 @@ class ShopDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val page = placesRepository.getShopProducts(openedShopId)
+                val isCarWash = page.shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
+                val chips = ProductCategory.filterChips(page.shopType)
                 _uiState.update {
+                    val selected = it.selectedCategoryId
+                    val keepSelected = selected == null || chips.any { chip -> chip.filterId == selected }
                     it.copy(
                         shopName = shopName,
                         shopType = page.shopType,
                         products = page.products,
-                        selectedCategoryId = if (
-                            page.shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
-                        ) {
-                            null
-                        } else {
-                            it.selectedCategoryId
-                        },
+                        selectedCategoryId = if (isCarWash) null else if (keepSelected) selected else null,
                         isShopAvailableForOrders = isShopAvailableForOrders(
                             shopStatus = page.shopStatus,
                             openingHour = page.openingHour,
                             closingHour = page.closingHour,
                             openingDays = page.openingDays,
+                            openingSchedules = page.openingSchedules,
                         ),
                         shopStatus = page.shopStatus,
                         openingHour = page.openingHour,
@@ -136,8 +135,13 @@ class ShopDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
     }
 
-    fun addToCart(product: ShopProduct) {
+    fun addToCart(
+        product: ShopProduct,
+        variant: com.ares.ewe.domain.model.ProductVariant? = null,
+        quantity: Int = 1,
+    ) {
         if (!_uiState.value.isShopAvailableForOrders) return
+        val qty = quantity.coerceAtLeast(1)
         viewModelScope.launch {
             val shopId = product.shopId ?: openedShopId
             val cartItems = cartRepository.items.first()
@@ -146,31 +150,34 @@ class ShopDetailViewModel @Inject constructor(
                     cartItems = cartItems,
                     productId = product.id,
                     shopId = shopId,
-                    quantityToAdd = 1,
+                    quantityToAdd = qty,
                 )
             ) {
                 _uiState.update { it.copy(showCarWashSingleProductDialog = true) }
                 return@launch
             }
             val validDiscount = product.discount.coerceIn(0, 100)
+            val listPrice = variant?.price ?: product.price
             val unitPrice = if (product.hasPromotion && validDiscount > 0) {
-                product.price * (1 - validDiscount / 100.0)
+                listPrice * (1 - validDiscount / 100.0)
             } else {
-                product.price
+                listPrice
             }
             pendingCartAddGate.runOrRequestAddress {
                 cartRepository.addItem(
                     productId = product.id,
                     name = product.name,
                     price = unitPrice,
-                    quantity = 1,
+                    quantity = qty,
                     imageUrl = product.imageUrl,
-                    listPrice = product.price,
+                    listPrice = listPrice,
                     hasPromotion = product.hasPromotion,
                     discount = product.discount,
                     pickupLatitude = pickupLatitude,
                     pickupLongitude = pickupLongitude,
                     shopId = shopId,
+                    variantId = variant?.id,
+                    variantName = variant?.name,
                 )
             }
         }

@@ -277,12 +277,12 @@ class CartViewModel @Inject constructor(
         _deliveryState.update { it.copy(placeOrderError = null) }
     }
 
-    fun removeItem(productId: String) {
-        cartRepository.removeItem(productId)
+    fun removeItem(productId: String, variantId: String = "") {
+        cartRepository.removeItem(productId, variantId)
     }
 
-    fun updateQuantity(productId: String, quantity: Int) {
-        cartRepository.updateQuantity(productId, quantity)
+    fun updateQuantity(productId: String, quantity: Int, variantId: String = "") {
+        cartRepository.updateQuantity(productId, quantity, variantId)
     }
 
     fun clearCart() {

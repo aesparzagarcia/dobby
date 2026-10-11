@@ -475,8 +475,18 @@ fun HomeFeaturedPlaceCard(
     onClick: () -> Unit = {},
     cardScale: Float = FeaturedPlaceCardScale,
 ) {
-    val isOpen = rememberIsPlaceOpenNow(place.openingHour, place.closingHour, place.openingDays)
-    val hoursLabel = formatPlaceHoursRange(place.openingHour, place.closingHour)
+    val isOpen = rememberIsPlaceOpenNow(
+        place.openingHour,
+        place.closingHour,
+        place.openingDays,
+        place.openingSchedules,
+    )
+    val hoursLabel = formatPlaceHoursRange(
+        place.openingHour,
+        place.closingHour,
+        place.openingDays,
+        place.openingSchedules,
+    )
     val subtitle = placeSubtitle(place)
     val corner = featuredPlaceCardCorner(cardScale)
     val imageAspect = featuredPlaceImageAspect(cardScale)
@@ -525,7 +535,10 @@ fun HomeFeaturedPlaceCard(
                             false -> StatusPill(text = "Cerrado", color = ClosedGray, scale = cardScale)
                             null -> {}
                         }
+                    } else if (isOpen == false) {
+                        StatusPill(text = "Cerrado", color = ClosedGray, scale = cardScale)
                     } else {
+                        // Ops status (Disponible / Lento / Alta demanda) only while open.
                         val ops = normalizedOpsStatus(place.shopStatus)
                         val color = when (ops) {
                             "SLOW" -> SlowYellow

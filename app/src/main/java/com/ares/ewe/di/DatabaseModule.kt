@@ -77,6 +77,51 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `cart_new` (
+                    `productId` TEXT NOT NULL,
+                    `variantId` TEXT NOT NULL DEFAULT '',
+                    `variantName` TEXT,
+                    `name` TEXT NOT NULL,
+                    `price` REAL NOT NULL,
+                    `quantity` INTEGER NOT NULL,
+                    `imageUrl` TEXT,
+                    `description` TEXT,
+                    `listPrice` REAL NOT NULL DEFAULT 0,
+                    `hasPromotion` INTEGER NOT NULL DEFAULT 0,
+                    `discount` INTEGER NOT NULL DEFAULT 0,
+                    `pickupLatitude` REAL,
+                    `pickupLongitude` REAL,
+                    `shopId` TEXT,
+                    `lineKind` TEXT NOT NULL DEFAULT 'PRODUCT',
+                    `serviceId` TEXT,
+                    `serviceNumber` TEXT,
+                    PRIMARY KEY(`productId`, `variantId`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                INSERT INTO `cart_new` (
+                    productId, variantId, variantName, name, price, quantity, imageUrl, description,
+                    listPrice, hasPromotion, discount, pickupLatitude, pickupLongitude, shopId,
+                    lineKind, serviceId, serviceNumber
+                )
+                SELECT
+                    productId, '', NULL, name, price, quantity, imageUrl, description,
+                    listPrice, hasPromotion, discount, pickupLatitude, pickupLongitude, shopId,
+                    lineKind, serviceId, serviceNumber
+                FROM `cart`
+                """.trimIndent()
+            )
+            db.execSQL("DROP TABLE `cart`")
+            db.execSQL("ALTER TABLE `cart_new` RENAME TO `cart`")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(
@@ -93,6 +138,7 @@ object DatabaseModule {
         MIGRATION_5_6,
         MIGRATION_6_7,
         MIGRATION_7_8,
+        MIGRATION_8_9,
     ).build()
 
     @Provides

@@ -1,5 +1,11 @@
 package com.ares.ewe.domain.model
 
+data class ShopHourWindow(
+    val days: List<String>,
+    val open: String,
+    val close: String,
+)
+
 data class FeaturedPlace(
     val id: String,
     val name: String,
@@ -13,6 +19,7 @@ data class FeaturedPlace(
     val openingHour: String? = null,
     val closingHour: String? = null,
     val openingDays: List<String> = emptyList(),
+    val openingSchedules: List<ShopHourWindow> = emptyList(),
     val latitude: Double? = null,
     val longitude: Double? = null,
     val shopStatus: String? = null,
@@ -36,6 +43,12 @@ data class HomeData(
     val bestSellerProducts: List<BestSellerProduct>
 )
 
+data class ProductVariant(
+    val id: String,
+    val name: String,
+    val price: Double,
+)
+
 data class ShopProduct(
     val id: String,
     val name: String,
@@ -48,13 +61,21 @@ data class ShopProduct(
     val discount: Int = 0,
     val shopId: String? = null,
     val category: String? = null,
-)
+    val variants: List<ProductVariant> = emptyList(),
+) {
+    val hasMultiplePresentations: Boolean
+        get() = variants.size > 1
+
+    val displayListPrice: Double
+        get() = if (hasMultiplePresentations) variants.minOf { it.price } else price
+}
 
 data class ShopProductsPage(
     val shopStatus: String,
     val openingHour: String?,
     val closingHour: String?,
     val openingDays: List<String> = emptyList(),
+    val openingSchedules: List<ShopHourWindow> = emptyList(),
     val products: List<ShopProduct>,
     val shopName: String? = null,
     val shopType: String? = null,
@@ -76,7 +97,11 @@ data class ProductDetail(
     val discount: Int = 0,
     val shopId: String? = null,
     val shopType: String? = null,
-)
+    val variants: List<ProductVariant> = emptyList(),
+) {
+    val hasMultiplePresentations: Boolean
+        get() = variants.size > 1
+}
 
 data class ServiceDetail(
     val id: String,

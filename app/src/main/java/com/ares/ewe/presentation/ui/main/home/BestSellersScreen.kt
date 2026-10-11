@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
 import com.ares.ewe.presentation.ui.components.CarWashSingleProductDialog
 import com.ares.ewe.presentation.viewmodel.main.home.BestSellersViewModel
 
@@ -114,6 +115,7 @@ fun BestSellersScreen(
                         ShopDetailCategoryRow(
                             selectedCategoryId = uiState.selectedCategoryId,
                             onCategorySelected = viewModel::onCategorySelected,
+                            showAllCategories = true,
                         )
 
                         if (filteredProducts.isEmpty()) {
@@ -152,9 +154,11 @@ fun BestSellersScreen(
                                     val shopAvailable = viewModel.isProductAvailable(product)
                                     val shopId = product.shopId?.trim().orEmpty()
                                     val place = uiState.featuredPlaces.find { it.id == shopId && !it.isService }
+                                    val isCarWash = CartCarWashSingleProductPolicy.isCarWash(place?.shopType)
                                     ShopDetailProductCard(
                                         product = product,
                                         isProductAvailable = shopAvailable,
+                                        isCarWash = isCarWash,
                                         onClick = {
                                             onProductClick(
                                                 product.id,

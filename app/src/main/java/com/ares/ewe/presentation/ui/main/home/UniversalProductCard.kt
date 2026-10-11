@@ -55,7 +55,6 @@ fun UniversalProductCard(
     val showPromotion = hasPromotion && validDiscount > 0
     val discountedPrice = if (showPromotion) price * (1 - validDiscount / 100.0) else price
     val corner = (16 * ProductCardScale).dp
-    val imagePadding = (4 * ProductCardScale).dp
 
     Card(
         modifier = modifier.clickable(onClick = onClick),
@@ -79,10 +78,8 @@ fun UniversalProductCard(
                 LoadingAsyncImage(
                     model = resolvedImageUrl,
                     contentDescription = name,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(imagePadding),
-                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                     placeholderBackground = Color.White,
                     error = {
                         Text(

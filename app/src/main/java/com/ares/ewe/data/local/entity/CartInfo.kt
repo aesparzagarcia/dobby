@@ -1,12 +1,12 @@
 package com.ares.ewe.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "cart")
+@Entity(tableName = "cart", primaryKeys = ["productId", "variantId"])
 data class CartInfo(
-    @PrimaryKey
     val productId: String,
+    val variantId: String = "",
+    val variantName: String? = null,
     val name: String,
     /** Precio unitario que paga el cliente (con descuento si aplica). */
     val price: Double,

@@ -166,7 +166,8 @@ class OrderRepositoryImpl @Inject constructor(
                 CreateOrderItemRequest(
                     productId = item.productId,
                     quantity = item.quantity,
-                    price = item.chargedUnitPrice
+                    price = item.chargedUnitPrice,
+                    variantId = item.variantId.takeIf { it.isNotBlank() },
                 )
             }
         )

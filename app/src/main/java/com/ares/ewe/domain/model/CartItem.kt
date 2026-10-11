@@ -2,6 +2,8 @@ package com.ares.ewe.domain.model
 
 data class CartItem(
     val productId: String,
+    val variantId: String = "",
+    val variantName: String? = null,
     val name: String,
     /** Valor persistido (unitario); con promo suele ser el efectivo o el de lista según versión. */
     val price: Double,
@@ -20,6 +22,9 @@ data class CartItem(
     val serviceId: String? = null,
     val serviceNumber: String? = null,
 ) {
+    val lineKey: String
+        get() = "$productId\u0000$variantId"
+
     val isServicePayment: Boolean
         get() = lineKind.equals("SERVICE", ignoreCase = true)
 

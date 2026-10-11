@@ -30,7 +30,8 @@ data class OrderHistoryDto(
 data class CreateOrderItemRequest(
     @SerializedName("productId") val productId: String,
     @SerializedName("quantity") val quantity: Int,
-    @SerializedName("price") val price: Double
+    @SerializedName("price") val price: Double,
+    @SerializedName("variantId") val variantId: String? = null,
 )
 
 data class CreateServicePaymentItemRequest(

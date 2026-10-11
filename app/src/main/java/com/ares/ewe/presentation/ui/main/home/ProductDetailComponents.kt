@@ -55,10 +55,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.domain.model.ProductDetail
+import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.presentation.components.LoadingAsyncImage
 import java.util.Locale
 
-private val HeroImagePadding = 24.dp
 private val CardOverlap = 24.dp
 private val RatingPillBg = Color(0xFFF3F4F6)
 private val MutedText = Color(0xFF6B7280)
@@ -103,10 +103,8 @@ fun ProductDetailHero(
                     LoadingAsyncImage(
                         model = url,
                         contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(HeroImagePadding),
-                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
                         placeholderBackground = Color.White,
                         error = {
                             Text(
@@ -196,9 +194,13 @@ fun ProductDetailInfoCard(
     deliveryEtaLabel: String,
     isProductAvailable: Boolean,
     modifier: Modifier = Modifier,
+    selectedVariantId: String = "",
+    onSelectVariant: (ProductVariant) -> Unit = {},
 ) {
     val validDiscount = product.discount.coerceIn(0, 100)
     val showPromotion = product.hasPromotion && validDiscount > 0
+    val showVariants = product.hasMultiplePresentations &&
+        product.shopType?.equals("CAR_WASH", ignoreCase = true) != true
     val unitPrice = if (showPromotion) product.price * (1 - validDiscount / 100.0) else product.price
     val primary = MaterialTheme.colorScheme.primary
     val statusColor = if (isProductAvailable) primary else ClosedGray
@@ -250,7 +252,15 @@ fun ProductDetailInfoCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            if (showPromotion) {
+            if (showVariants) {
+                ProductVariantPicker(
+                    variants = product.variants,
+                    selectedId = selectedVariantId,
+                    hasPromotion = product.hasPromotion,
+                    discount = product.discount,
+                    onSelect = onSelectVariant,
+                )
+            } else if (showPromotion) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

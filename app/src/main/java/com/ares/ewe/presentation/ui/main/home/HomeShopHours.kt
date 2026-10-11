@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.domain.model.BestSellerProduct
+import com.ares.ewe.domain.model.ShopHourWindow
 import com.ares.ewe.domain.model.ShopProduct
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -27,6 +28,7 @@ fun rememberIsPlaceOpenNow(
     openingHour: String?,
     closingHour: String?,
     openingDays: List<String> = emptyList(),
+    openingSchedules: List<ShopHourWindow> = emptyList(),
 ): Boolean? {
     val lifecycleOwner = LocalLifecycleOwner.current
     var refreshKey by remember { mutableIntStateOf(0) }
@@ -48,8 +50,8 @@ fun rememberIsPlaceOpenNow(
         }
     }
 
-    return remember(openingHour, closingHour, openingDays, refreshKey) {
-        isPlaceOpenNow(openingHour, closingHour, openingDays)
+    return remember(openingHour, closingHour, openingDays, openingSchedules, refreshKey) {
+        isPlaceOpenNow(openingHour, closingHour, openingDays, openingSchedules)
     }
 }
 
@@ -86,16 +88,30 @@ private fun weekdayNameEs(code: String): String =
         else -> code.lowercase(Locale.getDefault())
     }
 
-/** Whether the place is open now; `null` if hours are unknown. */
-fun isPlaceOpenNow(
+private fun resolvedWindows(
     openingHour: String?,
     closingHour: String?,
-    openingDays: List<String> = emptyList(),
-): Boolean? {
-    val days = normalizedDays(openingDays)
+    openingDays: List<String>,
+    openingSchedules: List<ShopHourWindow>,
+): List<ShopHourWindow> {
+    val fromApi = openingSchedules.mapNotNull { w ->
+        val open = w.open.trim()
+        val close = w.close.trim()
+        if (open.isEmpty() || close.isEmpty()) null
+        else ShopHourWindow(days = w.days, open = open, close = close)
+    }
+    if (fromApi.isNotEmpty()) return fromApi
+    val open = openingHour?.trim().orEmpty()
+    val close = closingHour?.trim().orEmpty()
+    if (open.isEmpty() || close.isEmpty()) return emptyList()
+    return listOf(ShopHourWindow(days = openingDays, open = open, close = close))
+}
+
+private fun isWindowOpenNow(window: ShopHourWindow): Boolean? {
+    val days = normalizedDays(window.days)
     val today = weekdayCode()
-    val open = parseHour(openingHour)
-    val close = parseHour(closingHour)
+    val open = parseHour(window.open)
+    val close = parseHour(window.close)
     if (open == null || close == null) {
         if (days.size < 7 && today !in days) return false
         return null
@@ -113,12 +129,85 @@ fun isPlaceOpenNow(
     return !now.isBefore(open) && now.isBefore(close)
 }
 
-fun formatPlaceHoursRange(openingHour: String?, closingHour: String?): String? {
-    val open = openingHour?.trim().orEmpty()
-    val close = closingHour?.trim().orEmpty()
-    if (open.isEmpty() || close.isEmpty()) return null
-    return "${formatHour12(open)} - ${formatHour12(close)}"
+/** Whether the place is open now; `null` if hours are unknown. */
+fun isPlaceOpenNow(
+    openingHour: String?,
+    closingHour: String?,
+    openingDays: List<String> = emptyList(),
+    openingSchedules: List<ShopHourWindow> = emptyList(),
+): Boolean? {
+    val windows = resolvedWindows(openingHour, closingHour, openingDays, openingSchedules)
+    if (windows.isEmpty()) {
+        val days = normalizedDays(openingDays)
+        val today = weekdayCode()
+        if (days.size < 7 && today !in days) return false
+        return null
+    }
+    var knownClosed = false
+    for (window in windows) {
+        when (isWindowOpenNow(window)) {
+            true -> return true
+            false -> knownClosed = true
+            null -> Unit
+        }
+    }
+    return if (knownClosed) false else null
 }
+
+/**
+ * Hours for today (e.g. "10:00 AM - 1:00 PM"). If closed today with no window,
+ * falls back to the next opening day ("Mañana …" / "Lun …").
+ */
+fun formatPlaceHoursRange(
+    openingHour: String?,
+    closingHour: String?,
+    openingDays: List<String> = emptyList(),
+    openingSchedules: List<ShopHourWindow> = emptyList(),
+): String? {
+    val windows = resolvedWindows(openingHour, closingHour, openingDays, openingSchedules)
+    if (windows.isEmpty()) return null
+    val today = weekdayCode()
+    val todayWindows = windowsForDay(today, windows)
+    if (todayWindows.isNotEmpty()) {
+        return formatWindowsRange(todayWindows)
+    }
+    val start = java.time.LocalDate.now()
+    for (offset in 1..7) {
+        val date = start.plusDays(offset.toLong())
+        val code = weekdayCode(date)
+        val dayWindows = windowsForDay(code, windows)
+        if (dayWindows.isEmpty()) continue
+        val range = formatWindowsRange(dayWindows)
+        return if (offset == 1) {
+            "Mañana $range"
+        } else {
+            "${weekdayShortEs(code)} $range"
+        }
+    }
+    return null
+}
+
+private fun windowsForDay(code: String, windows: List<ShopHourWindow>): List<ShopHourWindow> =
+    windows
+        .filter { code in normalizedDays(it.days) }
+        .sortedBy { parseHour(it.open)?.toSecondOfDay() ?: 0 }
+
+private fun formatWindowsRange(windows: List<ShopHourWindow>): String =
+    windows.joinToString(" · ") { w ->
+        "${formatHour12(w.open)} - ${formatHour12(w.close)}"
+    }
+
+private fun weekdayShortEs(code: String): String =
+    when (code) {
+        "MON" -> "Lun"
+        "TUE" -> "Mar"
+        "WED" -> "Mié"
+        "THU" -> "Jue"
+        "FRI" -> "Vie"
+        "SAT" -> "Sáb"
+        "SUN" -> "Dom"
+        else -> code
+    }
 
 /** AVAILABLE / SLOW can receive orders; HIGH_DEMAND is listed but blocked. */
 fun normalizedOpsStatus(shopStatus: String?): String {
@@ -150,9 +239,10 @@ fun isShopAvailableForOrders(
     openingHour: String?,
     closingHour: String?,
     openingDays: List<String> = emptyList(),
+    openingSchedules: List<ShopHourWindow> = emptyList(),
 ): Boolean {
     if (!isOrderableOpsStatus(shopStatus)) return false
-    return isPlaceOpenNow(openingHour, closingHour, openingDays) != false
+    return isPlaceOpenNow(openingHour, closingHour, openingDays, openingSchedules) != false
 }
 
 /** e.g. "Abre hoy a las 8:00 AM" when closed outside hours; null if inactive or hours unknown. */
@@ -199,15 +289,27 @@ fun isProductShopAvailableForOrders(
         openingHour = shop.openingHour,
         closingHour = shop.closingHour,
         openingDays = shop.openingDays,
+        openingSchedules = shop.openingSchedules,
     )
 }
 
 /** Open/available featured places first; preserves API order within each group. */
 fun isFeaturedPlaceAvailable(place: FeaturedPlace): Boolean {
     if (place.isService) {
-        return isPlaceOpenNow(place.openingHour, place.closingHour, place.openingDays) != false
+        return isPlaceOpenNow(
+            place.openingHour,
+            place.closingHour,
+            place.openingDays,
+            place.openingSchedules,
+        ) != false
     }
-    return isOrderableOpsStatus(place.shopStatus)
+    return isShopAvailableForOrders(
+        shopStatus = place.shopStatus,
+        openingHour = place.openingHour,
+        closingHour = place.closingHour,
+        openingDays = place.openingDays,
+        openingSchedules = place.openingSchedules,
+    )
 }
 
 fun sortFeaturedPlacesByAvailability(places: List<FeaturedPlace>): List<FeaturedPlace> =

@@ -9,9 +9,12 @@ import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
 import com.ares.ewe.domain.cart.PendingCartAddGate
 import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.model.ProductDetail
+import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.domain.repository.CartRepository
 import com.ares.ewe.domain.repository.FavoritesRepository
 import com.ares.ewe.domain.repository.PlacesRepository
+import com.ares.ewe.presentation.ui.main.home.formatShopReopensLabel
+import com.ares.ewe.presentation.ui.main.home.isShopAvailableForOrders
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,20 +30,37 @@ import javax.inject.Inject
 
 data class ProductUiState(
     val product: ProductDetail? = null,
+    val selectedVariantId: String = "",
     val quantity: Int = 1,
     val ratingCount: Int = 0,
     val isProductAvailable: Boolean = true,
+    val shopStatus: String? = null,
+    val shopReopensLabel: String? = null,
     val isFavorite: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val showCarWashSingleProductDialog: Boolean = false,
 ) {
+    val showShopClosedBanner: Boolean
+        get() = !isProductAvailable
+
+    val selectedVariant: ProductVariant?
+        get() {
+            val p = product ?: return null
+            if (!p.hasMultiplePresentations) return null
+            return p.variants.find { it.id == selectedVariantId }
+                ?: p.variants.minByOrNull { it.price }
+        }
+
+    val listPrice: Double
+        get() = selectedVariant?.price ?: product?.price ?: 0.0
+
     /** Precio por unidad que paga el cliente (con descuento si aplica). */
     val unitPriceEffective: Double
         get() {
             val p = product ?: return 0.0
             val d = p.discount.coerceIn(0, 100)
-            return if (p.hasPromotion && d > 0) p.price * (1 - d / 100.0) else p.price
+            return if (p.hasPromotion && d > 0) listPrice * (1 - d / 100.0) else listPrice
         }
 
     val total: Double
@@ -87,12 +107,41 @@ class ProductViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val product = placesRepository.getProduct(productId)
+                val shopId = product.shopId?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: navShopId
+                var available = shopAvailable
+                var status: String? = null
+                var reopens: String? = null
+                if (!shopId.isNullOrBlank()) {
+                    try {
+                        val page = placesRepository.getShopProducts(shopId)
+                        available = isShopAvailableForOrders(
+                            shopStatus = page.shopStatus,
+                            openingHour = page.openingHour,
+                            closingHour = page.closingHour,
+                            openingDays = page.openingDays,
+                            openingSchedules = page.openingSchedules,
+                        )
+                        status = page.shopStatus
+                        reopens = formatShopReopensLabel(
+                            shopStatus = page.shopStatus,
+                            openingHour = page.openingHour,
+                            openingDays = page.openingDays,
+                        )
+                    } catch (_: Exception) {
+                        // Keep nav shopAvailable; banner can still show without reopens text.
+                    }
+                }
+                val cheapestId = product.variants.minByOrNull { it.price }?.id.orEmpty()
                 _uiState.update {
                     it.copy(
                         product = product,
+                        selectedVariantId = cheapestId,
                         quantity = 1,
                         ratingCount = product.ratingCount,
-                        isProductAvailable = shopAvailable,
+                        isProductAvailable = available,
+                        shopStatus = status,
+                        shopReopensLabel = reopens,
                         isLoading = false,
                         errorMessage = null,
                     )
@@ -106,6 +155,10 @@ class ProductViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun selectVariant(variant: ProductVariant) {
+        _uiState.update { it.copy(selectedVariantId = variant.id) }
     }
 
     fun incrementQuantity() {
@@ -147,7 +200,9 @@ class ProductViewModel @Inject constructor(
                 return@launch
             }
             val imageUrl = product.imageUrls.firstOrNull()
-            val unitPrice = _uiState.value.unitPriceEffective
+            val state = _uiState.value
+            val unitPrice = state.unitPriceEffective
+            val variant = state.selectedVariant
             pendingCartAddGate.runOrRequestAddress {
                 cartRepository.addItem(
                     productId = product.id,
@@ -155,12 +210,14 @@ class ProductViewModel @Inject constructor(
                     price = unitPrice,
                     quantity = quantity,
                     imageUrl = imageUrl,
-                    listPrice = product.price,
+                    listPrice = state.listPrice,
                     hasPromotion = product.hasPromotion,
                     discount = product.discount,
                     pickupLatitude = pickupLatitude,
                     pickupLongitude = pickupLongitude,
                     shopId = shopId,
+                    variantId = variant?.id,
+                    variantName = variant?.name,
                 )
                 onAdded()
             }

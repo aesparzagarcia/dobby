@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -15,8 +16,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +42,15 @@ fun ProductScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val cartItemCount by viewModel.cartItemCount.collectAsState(0)
+    var closedBannerVisible by remember { mutableStateOf(false) }
+    var closedBannerDismissed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.product?.id) {
+        closedBannerDismissed = false
+    }
+    LaunchedEffect(uiState.showShopClosedBanner, closedBannerDismissed) {
+        closedBannerVisible = uiState.showShopClosedBanner && !closedBannerDismissed
+    }
 
     Box(
         modifier = Modifier
@@ -98,6 +112,8 @@ fun ProductScreen(
                             ratingCount = uiState.ratingCount,
                             deliveryEtaLabel = deliveryEtaLabel,
                             isProductAvailable = uiState.isProductAvailable,
+                            selectedVariantId = uiState.selectedVariantId,
+                            onSelectVariant = viewModel::selectVariant,
                             modifier = Modifier.padding(bottom = 16.dp),
                         )
                         Spacer(modifier = Modifier.height(96.dp))
@@ -116,6 +132,20 @@ fun ProductScreen(
                 }
             }
         }
+
+        ShopClosedTopBanner(
+            reopensLabel = uiState.shopReopensLabel,
+            shopStatus = uiState.shopStatus,
+            visible = closedBannerVisible,
+            onDismiss = {
+                closedBannerVisible = false
+                closedBannerDismissed = true
+            },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .statusBarsPadding(),
+        )
     }
 
     if (uiState.showCarWashSingleProductDialog) {

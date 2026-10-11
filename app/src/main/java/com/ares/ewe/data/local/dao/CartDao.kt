@@ -10,11 +10,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CartDao {
 
-    @Query("SELECT * FROM cart ORDER BY productId")
+    @Query("SELECT * FROM cart ORDER BY productId, variantId")
     fun getAll(): Flow<List<CartInfo>>
 
-    @Query("SELECT * FROM cart WHERE productId = :productId LIMIT 1")
-    suspend fun getByProductId(productId: String): CartInfo?
+    @Query("SELECT * FROM cart WHERE productId = :productId AND variantId = :variantId LIMIT 1")
+    suspend fun getByLine(productId: String, variantId: String): CartInfo?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: CartInfo)
@@ -22,11 +22,11 @@ interface CartDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<CartInfo>)
 
-    @Query("DELETE FROM cart WHERE productId = :productId")
-    suspend fun deleteByProductId(productId: String)
+    @Query("DELETE FROM cart WHERE productId = :productId AND variantId = :variantId")
+    suspend fun deleteByLine(productId: String, variantId: String)
 
-    @Query("UPDATE cart SET quantity = :quantity WHERE productId = :productId")
-    suspend fun updateQuantity(productId: String, quantity: Int)
+    @Query("UPDATE cart SET quantity = :quantity WHERE productId = :productId AND variantId = :variantId")
+    suspend fun updateQuantity(productId: String, variantId: String, quantity: Int)
 
     @Query("DELETE FROM cart")
     suspend fun deleteAll()

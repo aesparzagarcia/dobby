@@ -8,6 +8,10 @@ import com.ares.ewe.domain.model.HomeData
 import com.ares.ewe.domain.model.PlaceItem
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ServiceDetail
+import com.ares.ewe.domain.model.ShopHourWindow
+import com.ares.ewe.data.remote.model.ProductVariantDto
+import com.ares.ewe.data.remote.model.ShopProductDto
+import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.model.ShopProductsPage
 import com.ares.ewe.domain.repository.PlacesRepository
@@ -84,6 +88,16 @@ class PlacesRepositoryImpl @Inject constructor(
         )
     }
 
+    private fun mapHourWindows(
+        schedules: List<com.ares.ewe.data.remote.model.ShopHourWindowDto>?,
+    ): List<ShopHourWindow> =
+        schedules.orEmpty().mapNotNull { w ->
+            val open = w.open?.trim().orEmpty()
+            val close = w.close?.trim().orEmpty()
+            if (open.isEmpty() || close.isEmpty()) null
+            else ShopHourWindow(days = w.days, open = open, close = close)
+        }
+
     private fun mapFeaturedPlace(p: com.ares.ewe.data.remote.model.FeaturedPlaceDto): FeaturedPlace {
         val isService = p.kind == "service"
         val shopType = if (isService) null else p.type
@@ -105,6 +119,7 @@ class PlacesRepositoryImpl @Inject constructor(
             openingHour = p.openingHour,
             closingHour = p.closingHour,
             openingDays = p.openingDays ?: emptyList(),
+            openingSchedules = mapHourWindows(p.openingSchedules),
             latitude = p.lat,
             longitude = p.lng,
             shopStatus = if (isService) null else p.status,
@@ -150,19 +165,7 @@ class PlacesRepositoryImpl @Inject constructor(
 
     override suspend fun getBestSellers(): List<ShopProduct> {
         return api.getBestSellers().map { p ->
-            ShopProduct(
-                id = p.id,
-                name = p.name,
-                description = p.description,
-                price = p.price,
-                imageUrl = p.imageUrl?.toFullImageUrl(),
-                rate = p.rate,
-                ratingCount = p.ratingCount,
-                hasPromotion = p.hasPromotion,
-                discount = p.discount,
-                shopId = p.shopId,
-                category = p.category,
-            )
+            p.toDomain(fallbackShopId = p.shopId)
         }
     }
 
@@ -173,25 +176,14 @@ class PlacesRepositoryImpl @Inject constructor(
     override suspend fun getShopProducts(shopId: String): ShopProductsPage {
         val response = api.getShopProducts(shopId)
         val products = response.products.map { p ->
-            ShopProduct(
-                id = p.id,
-                name = p.name,
-                description = p.description,
-                price = p.price,
-                imageUrl = p.imageUrl?.toFullImageUrl(),
-                rate = p.rate,
-                ratingCount = p.ratingCount,
-                hasPromotion = p.hasPromotion,
-                discount = p.discount,
-                shopId = p.shopId ?: shopId,
-                category = p.category,
-            )
+            p.toDomain(fallbackShopId = shopId)
         }
         return ShopProductsPage(
             shopStatus = response.shop.status,
             openingHour = response.shop.openingHour,
             closingHour = response.shop.closingHour,
             openingDays = response.shop.openingDays ?: emptyList(),
+            openingSchedules = mapHourWindows(response.shop.openingSchedules),
             products = products,
             shopName = response.shop.name,
             shopType = response.shop.type,
@@ -217,6 +209,7 @@ class PlacesRepositoryImpl @Inject constructor(
             discount = dto.discount,
             shopId = dto.shopId,
             shopType = dto.shopType,
+            variants = dto.variants.toProductVariants(),
         )
     }
 
@@ -234,4 +227,29 @@ class PlacesRepositoryImpl @Inject constructor(
             lng = s.lng,
         )
     }
+
+    private fun ShopProductDto.toDomain(fallbackShopId: String?): ShopProduct {
+        return ShopProduct(
+            id = id,
+            name = name,
+            description = description,
+            price = price,
+            imageUrl = imageUrl?.toFullImageUrl(),
+            rate = rate,
+            ratingCount = ratingCount,
+            hasPromotion = hasPromotion,
+            discount = discount,
+            shopId = shopId ?: fallbackShopId,
+            category = category,
+            variants = variants.toProductVariants(),
+        )
+    }
 }
+
+private fun List<ProductVariantDto>?.toProductVariants(): List<ProductVariant> =
+    orEmpty().mapNotNull { v ->
+        val id = v.id?.trim().orEmpty()
+        val name = v.name.trim()
+        if (id.isEmpty() || name.isEmpty()) null
+        else ProductVariant(id = id, name = name, price = v.price)
+    }

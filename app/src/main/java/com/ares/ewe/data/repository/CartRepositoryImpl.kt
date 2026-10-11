@@ -35,12 +35,16 @@ class CartRepositoryImpl @Inject constructor(
         pickupLatitude: Double?,
         pickupLongitude: Double?,
         shopId: String?,
+        variantId: String?,
+        variantName: String?,
     ) {
         if (quantity <= 0) return
+        val lineVariantId = variantId?.trim().orEmpty()
+        val lineVariantName = variantName?.trim()?.takeIf { it.isNotEmpty() }
         scope.launch {
             // Productos y pagos de servicio no se mezclan en el mismo carrito.
             cartDao.deleteByLineKind(CartLineKinds.SERVICE)
-            val existing = cartDao.getByProductId(productId)
+            val existing = cartDao.getByLine(productId, lineVariantId)
             if (existing != null && !CartLineKinds.isService(existing.toCartItem())) {
                 val mergedLat = pickupLatitude ?: existing.pickupLatitude
                 val mergedLng = pickupLongitude ?: existing.pickupLongitude
@@ -48,6 +52,7 @@ class CartRepositoryImpl @Inject constructor(
                 cartDao.insert(
                     existing.copy(
                         name = name,
+                        variantName = lineVariantName ?: existing.variantName,
                         price = price,
                         quantity = existing.quantity + quantity,
                         imageUrl = imageUrl ?: existing.imageUrl,
@@ -66,6 +71,8 @@ class CartRepositoryImpl @Inject constructor(
                 cartDao.insert(
                     CartInfo(
                         productId = productId,
+                        variantId = lineVariantId,
+                        variantName = lineVariantName,
                         name = name,
                         price = price,
                         quantity = quantity,
@@ -100,6 +107,7 @@ class CartRepositoryImpl @Inject constructor(
             cartDao.insert(
                 CartInfo(
                     productId = lineId,
+                    variantId = "",
                     name = serviceName,
                     price = amount,
                     quantity = 1,
@@ -119,24 +127,26 @@ class CartRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun removeItem(productId: String) {
+    override fun removeItem(productId: String, variantId: String?) {
+        val lineVariantId = variantId?.trim().orEmpty()
         scope.launch {
-            cartDao.deleteByProductId(productId)
+            cartDao.deleteByLine(productId, lineVariantId)
         }
     }
 
-    override fun updateQuantity(productId: String, quantity: Int) {
+    override fun updateQuantity(productId: String, quantity: Int, variantId: String?) {
+        val lineVariantId = variantId?.trim().orEmpty()
         if (quantity <= 0) {
-            removeItem(productId)
+            removeItem(productId, lineVariantId)
             return
         }
         scope.launch {
-            val existing = cartDao.getByProductId(productId)
+            val existing = cartDao.getByLine(productId, lineVariantId)
             if (existing != null && existing.lineKind.equals(CartLineKinds.SERVICE, ignoreCase = true)) {
                 // Los pagos de servicio son una línea por número; no acumulan cantidad.
                 return@launch
             }
-            cartDao.updateQuantity(productId, quantity)
+            cartDao.updateQuantity(productId, lineVariantId, quantity)
         }
     }
 
@@ -149,6 +159,8 @@ class CartRepositoryImpl @Inject constructor(
 
 private fun CartInfo.toCartItem() = CartItem(
     productId = productId,
+    variantId = variantId,
+    variantName = variantName,
     name = name,
     price = price,
     quantity = quantity,

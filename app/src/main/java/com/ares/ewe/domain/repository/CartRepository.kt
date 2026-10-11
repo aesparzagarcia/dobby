@@ -17,6 +17,8 @@ interface CartRepository {
         pickupLatitude: Double? = null,
         pickupLongitude: Double? = null,
         shopId: String? = null,
+        variantId: String? = null,
+        variantName: String? = null,
     )
     fun addServiceItem(
         serviceId: String,
@@ -27,7 +29,7 @@ interface CartRepository {
         pickupLatitude: Double? = null,
         pickupLongitude: Double? = null,
     )
-    fun removeItem(productId: String)
-    fun updateQuantity(productId: String, quantity: Int)
+    fun removeItem(productId: String, variantId: String? = null)
+    fun updateQuantity(productId: String, quantity: Int, variantId: String? = null)
     fun clear()
 }

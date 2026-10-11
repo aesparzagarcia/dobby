@@ -121,10 +121,10 @@ fun CartScreen(
                         .background(CartListBackground),
                     contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
-                    itemsIndexed(uiState.items, key = { _, item -> item.productId }) { index, item ->
+                    itemsIndexed(uiState.items, key = { _, item -> item.lineKey }) { index, item ->
                         CartItemRow(
                             item = item,
-                            onRemove = { viewModel.removeItem(item.productId) },
+                            onRemove = { viewModel.removeItem(item.productId, item.variantId) },
                         )
                         if (index < uiState.items.lastIndex) {
                             HorizontalDivider(
@@ -426,6 +426,14 @@ private fun CartItemRow(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            item.variantName?.takeIf { it.isNotBlank() }?.let { variant ->
+                Text(
+                    text = variant,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
             if (item.isServicePayment) {
                 val number = item.serviceNumber?.takeIf { it.isNotBlank() }
                     ?: item.description?.removePrefix("Nº ")?.trim().orEmpty()

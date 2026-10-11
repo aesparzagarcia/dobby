@@ -104,9 +104,14 @@ class BestSellersViewModel @Inject constructor(
         _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
     }
 
-    fun addToCart(product: ShopProduct) {
+    fun addToCart(
+        product: ShopProduct,
+        variant: com.ares.ewe.domain.model.ProductVariant? = null,
+        quantity: Int = 1,
+    ) {
         if (!isProductAvailable(product)) return
         val shopId = product.shopId?.trim().orEmpty().ifEmpty { return }
+        val qty = quantity.coerceAtLeast(1)
         viewModelScope.launch {
             val place = _uiState.value.featuredPlaces.find { it.id == shopId && !it.isService }
             val cartItems = cartRepository.items.first()
@@ -115,31 +120,34 @@ class BestSellersViewModel @Inject constructor(
                     cartItems = cartItems,
                     productId = product.id,
                     shopId = shopId,
-                    quantityToAdd = 1,
+                    quantityToAdd = qty,
                 )
             ) {
                 _uiState.update { it.copy(showCarWashSingleProductDialog = true) }
                 return@launch
             }
             val validDiscount = product.discount.coerceIn(0, 100)
+            val listPrice = variant?.price ?: product.price
             val unitPrice = if (product.hasPromotion && validDiscount > 0) {
-                product.price * (1 - validDiscount / 100.0)
+                listPrice * (1 - validDiscount / 100.0)
             } else {
-                product.price
+                listPrice
             }
             pendingCartAddGate.runOrRequestAddress {
                 cartRepository.addItem(
                     productId = product.id,
                     name = product.name,
                     price = unitPrice,
-                    quantity = 1,
+                    quantity = qty,
                     imageUrl = product.imageUrl,
-                    listPrice = product.price,
+                    listPrice = listPrice,
                     hasPromotion = product.hasPromotion,
                     discount = product.discount,
                     pickupLatitude = place?.latitude,
                     pickupLongitude = place?.longitude,
                     shopId = shopId,
+                    variantId = variant?.id,
+                    variantName = variant?.name,
                 )
             }
         }

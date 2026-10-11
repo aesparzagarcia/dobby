@@ -19,9 +19,16 @@ data class FeaturedPlaceDto(
     @SerializedName("opening_hour") val openingHour: String? = null,
     @SerializedName("closing_hour") val closingHour: String? = null,
     @SerializedName("opening_days") val openingDays: List<String> = emptyList(),
+    @SerializedName("opening_schedules") val openingSchedules: List<ShopHourWindowDto> = emptyList(),
     @SerializedName("lat") val lat: Double? = null,
     @SerializedName("lng") val lng: Double? = null,
     @SerializedName("status") val status: String? = null,
+)
+
+data class ShopHourWindowDto(
+    @SerializedName("days") val days: List<String> = emptyList(),
+    @SerializedName("open") val open: String? = null,
+    @SerializedName("close") val close: String? = null,
 )
 
 data class BestSellerProductDto(
@@ -50,6 +57,12 @@ data class PromotionProductDto(
     @SerializedName("shop_id") val shopId: String? = null,
 )
 
+data class ProductVariantDto(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("name") val name: String = "",
+    @SerializedName("price") val price: Double = 0.0,
+)
+
 data class ShopProductDto(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
@@ -62,6 +75,7 @@ data class ShopProductDto(
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
     @SerializedName("category") val category: String? = null,
+    @SerializedName("variants") val variants: List<ProductVariantDto>? = emptyList(),
 )
 
 data class ShopInfoDto(
@@ -69,6 +83,7 @@ data class ShopInfoDto(
     @SerializedName("opening_hour") val openingHour: String? = null,
     @SerializedName("closing_hour") val closingHour: String? = null,
     @SerializedName("opening_days") val openingDays: List<String> = emptyList(),
+    @SerializedName("opening_schedules") val openingSchedules: List<ShopHourWindowDto> = emptyList(),
     @SerializedName("id") val id: String? = null,
     @SerializedName("name") val name: String? = null,
     @SerializedName("type") val type: String? = null,
@@ -95,6 +110,7 @@ data class ProductDetailDto(
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
     @SerializedName("shop_type") val shopType: String? = null,
+    @SerializedName("variants") val variants: List<ProductVariantDto>? = emptyList(),
 )
 
 data class ServiceDetailDto(
