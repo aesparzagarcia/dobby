@@ -24,7 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Store
@@ -52,7 +51,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ares.ewe.R
+import com.ares.ewe.presentation.components.DeliveryImagePlaceholder
 import com.ares.ewe.presentation.components.LoadingAsyncImage
+import com.ares.ewe.presentation.components.ProductImagePlaceholder
 import com.ares.ewe.BuildConfig
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.OrderTracking
@@ -396,14 +397,7 @@ private fun OrderTrackingProductRow(item: OrderTrackingItem) {
                     .size(OrderTrackingSheetDim.thumb)
                     .clip(RoundedCornerShape(OrderTrackingSheetDim.radiusSm)),
                 contentScale = ContentScale.Crop,
-                error = {
-                    Icon(
-                        imageVector = Icons.Default.Inventory2,
-                        contentDescription = null,
-                        tint = OrderTrackingSheetPalette.Muted,
-                        modifier = Modifier.size(OrderTrackingSheetDim.iconLg),
-                    )
-                },
+                error = { ProductImagePlaceholder(contentDescription = item.productName) },
             )
         }
         Text(
@@ -557,32 +551,17 @@ private fun CourierAssignedCard(dm: OrderTrackingDeliveryMan) {
         val courierImageUrl = dm.profilePhotoUrl?.let { url ->
             if (url.startsWith("http")) url
             else BuildConfig.BASE_URL.substringBefore("api/").dropLast(1) + url
-        }
-        if (!courierImageUrl.isNullOrBlank()) {
-            LoadingAsyncImage(
-                model = courierImageUrl,
-                contentDescription = dm.name,
-                modifier = Modifier
-                    .size(OrderTrackingSheetDim.avatar)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop,
-                placeholderBackground = Color.White,
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(OrderTrackingSheetDim.avatar)
-                    .clip(CircleShape)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = OrderTrackingSheetPalette.Muted,
-                )
-            }
-        }
+        }?.takeIf { it.isNotBlank() }
+        LoadingAsyncImage(
+            model = courierImageUrl,
+            contentDescription = dm.name,
+            modifier = Modifier
+                .size(OrderTrackingSheetDim.avatar)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop,
+            placeholderBackground = Color.White,
+            error = { DeliveryImagePlaceholder() },
+        )
         Column(
             modifier = Modifier
                 .weight(1f)

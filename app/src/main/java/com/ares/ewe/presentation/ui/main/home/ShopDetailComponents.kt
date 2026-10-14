@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.presentation.components.LoadingAsyncImage
+import com.ares.ewe.presentation.components.ProductImagePlaceholder
 import kotlin.math.roundToInt
 import com.ares.ewe.core.util.ProductCategory
 import com.ares.ewe.domain.model.ProductVariant
@@ -428,13 +429,7 @@ fun ShopDetailProductCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     placeholderBackground = Color.White,
-                    error = {
-                        Text(
-                            text = product.name.take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
+                    error = { ProductImagePlaceholder(contentDescription = product.name) },
                 )
             }
 

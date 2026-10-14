@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.presentation.components.LoadingAsyncImage
+import com.ares.ewe.presentation.components.ProductImagePlaceholder
 import java.util.Locale
 
 private val CardOverlap = 24.dp
@@ -106,13 +107,7 @@ fun ProductDetailHero(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         placeholderBackground = Color.White,
-                        error = {
-                            Text(
-                                text = "?",
-                                style = MaterialTheme.typography.displayMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
+                        error = { ProductImagePlaceholder() },
                     )
                 }
             }

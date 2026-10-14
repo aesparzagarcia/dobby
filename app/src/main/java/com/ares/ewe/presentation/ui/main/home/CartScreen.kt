@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.presentation.components.LoadingAsyncImage
+import com.ares.ewe.presentation.components.ProductImagePlaceholder
 import com.ares.ewe.core.pricing.OrderPricing
 import com.ares.ewe.domain.model.CartItem
 import com.ares.ewe.presentation.viewmodel.main.home.CartViewModel
@@ -161,6 +162,7 @@ fun CartScreen(
                         grandTotal = uiState.grandTotal,
                         hasValidDeliveryAddress = uiState.hasValidDeliveryAddress,
                         isServicePayment = uiState.items.isNotEmpty() && uiState.items.all { it.isServicePayment },
+                        isCarWashCart = uiState.isCarWashCart,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     if (uiState.isLoggedIn) {
@@ -204,6 +206,7 @@ private fun CartPricingFooter(
     grandTotal: Double,
     hasValidDeliveryAddress: Boolean,
     isServicePayment: Boolean = false,
+    isCarWashCart: Boolean = false,
 ) {
     if (pricing == null) {
         Row(
@@ -243,15 +246,17 @@ private fun CartPricingFooter(
         )
         Spacer(modifier = Modifier.height(4.dp))
         PricingLine(label = "Tarifa de servicio", amount = pricing.serviceFee)
-        Spacer(modifier = Modifier.height(4.dp))
-        PricingLine(label = "Envío", amount = pricing.delivery.finalDeliveryFee)
-        if (pricing.delivery.dynamicMultiplier > 1.0) {
+        if (!isCarWashCart) {
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Incluye tarifa dinámica (×${String.format(Locale.US, "%.2f", pricing.delivery.dynamicMultiplier)})",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            PricingLine(label = "Envío", amount = pricing.delivery.finalDeliveryFee)
+            if (pricing.delivery.dynamicMultiplier > 1.0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Incluye tarifa dinámica (×${String.format(Locale.US, "%.2f", pricing.delivery.dynamicMultiplier)})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
@@ -411,9 +416,10 @@ private fun CartItemRow(
         ) {
             LoadingAsyncImage(
                 model = item.imageUrl,
-                contentDescription = null,
+                contentDescription = item.name,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
+                error = { ProductImagePlaceholder(contentDescription = item.name) },
             )
         }
         Spacer(modifier = Modifier.width(12.dp))

@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.presentation.components.LoadingAsyncImage
+import com.ares.ewe.presentation.components.ShopImagePlaceholder
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.core.theme.DobbyPureScale
 import com.ares.ewe.core.util.serviceCategoryLabelEs
@@ -516,13 +517,7 @@ fun HomeFeaturedPlaceCard(
                     contentDescription = place.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    error = {
-                        Text(
-                            text = place.name.take(1).uppercase(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
+                    error = { ShopImagePlaceholder(contentDescription = place.name) },
                 )
                 Box(
                     modifier = Modifier
@@ -654,13 +649,7 @@ fun HomeServicePlaceRow(
                     contentDescription = place.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    error = {
-                        Text(
-                            text = place.name.take(1).uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    },
+                    error = { ShopImagePlaceholder(contentDescription = place.name) },
                 )
             }
             Column(modifier = Modifier.weight(1f)) {

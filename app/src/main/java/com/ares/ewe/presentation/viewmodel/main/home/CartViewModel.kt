@@ -57,6 +57,8 @@ data class CartUiState(
     /** Dirección guardada con id y coordenadas (necesarias para envío y checkout). */
     val hasValidDeliveryAddress: Boolean = false,
     val isLoggedIn: Boolean = false,
+    /** Carrito solo de autolavado (no mostrar línea de envío). */
+    val isCarWashCart: Boolean = false,
 )
 
 @HiltViewModel
@@ -189,6 +191,7 @@ class CartViewModel @Inject constructor(
             placeOrderError = delivery.placeOrderError,
             hasValidDeliveryAddress = hasValidDeliveryAddress,
             isLoggedIn = isLoggedIn,
+            isCarWashCart = isCarWashCart,
         )
     }.stateIn(
         scope = viewModelScope,
