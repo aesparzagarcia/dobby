@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.ProductCategory
 import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
+import com.ares.ewe.domain.cart.CartShopSwitchPolicy
 import com.ares.ewe.domain.cart.PendingCartAddGate
 import com.ares.ewe.presentation.ui.main.home.formatShopReopensLabel
 import com.ares.ewe.presentation.ui.main.home.isShopAvailableForOrders
@@ -38,6 +39,7 @@ data class ShopDetailUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val showCarWashSingleProductDialog: Boolean = false,
+    val showShopSwitchDialog: Boolean = false,
 ) {
     val isCarWash: Boolean
         get() = shopType?.trim()?.equals("CAR_WASH", ignoreCase = true) == true
@@ -73,6 +75,7 @@ class ShopDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ShopDetailUiState())
     val uiState: StateFlow<ShopDetailUiState> = _uiState.asStateFlow()
+    private var pendingShopSwitchProduct: ShopProduct? = null
 
     val cartItemCount: StateFlow<Int> = cartRepository.items
         .map { it.sumOf { item -> item.quantity } }
@@ -135,6 +138,21 @@ class ShopDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
     }
 
+    fun dismissShopSwitchDialog() {
+        pendingShopSwitchProduct = null
+        _uiState.update { it.copy(showShopSwitchDialog = false) }
+    }
+
+    fun confirmShopSwitchAndAdd() {
+        viewModelScope.launch {
+            cartRepository.clearNow()
+            _uiState.update { it.copy(showShopSwitchDialog = false) }
+            val product = pendingShopSwitchProduct
+            pendingShopSwitchProduct = null
+            if (product != null) addToCart(product)
+        }
+    }
+
     fun addToCart(
         product: ShopProduct,
         variant: com.ares.ewe.domain.model.ProductVariant? = null,
@@ -145,6 +163,11 @@ class ShopDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val shopId = product.shopId ?: openedShopId
             val cartItems = cartRepository.items.first()
+            if (CartShopSwitchPolicy.needsConfirmationIfShopKnown(cartItems, shopId)) {
+                pendingShopSwitchProduct = product
+                _uiState.update { it.copy(showShopSwitchDialog = true) }
+                return@launch
+            }
             if (CartCarWashSingleProductPolicy.blocksAdd(
                     shopType = _uiState.value.shopType,
                     cartItems = cartItems,

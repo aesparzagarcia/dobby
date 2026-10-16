@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ares.ewe.core.delivery.DeliveryEtaEstimator
 import com.ares.ewe.presentation.ui.components.CarWashSingleProductDialog
+import com.ares.ewe.presentation.ui.components.ShopSwitchConfirmDialog
 import com.ares.ewe.presentation.viewmodel.main.home.ProductViewModel
 
 @Composable
@@ -36,6 +37,7 @@ fun ProductScreen(
     onBack: () -> Unit,
     onAddToCartClick: () -> Unit = {},
     onCartClick: () -> Unit = {},
+    onShopClick: (shopId: String, shopName: String) -> Unit = { _, _ -> },
     userLatitude: Double? = null,
     userLongitude: Double? = null,
     viewModel: ProductViewModel = hiltViewModel(),
@@ -114,6 +116,16 @@ fun ProductScreen(
                             isProductAvailable = uiState.isProductAvailable,
                             selectedVariantId = uiState.selectedVariantId,
                             onSelectVariant = viewModel::selectVariant,
+                            shopName = uiState.shopName,
+                            shopLogoUrl = uiState.shopLogoUrl,
+                            shopType = uiState.shopType,
+                            shopRate = uiState.shopRate,
+                            shopRatingCount = uiState.shopRatingCount,
+                            onShopClick = uiState.shopId?.takeIf { it.isNotBlank() }?.let { shopId ->
+                                uiState.shopName?.takeIf { it.isNotBlank() }?.let { shopName ->
+                                    { onShopClick(shopId, shopName) }
+                                }
+                            },
                             modifier = Modifier.padding(bottom = 16.dp),
                         )
                         Spacer(modifier = Modifier.height(96.dp))
@@ -151,6 +163,13 @@ fun ProductScreen(
     if (uiState.showCarWashSingleProductDialog) {
         CarWashSingleProductDialog(
             onDismiss = { viewModel.dismissCarWashSingleProductDialog() },
+        )
+    }
+
+    if (uiState.showShopSwitchDialog) {
+        ShopSwitchConfirmDialog(
+            onConfirm = { viewModel.confirmShopSwitchAndAdd(onAdded = onAddToCartClick) },
+            onDismiss = { viewModel.dismissShopSwitchDialog() },
         )
     }
 }

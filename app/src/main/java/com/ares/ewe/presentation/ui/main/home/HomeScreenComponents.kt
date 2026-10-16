@@ -18,18 +18,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Handyman
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,11 +46,16 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.ares.ewe.R
 import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.presentation.components.ShopImagePlaceholder
 import com.ares.ewe.core.theme.DobbyColors
@@ -63,19 +72,102 @@ private val SlowYellow = Color(0xFFF59E0B)
 private val HighDemandRed = Color(0xFFEF4444)
 private val ClosedGray = Color(0xFF6B7280)
 private val MutedText = DobbyColors.TextSecondary
+private val ConnectionErrorTitle = Color(0xFF111827)
+private val ConnectionErrorBody = Color(0xFF9CA3AF)
+private val ConnectionRetryButton = Color(0xFF111111)
+
+private const val CONNECTION_ERROR_TITLE = "Sin conexión"
+private const val CONNECTION_ERROR_BODY =
+    "No se pudo conectar al servidor. Verifica tu conexión a internet e intenta de nuevo."
+
+/** Parte "Título: detalle" que arma [com.ares.ewe.core.network.toUserFacingMessage]. */
+fun splitHomeErrorMessage(message: String): Pair<String, String> {
+    val separator = ": "
+    val index = message.indexOf(separator)
+    if (index <= 0) return "No se pudo cargar" to message
+    val title = message.substring(0, index).trim().ifBlank { "No se pudo cargar" }
+    val body = message.substring(index + separator.length).trim().ifBlank { message }
+    return title to body
+}
+
+@Composable
+fun HomeConnectionErrorState(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String = CONNECTION_ERROR_TITLE,
+    message: String = CONNECTION_ERROR_BODY,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_connection_error),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth(0.78f)
+                .aspectRatio(1024f / 768f),
+            contentScale = ContentScale.Fit,
+        )
+        Spacer(modifier = Modifier.height(28.dp))
+        Text(
+            text = title,
+            color = ConnectionErrorTitle,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = message,
+            color = ConnectionErrorBody,
+            fontSize = 15.sp,
+            lineHeight = 22.sp,
+            fontWeight = FontWeight.Normal,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(28.dp))
+        Button(
+            onClick = onRetry,
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ConnectionRetryButton,
+                contentColor = Color.White,
+            ),
+            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "Reintentar",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+            )
+        }
+    }
+}
 
 enum class HomeQuickCategory {
     All,
     Restaurants,
     Shops,
     Services,
-    Offers,
+    CarWash,
 }
 
 private data class HomeCategoryItem(
     val category: HomeQuickCategory,
     val label: String,
-    val icon: ImageVector,
+    val icon: ImageVector? = null,
+    val iconRes: Int? = null,
 )
 
 private const val HomeCategoryRowScale = 0.9f
@@ -201,7 +293,8 @@ private fun HomeCategoryItemColumn(
     val itemWidth = (72 * s).dp
     val iconBoxSize = (56 * s).dp
     val iconBoxCorner = (16 * s).dp
-    val iconSize = (26 * s).dp
+    // El asset de car wash es apaisado; en 26.dp queda más bajo que los íconos del sistema.
+    val iconSize = if (item.iconRes != null) (38 * s).dp else (26 * s).dp
     val labelGap = (6 * s).dp
     val boxBackground = if (isSelected) DobbyPureScale.Pure else DobbyPureScale.Onyx
     val iconTint = if (isSelected) DobbyPureScale.Onyx else DobbyPureScale.Pure
@@ -230,12 +323,22 @@ private fun HomeCategoryItemColumn(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.label,
-                tint = iconTint,
-                modifier = Modifier.size(iconSize),
-            )
+            if (item.iconRes != null) {
+                Image(
+                    painter = painterResource(item.iconRes),
+                    contentDescription = item.label,
+                    modifier = Modifier.size(iconSize),
+                    contentScale = ContentScale.Fit,
+                    colorFilter = ColorFilter.tint(iconTint),
+                )
+            } else if (item.icon != null) {
+                Icon(
+                    imageVector = item.icon,
+                    contentDescription = item.label,
+                    tint = iconTint,
+                    modifier = Modifier.size(iconSize),
+                )
+            }
         }
         Spacer(modifier = Modifier.height(labelGap))
         Text(
@@ -253,7 +356,6 @@ fun HomeCategoryRow(
     selected: HomeQuickCategory,
     onCategorySelected: (HomeQuickCategory) -> Unit,
     modifier: Modifier = Modifier,
-    includeOffers: Boolean = true,
     scale: Float = HomeCategoryRowScale,
     spreadToEdges: Boolean = false,
 ) {
@@ -261,9 +363,13 @@ fun HomeCategoryRow(
         add(HomeCategoryItem(HomeQuickCategory.Restaurants, "Restaurantes", Icons.Default.Restaurant))
         add(HomeCategoryItem(HomeQuickCategory.Shops, "Tiendas", Icons.Default.ShoppingBag))
         add(HomeCategoryItem(HomeQuickCategory.Services, "Servicios", Icons.Default.Handyman))
-        if (includeOffers) {
-            add(HomeCategoryItem(HomeQuickCategory.Offers, "Ofertas", Icons.Default.LocalOffer))
-        }
+        add(
+            HomeCategoryItem(
+                category = HomeQuickCategory.CarWash,
+                label = "Autolavado",
+                iconRes = R.drawable.ic_home_car_wash,
+            ),
+        )
         add(HomeCategoryItem(HomeQuickCategory.All, "Ver todos", Icons.Default.Apps))
     }
     val s = scale
@@ -756,7 +862,19 @@ fun filterPlacesByCategory(
 ): List<FeaturedPlace> = when (category) {
     HomeQuickCategory.All -> places
     HomeQuickCategory.Restaurants -> places.filter { !it.isService && it.shopType != "SHOP" && it.shopType != "CAR_WASH" }
-    HomeQuickCategory.Shops -> places.filter { !it.isService && (it.shopType == "SHOP" || it.shopType == "CAR_WASH") }
+    HomeQuickCategory.Shops -> places.filter { !it.isService && it.shopType == "SHOP" }
     HomeQuickCategory.Services -> places.filter { it.isService }
-    HomeQuickCategory.Offers -> places
+    HomeQuickCategory.CarWash -> places.filter { !it.isService && it.shopType == "CAR_WASH" }
+}
+
+fun filterProductsByCategory(
+    products: List<BestSellerProduct>,
+    places: List<FeaturedPlace>,
+    category: HomeQuickCategory,
+): List<BestSellerProduct> = when (category) {
+    HomeQuickCategory.CarWash -> {
+        val ids = places.filter { it.shopType == "CAR_WASH" }.map { it.id }.toSet()
+        products.filter { it.shopId != null && ids.contains(it.shopId) }
+    }
+    else -> products
 }

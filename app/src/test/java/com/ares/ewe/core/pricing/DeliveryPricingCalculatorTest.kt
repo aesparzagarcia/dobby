@@ -63,6 +63,10 @@ class DeliveryPricingCalculatorTest {
         )
         val order = OrderPricing(productsSubtotal = 220.0, delivery = delivery)
         assertEquals(17.6, order.serviceFee, 0.001)
+        assertEquals(0.16, order.ivaRate, 0.001)
+        assertEquals(15.17, order.serviceFeeNet, 0.001)
+        assertEquals(2.43, order.serviceFeeIva, 0.001)
+        assertEquals(order.serviceFee, order.serviceFeeNet + order.serviceFeeIva, 0.001)
         assertEquals(343.6, order.grandTotal, 0.001)
     }
 }

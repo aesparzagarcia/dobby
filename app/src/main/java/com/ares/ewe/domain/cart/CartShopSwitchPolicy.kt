@@ -13,6 +13,11 @@ object CartShopSwitchPolicy {
             .mapNotNull { it.shopId?.trim()?.takeIf { id -> id.isNotEmpty() } }
             .toSet()
         if (cartShopIds.isEmpty()) return true
-        return !cartShopIds.all { it == target }
+        return !cartShopIds.all { it.equals(target, ignoreCase = true) }
+    }
+
+    fun needsConfirmationIfShopKnown(cartItems: List<CartItem>, targetShopId: String?): Boolean {
+        val target = targetShopId?.trim()?.takeIf { it.isNotEmpty() } ?: return false
+        return needsConfirmation(cartItems, target)
     }
 }

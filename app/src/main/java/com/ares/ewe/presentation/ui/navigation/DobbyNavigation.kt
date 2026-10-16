@@ -72,6 +72,7 @@ fun DobbyNavigation(
     }
     val cartItems by cartRepository.items.collectAsState(initial = emptyList())
     var pendingShopPlace by remember { mutableStateOf<FeaturedPlace?>(null) }
+    var pendingProductNav by remember { mutableStateOf<PendingProductNav?>(null) }
     var showAddressRequiredForCartDialog by remember { mutableStateOf(false) }
     val pendingCartAddGate = remember(context) {
         EntryPointAccessors.fromApplication(
@@ -128,6 +129,18 @@ fun DobbyNavigation(
         )
     }
 
+    fun navigateToProduct(
+        productId: String,
+        pickupLat: Double?,
+        pickupLng: Double?,
+        shopId: String?,
+        shopAvailable: Boolean = true,
+    ) {
+        navController.navigate(
+            DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId, shopAvailable),
+        )
+    }
+
     fun handlePlaceClick(place: FeaturedPlace) {
         if (place.isService) {
             navController.navigate(DobbyScreens.serviceDetail(place.id))
@@ -140,14 +153,35 @@ fun DobbyNavigation(
         }
     }
 
-    pendingShopPlace?.let {
+    fun handleProductClick(
+        productId: String,
+        pickupLat: Double?,
+        pickupLng: Double?,
+        shopId: String?,
+        shopAvailable: Boolean = true,
+    ) {
+        if (CartShopSwitchPolicy.needsConfirmationIfShopKnown(cartItems, shopId)) {
+            pendingProductNav = PendingProductNav(productId, pickupLat, pickupLng, shopId, shopAvailable)
+        } else {
+            navigateToProduct(productId, pickupLat, pickupLng, shopId, shopAvailable)
+        }
+    }
+
+    if (pendingShopPlace != null || pendingProductNav != null) {
         ShopSwitchConfirmDialog(
             onConfirm = {
                 cartRepository.clear()
-                navigateToShop(it)
+                pendingShopPlace?.let { navigateToShop(it) }
+                pendingProductNav?.let {
+                    navigateToProduct(it.productId, it.pickupLat, it.pickupLng, it.shopId, it.shopAvailable)
+                }
                 pendingShopPlace = null
+                pendingProductNav = null
             },
-            onDismiss = { pendingShopPlace = null },
+            onDismiss = {
+                pendingShopPlace = null
+                pendingProductNav = null
+            },
         )
     }
 
@@ -206,9 +240,7 @@ fun DobbyNavigation(
             }
             .first()
         val shopId = pendingProductShopId?.takeIf { it.isNotEmpty() }
-        navController.navigate(DobbyScreens.productDetail(productId, null, null, shopId)) {
-            launchSingleTop = true
-        }
+        handleProductClick(productId, null, null, shopId)
         onPendingProductNavigated()
     }
 
@@ -305,9 +337,7 @@ fun DobbyNavigation(
                     navController.navigate(DobbyScreens.DeliveryAddress)
                 },
                 onProductClick = { productId, shopId, shopAvailable ->
-                    navController.navigate(
-                        DobbyScreens.productDetail(productId, null, null, shopId, shopAvailable),
-                    )
+                    handleProductClick(productId, null, null, shopId, shopAvailable)
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) },
                 onTrackOrderClick = { orderId ->
@@ -337,9 +367,7 @@ fun DobbyNavigation(
             BestSellersScreen(
                 onBack = { navController.popBackStack() },
                 onProductClick = { productId, pickupLat, pickupLng, shopId, shopAvailable ->
-                    navController.navigate(
-                        DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId, shopAvailable),
-                    )
+                    handleProductClick(productId, pickupLat, pickupLng, shopId, shopAvailable)
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) },
             )
@@ -445,9 +473,7 @@ fun DobbyNavigation(
             ShopDetailScreen(
                 onBack = { navController.popBackStack() },
                 onProductClick = { productId, pickupLat, pickupLng, shopId, shopAvailable ->
-                    navController.navigate(
-                        DobbyScreens.productDetail(productId, pickupLat, pickupLng, shopId, shopAvailable),
-                    )
+                    handleProductClick(productId, pickupLat, pickupLng, shopId, shopAvailable)
                 },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) }
             )
@@ -461,11 +487,25 @@ fun DobbyNavigation(
                 navArgument("shopId") { type = NavType.StringType; defaultValue = "none" },
                 navArgument("shopAvailable") { type = NavType.BoolType; defaultValue = true },
             )
-        ) {
+        ) { backStackEntry ->
             ProductScreen(
                 onBack = { navController.popBackStack() },
                 onAddToCartClick = { navController.navigate(DobbyScreens.Cart) },
                 onCartClick = { navController.navigate(DobbyScreens.Cart) },
+                onShopClick = { shopId, shopName ->
+                    val popped = navController.popBackStack(DobbyScreens.ShopDetail, inclusive = false)
+                    if (!popped) {
+                        val pickupLat = backStackEntry.arguments?.getString("pickupLat")
+                            ?.takeIf { value -> value != "none" }
+                            ?.toDoubleOrNull()
+                        val pickupLng = backStackEntry.arguments?.getString("pickupLng")
+                            ?.takeIf { value -> value != "none" }
+                            ?.toDoubleOrNull()
+                        navController.navigate(
+                            DobbyScreens.shopDetail(shopId, shopName, pickupLat, pickupLng),
+                        )
+                    }
+                },
             )
         }
         composable(DobbyScreens.Cart) {
@@ -523,3 +563,11 @@ fun DobbyNavigation(
         }
     }
 }
+
+private data class PendingProductNav(
+    val productId: String,
+    val pickupLat: Double?,
+    val pickupLng: Double?,
+    val shopId: String?,
+    val shopAvailable: Boolean,
+)

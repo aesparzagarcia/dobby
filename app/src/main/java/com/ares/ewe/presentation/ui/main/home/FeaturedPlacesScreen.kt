@@ -91,7 +91,6 @@ fun FeaturedPlacesScreen(
                     HomeCategoryRow(
                         selected = uiState.selectedCategory,
                         onCategorySelected = viewModel::onCategorySelected,
-                        includeOffers = false,
                         scale = 0.9f,
                         spreadToEdges = true,
                     )

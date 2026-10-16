@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.normalizeImageUrlForStorage
 import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
+import com.ares.ewe.domain.cart.CartShopSwitchPolicy
 import com.ares.ewe.domain.cart.PendingCartAddGate
 import com.ares.ewe.domain.model.FavoriteProduct
 import com.ares.ewe.domain.model.ProductDetail
@@ -36,10 +37,17 @@ data class ProductUiState(
     val isProductAvailable: Boolean = true,
     val shopStatus: String? = null,
     val shopReopensLabel: String? = null,
+    val shopId: String? = null,
+    val shopName: String? = null,
+    val shopLogoUrl: String? = null,
+    val shopType: String? = null,
+    val shopRate: Float = 0f,
+    val shopRatingCount: Int = 0,
     val isFavorite: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val showCarWashSingleProductDialog: Boolean = false,
+    val showShopSwitchDialog: Boolean = false,
 ) {
     val showShopClosedBanner: Boolean
         get() = !isProductAvailable
@@ -112,6 +120,11 @@ class ProductViewModel @Inject constructor(
                 var available = shopAvailable
                 var status: String? = null
                 var reopens: String? = null
+                var shopName = product.shopName
+                var shopLogoUrl = product.shopLogoUrl
+                var shopType = product.shopType
+                var shopRate = product.shopRate
+                var shopRatingCount = product.shopRatingCount
                 if (!shopId.isNullOrBlank()) {
                     try {
                         val page = placesRepository.getShopProducts(shopId)
@@ -128,6 +141,11 @@ class ProductViewModel @Inject constructor(
                             openingHour = page.openingHour,
                             openingDays = page.openingDays,
                         )
+                        shopName = page.shopName?.trim()?.takeIf { it.isNotEmpty() } ?: shopName
+                        shopLogoUrl = page.logoUrl ?: shopLogoUrl
+                        shopType = page.shopType ?: shopType
+                        shopRate = page.rate
+                        shopRatingCount = page.ratingCount
                     } catch (_: Exception) {
                         // Keep nav shopAvailable; banner can still show without reopens text.
                     }
@@ -142,6 +160,12 @@ class ProductViewModel @Inject constructor(
                         isProductAvailable = available,
                         shopStatus = status,
                         shopReopensLabel = reopens,
+                        shopId = shopId,
+                        shopName = shopName,
+                        shopLogoUrl = shopLogoUrl,
+                        shopType = shopType,
+                        shopRate = shopRate,
+                        shopRatingCount = shopRatingCount,
                         isLoading = false,
                         errorMessage = null,
                     )
@@ -180,6 +204,18 @@ class ProductViewModel @Inject constructor(
         _uiState.update { it.copy(showCarWashSingleProductDialog = false) }
     }
 
+    fun dismissShopSwitchDialog() {
+        _uiState.update { it.copy(showShopSwitchDialog = false) }
+    }
+
+    fun confirmShopSwitchAndAdd(onAdded: () -> Unit = {}) {
+        viewModelScope.launch {
+            cartRepository.clearNow()
+            _uiState.update { it.copy(showShopSwitchDialog = false) }
+            addToCart(onAdded)
+        }
+    }
+
     fun addToCart(onAdded: () -> Unit = {}) {
         val product = _uiState.value.product ?: return
         if (!_uiState.value.isProductAvailable) return
@@ -188,6 +224,10 @@ class ProductViewModel @Inject constructor(
         viewModelScope.launch {
             val cartItems = cartRepository.items.first()
             val shopId = product.shopId ?: navShopId
+            if (CartShopSwitchPolicy.needsConfirmationIfShopKnown(cartItems, shopId)) {
+                _uiState.update { it.copy(showShopSwitchDialog = true) }
+                return@launch
+            }
             if (CartCarWashSingleProductPolicy.blocksAdd(
                     shopType = product.shopType,
                     cartItems = cartItems,

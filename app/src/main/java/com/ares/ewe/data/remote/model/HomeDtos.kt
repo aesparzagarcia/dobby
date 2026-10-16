@@ -110,6 +110,10 @@ data class ProductDetailDto(
     @SerializedName("discount") val discount: Int = 0,
     @SerializedName("shop_id") val shopId: String? = null,
     @SerializedName("shop_type") val shopType: String? = null,
+    @SerializedName("shop_name") val shopName: String? = null,
+    @SerializedName("shop_logo_url") val shopLogoUrl: String? = null,
+    @SerializedName("shop_rate") val shopRate: Float = 0f,
+    @SerializedName("shop_rating_count") val shopRatingCount: Int = 0,
     @SerializedName("variants") val variants: List<ProductVariantDto>? = emptyList(),
 )
 

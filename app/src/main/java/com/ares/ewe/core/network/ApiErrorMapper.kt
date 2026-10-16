@@ -3,28 +3,42 @@ package com.ares.ewe.core.network
 import com.google.gson.JsonParser
 import java.io.IOException
 import java.net.ConnectException
+import java.net.NoRouteToHostException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 import retrofit2.HttpException
 
 /**
- * High-level classification for API / network failures shown in UI.
+ * Catálogo de fallos que ve el usuario. Cada tipo tiene su propio texto;
+ * no se muestra el mensaje técnico de OkHttp o del sistema.
  */
 enum class ApiErrorKind {
-    /** Sin red, timeout, host inalcanzable, etc. */
-    CONNECTION,
+    /** El dispositivo no tiene red o no resuelve el host. */
+    NO_INTERNET,
 
-    /** 401 / 403 */
+    /** El host existe, pero no acepta la conexión (servidor caído o puerto cerrado). */
+    SERVER_UNAVAILABLE,
+
+    /** La petición salió, pero no hubo respuesta a tiempo. */
+    TIMEOUT,
+
+    /** 401 / 403: sesión ausente o vencida. */
     AUTHORIZATION,
 
-    /** 4xx distintos de auth (validación, no encontrado, etc.) */
+    /** 400: datos de la petición rechazados. */
+    BAD_REQUEST,
+
+    /** Otros 4xx (no encontrado, conflicto, etc.). */
     CLIENT,
 
-    /** 5xx */
+    /** 5xx. */
     SERVER,
 
-    /** Otros */
+    /** Certificado o negociación TLS. */
+    SSL,
+
+    /** Cualquier otro fallo. */
     UNKNOWN,
 }
 
@@ -41,13 +55,54 @@ data class UserFacingApiError(
     fun formattedMessage(): String = "$label: $detail"
 }
 
-fun Throwable.unwrap(): Throwable {
-    var current = this
-    while (current.cause != null && current.cause !== current) {
-        current = current.cause!!
+fun Throwable.unwrap(): Throwable = causeChain().last()
+
+private fun Throwable.causeChain(): List<Throwable> {
+    val chain = ArrayList<Throwable>(4)
+    var current: Throwable? = this
+    while (current != null && current !in chain) {
+        chain.add(current)
+        current = current.cause
     }
-    return current
+    return chain
 }
+
+private fun Throwable.signalsServerDown(): Boolean {
+    if (this is ConnectException) return true
+    val message = message?.lowercase().orEmpty()
+    return message.contains("econnrefused") ||
+        message.contains("connection refused") ||
+        message.contains("isconnected failed") ||
+        message.contains("failed to connect")
+}
+
+private fun Throwable.signalsNoInternet(): Boolean {
+    if (this is UnknownHostException || this is NoRouteToHostException) return true
+    val message = message?.lowercase().orEmpty()
+    return message.contains("unable to resolve host") ||
+        message.contains("no address associated") ||
+        message.contains("network is unreachable") ||
+        message.contains("enetunreach") ||
+        message.contains("ehostunreach")
+}
+
+private fun noInternetError() = UserFacingApiError(
+    ApiErrorKind.NO_INTERNET,
+    "Sin internet",
+    "No hay conexión a internet. Verifica tu red e intenta de nuevo.",
+)
+
+private fun serverUnavailableError() = UserFacingApiError(
+    ApiErrorKind.SERVER_UNAVAILABLE,
+    "Servidor no disponible",
+    "No se pudo conectar al servidor. Puede estar fuera de servicio. Intenta de nuevo en unos minutos.",
+)
+
+private fun timeoutError() = UserFacingApiError(
+    ApiErrorKind.TIMEOUT,
+    "Tiempo de espera",
+    "El servidor tardó demasiado en responder. Intenta de nuevo.",
+)
 
 private fun parseHttpErrorBody(e: HttpException): String? {
     return try {
@@ -66,43 +121,28 @@ private fun parseHttpErrorBody(e: HttpException): String? {
 
 /**
  * Maps exceptions from Retrofit/OkHttp (and common I/O) to Spanish copy with a visible error *category*.
+ * Walks the whole cause chain: OkHttp often wraps ECONNREFUSED inside [ConnectException]
+ * and then inside an [android.system.ErrnoException] whose message is English.
  */
 fun Throwable.toUserFacingApiError(): UserFacingApiError {
-    val t = unwrap()
-    return when (t) {
-        is HttpException -> mapHttpException(t)
-        is SocketTimeoutException -> UserFacingApiError(
-            ApiErrorKind.CONNECTION,
-            "Tiempo de espera agotado",
-            "El servidor no respondió. Intenta de nuevo."
-        )
-        is UnknownHostException -> UserFacingApiError(
-            ApiErrorKind.CONNECTION,
-            "Sin conexión",
-            "No se pudo contactar al servidor. Revisa tu internet o la URL del API."
-        )
-        is ConnectException -> UserFacingApiError(
-            ApiErrorKind.CONNECTION,
-            "Sin conexión",
-            "No se pudo establecer la conexión. ¿El servidor está disponible?"
-        )
-        is SSLException -> UserFacingApiError(
-            ApiErrorKind.CONNECTION,
+    val chain = causeChain()
+    chain.firstOrNull { it is HttpException }?.let { return mapHttpException(it as HttpException) }
+    if (chain.any { it is SocketTimeoutException }) return timeoutError()
+    if (chain.any { it.signalsServerDown() }) return serverUnavailableError()
+    if (chain.any { it.signalsNoInternet() }) return noInternetError()
+    if (chain.any { it is SSLException }) {
+        return UserFacingApiError(
+            ApiErrorKind.SSL,
             "Conexión segura",
-            "Falló la negociación SSL. Comprueba fecha y hora del dispositivo o la red."
-        )
-        is IOException -> UserFacingApiError(
-            ApiErrorKind.CONNECTION,
-            "Sin conexión",
-            "No hay conexión o se interrumpió. Inténtalo de nuevo."
-        )
-        else -> UserFacingApiError(
-            ApiErrorKind.UNKNOWN,
-            "Error",
-            t.message?.takeIf { it.isNotBlank() }
-                ?: "Algo salió mal. Inténtalo de nuevo."
+            "No se pudo establecer una conexión segura. Revisa la fecha y hora del dispositivo e intenta de nuevo.",
         )
     }
+    if (chain.any { it is IOException }) return serverUnavailableError()
+    return UserFacingApiError(
+        ApiErrorKind.UNKNOWN,
+        "No se pudo cargar",
+        "Algo salió mal. Inténtalo de nuevo.",
+    )
 }
 
 private fun mapHttpException(e: HttpException): UserFacingApiError {
@@ -111,25 +151,30 @@ private fun mapHttpException(e: HttpException): UserFacingApiError {
     return when (code) {
         401, 403 -> UserFacingApiError(
             ApiErrorKind.AUTHORIZATION,
-            "Autorización",
+            "Sesión",
             serverMsg
                 ?.takeUnless { it.equals("Unauthorized", ignoreCase = true) || it.equals("Forbidden", ignoreCase = true) }
                 ?: "Inicia sesión para continuar."
         )
         in 500..599 -> UserFacingApiError(
             ApiErrorKind.SERVER,
-            "Servidor",
-            "El servidor tuvo un problema (${code}). Inténtalo más tarde."
+            "Error del servidor",
+            "El servidor tuvo un problema. Inténtalo más tarde."
+        )
+        400 -> UserFacingApiError(
+            ApiErrorKind.BAD_REQUEST,
+            "Solicitud incorrecta",
+            serverMsg ?: "Los datos enviados no son válidos. Revísalos e intenta de nuevo."
         )
         404 -> UserFacingApiError(
             ApiErrorKind.CLIENT,
             "No encontrado",
-            serverMsg ?: "No se encontró el recurso solicitado."
+            serverMsg ?: "No se encontró lo que buscabas."
         )
         in 400..499 -> UserFacingApiError(
             ApiErrorKind.CLIENT,
             "Solicitud",
-            serverMsg ?: "No se pudo completar la solicitud (${code})."
+            serverMsg ?: "No se pudo completar la solicitud. Intenta de nuevo."
         )
         else -> UserFacingApiError(
             ApiErrorKind.UNKNOWN,

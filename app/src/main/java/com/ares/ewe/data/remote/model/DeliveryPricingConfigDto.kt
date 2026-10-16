@@ -15,6 +15,7 @@ data class DeliveryPricingConfigDto(
     @SerializedName("zoneBFee") val zoneBFee: Double,
     @SerializedName("zoneCFee") val zoneCFee: Double,
     @SerializedName("zoneDFee") val zoneDFee: Double,
+    @SerializedName("ivaRate") val ivaRate: Double = 0.16,
 ) {
     fun toSettings(): DeliveryPricingSettings = DeliveryPricingSettings(
         baseFee = baseFee,
@@ -28,5 +29,6 @@ data class DeliveryPricingConfigDto(
         zoneBFee = zoneBFee,
         zoneCFee = zoneCFee,
         zoneDFee = zoneDFee,
+        ivaRate = ivaRate,
     )
 }

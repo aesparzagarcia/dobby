@@ -32,4 +32,5 @@ interface CartRepository {
     fun removeItem(productId: String, variantId: String? = null)
     fun updateQuantity(productId: String, quantity: Int, variantId: String? = null)
     fun clear()
+    suspend fun clearNow()
 }

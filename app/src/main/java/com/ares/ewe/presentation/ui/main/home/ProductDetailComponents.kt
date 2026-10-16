@@ -20,10 +20,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RoomService
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -54,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ares.ewe.core.util.shopTypeLabelEs
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.presentation.components.LoadingAsyncImage
@@ -104,8 +108,16 @@ fun ProductDetailHero(
                     LoadingAsyncImage(
                         model = url,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 20.dp,
+                                bottom = CardOverlap + 12.dp,
+                            ),
+                        contentScale = ContentScale.Fit,
                         placeholderBackground = Color.White,
                         error = { ProductImagePlaceholder() },
                     )
@@ -183,6 +195,85 @@ private fun ProductDetailOverlayIconButton(
 }
 
 @Composable
+private fun ProductShopHeader(
+    shopName: String,
+    shopLogoUrl: String?,
+    shopType: String?,
+    shopRate: Float,
+    shopRatingCount: Int,
+    onClick: (() -> Unit)?,
+) {
+    val rowModifier = if (onClick != null) {
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+    Row(
+        modifier = rowModifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .border(1.dp, Color(0xFFE8E8ED), CircleShape)
+                .background(RatingPillBg),
+            contentAlignment = Alignment.Center,
+        ) {
+            LoadingAsyncImage(
+                model = shopLogoUrl,
+                contentDescription = shopName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                placeholderBackground = RatingPillBg,
+                error = {
+                    Icon(
+                        imageVector = Icons.Default.Store,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = shopName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (onClick != null) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+            Text(
+                text = shopTypeLabelEs(shopType),
+                style = MaterialTheme.typography.bodySmall,
+                color = MutedText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        RatingDisplay(
+            rate = shopRate,
+            ratingCount = shopRatingCount.takeIf { it > 0 },
+        )
+    }
+}
+
+@Composable
 fun ProductDetailInfoCard(
     product: ProductDetail,
     ratingCount: Int,
@@ -191,6 +282,12 @@ fun ProductDetailInfoCard(
     modifier: Modifier = Modifier,
     selectedVariantId: String = "",
     onSelectVariant: (ProductVariant) -> Unit = {},
+    shopName: String? = null,
+    shopLogoUrl: String? = null,
+    shopType: String? = null,
+    shopRate: Float = 0f,
+    shopRatingCount: Int = 0,
+    onShopClick: (() -> Unit)? = null,
 ) {
     val validDiscount = product.discount.coerceIn(0, 100)
     val showPromotion = product.hasPromotion && validDiscount > 0
@@ -213,26 +310,23 @@ fun ProductDetailInfoCard(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 20.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
+            if (!shopName.isNullOrBlank() || !shopLogoUrl.isNullOrBlank()) {
+                ProductShopHeader(
+                    shopName = shopName ?: "Tienda",
+                    shopLogoUrl = shopLogoUrl,
+                    shopType = shopType,
+                    shopRate = shopRate,
+                    shopRatingCount = shopRatingCount,
+                    onClick = onShopClick,
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                RatingDisplay(
-                    rate = product.rate,
-                    ratingCount = ratingCount.takeIf { it > 0 },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(RatingPillBg)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
+
+            Text(
+                text = product.name,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
 
             if (product.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(10.dp))

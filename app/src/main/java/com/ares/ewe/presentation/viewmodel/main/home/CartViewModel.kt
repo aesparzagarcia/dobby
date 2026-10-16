@@ -152,6 +152,7 @@ class CartViewModel @Inject constructor(
                 OrderPricing(
                     productsSubtotal = productsSubtotal,
                     delivery = DeliveryPricingCalculator.waived(distanceKm ?: 0.0),
+                    ivaRate = pricingSettings.ivaRate,
                 )
             }
             else -> distanceKm?.let { km ->
@@ -166,6 +167,7 @@ class CartViewModel @Inject constructor(
                 OrderPricing(
                     productsSubtotal = productsSubtotal,
                     delivery = deliveryBreakdown,
+                    ivaRate = pricingSettings.ivaRate,
                 )
             }
         }

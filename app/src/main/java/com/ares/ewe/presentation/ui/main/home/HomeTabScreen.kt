@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -123,12 +122,11 @@ fun HomeTabScreen(
     val filteredPlaces = categoryPlaces.filter {
         query.isBlank() || it.name.contains(query, ignoreCase = true)
     }
-    val categoryProducts = when (quickCategory) {
-        HomeQuickCategory.Offers -> uiState.bestSellerProducts.filter {
-            it.hasPromotion && it.discount > 0
-        }
-        else -> uiState.bestSellerProducts
-    }
+    val categoryProducts = filterProductsByCategory(
+        uiState.bestSellerProducts,
+        uiState.featuredPlaces,
+        quickCategory,
+    )
     val filteredProducts = categoryProducts.filter {
         query.isBlank() || it.name.contains(query, ignoreCase = true)
     }
@@ -140,27 +138,19 @@ fun HomeTabScreen(
     // Ancho del producto: 10% menos que restaurante + 15% más compacto
     val productCardWidth = (featuredCardWidthPx * 0.9f * 0.85f).toInt().dp
 
+    val catalogEmpty =
+        uiState.featuredPlaces.isEmpty() && uiState.bestSellerProducts.isEmpty()
     Column(modifier = modifier.fillMaxSize().background(HomeScreenBackground)) {
         when {
-            uiState.errorMessage != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = uiState.errorMessage!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadHome() }) {
-                            Text("Reintentar")
-                        }
-                    }
-                }
+            uiState.errorMessage != null && catalogEmpty -> {
+                val (title, body) = splitHomeErrorMessage(uiState.errorMessage!!)
+                HomeConnectionErrorState(
+                    onRetry = { viewModel.loadHome() },
+                    title = title,
+                    message = body,
+                )
             }
-            uiState.isLoading -> {
+            uiState.isLoading && catalogEmpty -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -233,9 +223,6 @@ fun HomeTabScreen(
                                 selected = quickCategory,
                                 onCategorySelected = { cat ->
                                     quickCategory = cat
-                                    if (cat == HomeQuickCategory.Offers) {
-                                        onPromotionsTabClick()
-                                    }
                                 },
                                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
                             )

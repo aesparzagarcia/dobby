@@ -209,6 +209,10 @@ class PlacesRepositoryImpl @Inject constructor(
             discount = dto.discount,
             shopId = dto.shopId,
             shopType = dto.shopType,
+            shopName = dto.shopName?.trim()?.takeIf { it.isNotEmpty() },
+            shopLogoUrl = dto.shopLogoUrl?.toFullImageUrl(),
+            shopRate = dto.shopRate,
+            shopRatingCount = dto.shopRatingCount,
             variants = dto.variants.toProductVariants(),
         )
     }

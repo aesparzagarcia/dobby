@@ -1,8 +1,10 @@
 package com.ares.ewe.presentation.ui.main.home
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,10 +23,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,6 +36,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.res.painterResource
+import com.ares.ewe.R
+import com.ares.ewe.core.theme.DobbyColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
@@ -82,9 +92,12 @@ fun CartScreen(
         BackHandler { /* bloquear atrás mientras se crea el pedido */ }
     }
 
+    val isEmpty = uiState.items.isEmpty()
+    val screenBackground = if (isEmpty) Color.White else CartScreenBackground
+
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
-        containerColor = CartScreenBackground,
+        containerColor = screenBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Carrito") },
@@ -92,7 +105,12 @@ fun CartScreen(
                     IconButton(onClick = onBack, enabled = !uiState.isPlacingOrder) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = screenBackground,
+                    titleContentColor = DobbyColors.TextPrimary,
+                    navigationIconContentColor = DobbyColors.TextPrimary,
+                ),
             )
         }
     ) { paddingValues ->
@@ -101,19 +119,8 @@ fun CartScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (uiState.items.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Tu carrito está vacío",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            if (isEmpty) {
+                EmptyCartContent(onExplore = onBack)
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -201,6 +208,72 @@ fun CartScreen(
 }
 
 @Composable
+private fun EmptyCartContent(onExplore: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier.size(width = 268.dp, height = 220.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 248.dp, height = 186.dp)
+                    .offset(x = 8.dp, y = 12.dp)
+                    .background(
+                        color = Color(0xFFFDECEC),
+                        shape = CircleShape,
+                    ),
+            )
+            Image(
+                painter = painterResource(R.drawable.ic_empty_cart),
+                contentDescription = null,
+                modifier = Modifier.size(214.dp),
+                contentScale = ContentScale.Fit,
+            )
+        }
+        Text(
+            text = "Tu carrito está vacío",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = DobbyColors.TextPrimary,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = "Aún no has agregado productos.\nExplora nuestros restaurantes y encuentra\ntus platillos favoritos.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = DobbyColors.TextSecondary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(28.dp))
+        androidx.compose.material3.Button(
+            onClick = onExplore,
+            shape = RoundedCornerShape(percent = 50),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = DobbyColors.Primary,
+                contentColor = DobbyColors.OnPrimary,
+            ),
+            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Explore,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Explorar restaurantes",
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
 private fun CartPricingFooter(
     pricing: OrderPricing?,
     grandTotal: Double,
@@ -244,8 +317,13 @@ private fun CartPricingFooter(
             label = if (isServicePayment) "Subtotal servicios" else "Subtotal productos",
             amount = pricing.productsSubtotal,
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        PricingLine(label = "Tarifa de servicio", amount = pricing.serviceFee)
+        if (pricing.serviceFee > 0) {
+            val ivaPct = (pricing.ivaRate * 100.0).toInt().coerceAtLeast(0)
+            Spacer(modifier = Modifier.height(4.dp))
+            PricingLine(label = "Tarifa de uso de la app", amount = pricing.serviceFeeNet)
+            Spacer(modifier = Modifier.height(4.dp))
+            PricingLine(label = "IVA ($ivaPct%)", amount = pricing.serviceFeeIva)
+        }
         if (!isCarWashCart) {
             Spacer(modifier = Modifier.height(4.dp))
             PricingLine(label = "Envío", amount = pricing.delivery.finalDeliveryFee)

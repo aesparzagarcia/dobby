@@ -55,6 +55,7 @@ import com.ares.ewe.presentation.components.DeliveryImagePlaceholder
 import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.presentation.components.ProductImagePlaceholder
 import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.pricing.splitServiceFeeIva
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.OrderTracking
 import com.ares.ewe.domain.model.OrderTrackingDeliveryMan
@@ -196,6 +197,9 @@ fun OrderTrackingBottomSheetContent(
             OrderTrackingPricingSection(
                 productsSubtotal = productsSubtotal,
                 serviceFee = tracking.serviceFee,
+                serviceFeeNet = tracking.serviceFeeNet,
+                serviceFeeIva = tracking.serviceFeeIva,
+                ivaRate = tracking.ivaRate,
                 deliveryFee = tracking.deliveryFee,
                 total = tracking.total,
             )
@@ -423,13 +427,23 @@ private fun OrderTrackingProductRow(item: OrderTrackingItem) {
 private fun OrderTrackingPricingSection(
     productsSubtotal: Double,
     serviceFee: Double,
+    serviceFeeNet: Double,
+    serviceFeeIva: Double,
+    ivaRate: Double,
     deliveryFee: Double,
     total: Double,
 ) {
+    val feeSplit = if (serviceFeeNet > 0 || serviceFeeIva > 0) {
+        com.ares.ewe.core.pricing.ServiceFeeIvaSplit(serviceFeeNet, serviceFeeIva)
+    } else {
+        splitServiceFeeIva(serviceFee, ivaRate)
+    }
+    val ivaPct = (ivaRate * 100.0).toInt().coerceAtLeast(0)
     Column(verticalArrangement = Arrangement.spacedBy(OrderTrackingSheetDim.pricingRowGap)) {
         PricingLine(label = "Subtotal productos", amount = productsSubtotal)
         if (serviceFee > 0) {
-            PricingLine(label = "Tarifa de servicio", amount = serviceFee)
+            PricingLine(label = "Tarifa de uso de la app", amount = feeSplit.net)
+            PricingLine(label = "IVA ($ivaPct%)", amount = feeSplit.iva)
         }
         if (deliveryFee > 0) {
             PricingLine(label = "Envío", amount = deliveryFee)

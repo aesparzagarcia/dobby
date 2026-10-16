@@ -155,6 +155,10 @@ class CartRepositoryImpl @Inject constructor(
             cartDao.deleteAll()
         }
     }
+
+    override suspend fun clearNow() {
+        cartDao.deleteAll()
+    }
 }
 
 private fun CartInfo.toCartItem() = CartItem(

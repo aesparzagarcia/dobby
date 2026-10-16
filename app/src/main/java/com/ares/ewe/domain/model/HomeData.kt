@@ -97,6 +97,10 @@ data class ProductDetail(
     val discount: Int = 0,
     val shopId: String? = null,
     val shopType: String? = null,
+    val shopName: String? = null,
+    val shopLogoUrl: String? = null,
+    val shopRate: Float = 0f,
+    val shopRatingCount: Int = 0,
     val variants: List<ProductVariant> = emptyList(),
 ) {
     val hasMultiplePresentations: Boolean
