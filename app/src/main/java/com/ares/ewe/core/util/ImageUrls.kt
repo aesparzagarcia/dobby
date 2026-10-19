@@ -1,9 +1,9 @@
 package com.ares.ewe.core.util
 
-import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 
 private val imageBaseUrl: String
-    get() = BuildConfig.BASE_URL.removeSuffix("api/").trimEnd('/')
+    get() = DevServerStore.baseUrl().removeSuffix("api/").trimEnd('/')
 
 /** Relative `/uploads/...` → absolute URL with current [BuildConfig.BASE_URL] host. */
 fun String.toFullImageUrl(): String {

@@ -1,6 +1,8 @@
 package com.ares.ewe
 
 import android.app.Application
+import android.content.Context
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.core.crash.CrashlyticsJourney
 import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.session.ProactiveAccessTokenRefresh
@@ -18,7 +20,13 @@ class DobbyApplication : Application() {
     @Inject
     lateinit var sessionManager: SessionManager
 
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        DevServerStore.init(base)
+    }
+
     override fun onCreate() {
+        DevServerStore.init(this)
         super.onCreate()
         CrashlyticsJourney.setApp("dobby")
         runBlocking { sessionManager.prepareSession() }

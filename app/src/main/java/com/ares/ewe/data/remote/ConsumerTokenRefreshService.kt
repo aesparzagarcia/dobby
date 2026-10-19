@@ -1,6 +1,6 @@
 package com.ares.ewe.data.remote
 
-import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.data.local.datastore.SessionManager
 import com.ares.ewe.data.remote.model.AppRefreshRequest
 import com.ares.ewe.data.remote.model.AppRefreshResponse
@@ -85,7 +85,7 @@ class ConsumerTokenRefreshService @Inject constructor(
         }
 
     private fun executeRefresh(refresh: String): HttpRefreshResult {
-        val url = BuildConfig.BASE_URL.trimEnd('/') + "/auth/refresh"
+        val url = DevServerStore.baseUrl().trimEnd('/') + "/auth/refresh"
         val bodyJson = gson.toJson(AppRefreshRequest(refresh))
         val httpReq = Request.Builder()
             .url(url)

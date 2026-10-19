@@ -27,8 +27,8 @@ android {
         applicationId = "com.ares.ewe"
         minSdk = 24
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.1.3"
+        versionCode = 15
+        versionName = "1.1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -53,7 +53,7 @@ android {
             resValue("string", "app_name", "Dobbi Dev")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             val devHost = (project.findProperty("DEV_API_HOST") as String?)?.trim()?.takeIf { it.isNotBlank() }
-                ?: "http://192.168.100.61:3001"
+                ?: "http://192.151.203.156:3001"
             val devPort = (project.findProperty("DEV_API_PORT") as String?)?.trim()?.takeIf { it.isNotBlank() }
             val devBase = if (devPort != null && !devHost.contains(":")) {
                 "$devHost:$devPort"

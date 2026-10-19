@@ -54,7 +54,7 @@ import com.ares.ewe.R
 import com.ares.ewe.presentation.components.DeliveryImagePlaceholder
 import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.presentation.components.ProductImagePlaceholder
-import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.core.pricing.splitServiceFeeIva
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.domain.model.OrderTracking
@@ -564,7 +564,7 @@ private fun CourierAssignedCard(dm: OrderTrackingDeliveryMan) {
     ) {
         val courierImageUrl = dm.profilePhotoUrl?.let { url ->
             if (url.startsWith("http")) url
-            else BuildConfig.BASE_URL.substringBefore("api/").dropLast(1) + url
+            else DevServerStore.baseUrl().substringBefore("api/").dropLast(1) + url
         }?.takeIf { it.isNotBlank() }
         LoadingAsyncImage(
             model = courierImageUrl,

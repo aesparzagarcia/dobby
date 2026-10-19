@@ -17,6 +17,8 @@ data class DeliveryPricingSettings(
     val zoneDFee: Double,
     /** IVA sobre tarifa de uso (fracción, ej. 0.16). */
     val ivaRate: Double = DEFAULT_IVA_RATE,
+    /** Tarifa de uso (fracción, ej. 0.10). */
+    val serviceFeeRate: Double = DEFAULT_SERVICE_FEE_RATE,
 ) {
     companion object {
         val DEFAULT = DeliveryPricingSettings(
@@ -32,6 +34,7 @@ data class DeliveryPricingSettings(
             zoneCFee = 25.0,
             zoneDFee = 50.0,
             ivaRate = DEFAULT_IVA_RATE,
+            serviceFeeRate = DEFAULT_SERVICE_FEE_RATE,
         )
     }
 }

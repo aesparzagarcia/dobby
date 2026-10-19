@@ -1,6 +1,6 @@
 package com.ares.ewe.data.repository
 
-import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.domain.model.Ad
 import com.ares.ewe.domain.repository.AdsRepository
@@ -11,7 +11,7 @@ class AdsRepositoryImpl @Inject constructor(
 ) : AdsRepository {
 
     private val imageBaseUrl: String
-        get() = BuildConfig.BASE_URL.removeSuffix("api/").trimEnd('/')
+        get() = DevServerStore.baseUrl().removeSuffix("api/").trimEnd('/')
 
     private fun String?.toFullImageUrl(): String? =
         if (this == null) null

@@ -1,6 +1,7 @@
 package com.ares.ewe.data.remote.model
 
 import com.ares.ewe.core.pricing.DeliveryPricingSettings
+import com.ares.ewe.core.pricing.normalizeServiceFeeRate
 import com.google.gson.annotations.SerializedName
 
 data class DeliveryPricingConfigDto(
@@ -16,6 +17,7 @@ data class DeliveryPricingConfigDto(
     @SerializedName("zoneCFee") val zoneCFee: Double,
     @SerializedName("zoneDFee") val zoneDFee: Double,
     @SerializedName("ivaRate") val ivaRate: Double = 0.16,
+    @SerializedName("serviceFeeRate") val serviceFeeRate: Double = 0.08,
 ) {
     fun toSettings(): DeliveryPricingSettings = DeliveryPricingSettings(
         baseFee = baseFee,
@@ -30,5 +32,6 @@ data class DeliveryPricingConfigDto(
         zoneCFee = zoneCFee,
         zoneDFee = zoneDFee,
         ivaRate = ivaRate,
+        serviceFeeRate = normalizeServiceFeeRate(serviceFeeRate),
     )
 }

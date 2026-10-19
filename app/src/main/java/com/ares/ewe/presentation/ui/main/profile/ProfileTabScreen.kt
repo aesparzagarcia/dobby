@@ -63,6 +63,7 @@ fun ProfileTabScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scroll = rememberScrollState()
+    val serverDialog = rememberDevServerDialogState()
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteFinalConfirm by remember { mutableStateOf(false) }
@@ -218,6 +219,13 @@ fun ProfileTabScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 Button(onClick = { viewModel.refresh() }) {
                     Text("Reintentar")
+                }
+                if (com.ares.ewe.BuildConfig.ENVIRONMENT == "dev") {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(onClick = { serverDialog.open() }) {
+                        Text("Configurar IP")
+                    }
+                    DevServerConnectionDialogs(serverDialog)
                 }
             }
             else -> {

@@ -1,6 +1,6 @@
 package com.ares.ewe.data.repository
 
-import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.domain.model.BestSellerProduct
 import com.ares.ewe.domain.model.FeaturedPlace
@@ -26,7 +26,7 @@ class PlacesRepositoryImpl @Inject constructor(
 ) : PlacesRepository {
 
     private val imageBaseUrl: String
-        get() = BuildConfig.BASE_URL.removeSuffix("api/").trimEnd('/')
+        get() = DevServerStore.baseUrl().removeSuffix("api/").trimEnd('/')
 
     private fun String.toFullImageUrl(): String =
         if (this.startsWith("http")) this else "$imageBaseUrl$this"

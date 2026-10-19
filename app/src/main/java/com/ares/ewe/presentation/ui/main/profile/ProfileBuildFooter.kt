@@ -13,12 +13,15 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 
 private val DeleteRed = Color(0xFFEF4444)
 private val DeleteRedBg = Color(0xFFFFF1F2)
@@ -34,6 +37,7 @@ fun ProfileAccountSection(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val serverDialog = rememberDevServerDialogState()
     Column(modifier = modifier.fillMaxWidth()) {
         ProfileSectionHeader(title = "Cuenta")
         Spacer(modifier = Modifier.height(8.dp))
@@ -78,6 +82,27 @@ fun ProfileAccountSection(
                 .align(Alignment.CenterHorizontally)
                 .padding(top = 16.dp),
         )
+
+        if (BuildConfig.ENVIRONMENT == "dev") {
+            TextButton(
+                onClick = { serverDialog.open() },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Server connection",
+                        color = DevPurple,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = DevServerStore.displayHost(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF9CA3AF),
+                    )
+                }
+            }
+            DevServerConnectionDialogs(serverDialog)
+        }
 
         if (BuildConfig.DEBUG) {
             Spacer(modifier = Modifier.height(20.dp))

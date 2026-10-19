@@ -1,6 +1,6 @@
 package com.ares.ewe.data.repository
 
-import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.data.remote.api.DobbyApi
 import com.ares.ewe.data.remote.model.CreateOrderItemRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
@@ -207,6 +207,6 @@ class OrderRepositoryImpl @Inject constructor(
 private fun String?.toOrderTrackingImageUrl(): String? {
     if (this.isNullOrBlank()) return null
     if (startsWith("http")) return this
-    val base = BuildConfig.BASE_URL.removeSuffix("api/").trimEnd('/')
+    val base = DevServerStore.baseUrl().removeSuffix("api/").trimEnd('/')
     return "$base$this"
 }
