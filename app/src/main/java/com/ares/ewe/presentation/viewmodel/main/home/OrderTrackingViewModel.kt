@@ -25,6 +25,9 @@ data class OrderTrackingUiState(
     val errorMessage: String? = null,
     val rateSubmitting: Boolean = false,
     val rateError: String? = null,
+    val draftShopStars: Int? = null,
+    val draftDeliveryStars: Int? = null,
+    val draftProductStars: Map<String, Int> = emptyMap(),
     /** Driving route from repartidor to delivery address (Google Directions), or straight segment if API fails. */
     val routePoints: List<LatLng> = emptyList(),
     /** True when Directions did not return a street polyline (key/API issue or empty result). */
@@ -154,37 +157,95 @@ class OrderTrackingViewModel @Inject constructor(
         }
     }
 
-    fun submitDeliveryRating(stars: Int) {
-        submitRating(stars) { orderRepository.rateDelivery(orderId, stars) }
+    fun selectDeliveryRating(stars: Int) {
+        if (stars !in 1..5) return
+        _uiState.value = _uiState.value.copy(draftDeliveryStars = stars, rateError = null)
     }
 
-    fun submitShopRating(stars: Int) {
-        submitRating(stars) { orderRepository.rateShop(orderId, stars) }
+    fun selectShopRating(stars: Int) {
+        if (stars !in 1..5) return
+        _uiState.value = _uiState.value.copy(draftShopStars = stars, rateError = null)
     }
 
-    fun submitProductRating(productId: String, stars: Int) {
-        submitRating(stars) { orderRepository.rateProduct(orderId, productId, stars) }
+    fun selectProductRating(productId: String, stars: Int) {
+        if (stars !in 1..5 || productId.isBlank()) return
+        _uiState.value = _uiState.value.copy(
+            draftProductStars = _uiState.value.draftProductStars + (productId to stars),
+            rateError = null,
+        )
     }
 
-    private fun submitRating(stars: Int, action: suspend () -> Result<Unit>) {
-        if (orderId.isBlank() || stars !in 1..5) return
+    /** Guarda las estrellas elegidas y luego cierra el seguimiento. */
+    fun finish(onDone: () -> Unit) {
+        val state = _uiState.value
+        val tracking = state.tracking ?: return
+        if (!tracking.isDelivered || state.rateSubmitting || orderId.isBlank()) return
+        if (!tracking.hasPendingRatings) {
+            onDone()
+            return
+        }
+        if (!draftsComplete(tracking, state)) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(rateSubmitting = true, rateError = null)
-            action()
-                .onSuccess {
-                    _uiState.value = _uiState.value.copy(rateSubmitting = false, rateError = null)
-                    loadTracking()
+            if (tracking.canRateShop) {
+                val stars = _uiState.value.draftShopStars ?: run {
+                    failRating(null)
+                    return@launch
                 }
-                .onFailure { e ->
-                    _uiState.value = _uiState.value.copy(
-                        rateSubmitting = false,
-                        rateError = e.toUserFacingMessage(),
-                    )
+                val result = orderRepository.rateShop(orderId, stars)
+                if (result.isFailure && !result.isAlreadyRated()) {
+                    failRating(result.exceptionOrNull())
+                    return@launch
                 }
+            }
+            if (tracking.canRateDelivery) {
+                val stars = _uiState.value.draftDeliveryStars ?: run {
+                    failRating(null)
+                    return@launch
+                }
+                val result = orderRepository.rateDelivery(orderId, stars)
+                if (result.isFailure && !result.isAlreadyRated()) {
+                    failRating(result.exceptionOrNull())
+                    return@launch
+                }
+            }
+            val products = tracking.items.mapNotNull { item ->
+                if (!item.canRate) return@mapNotNull null
+                val stars = _uiState.value.draftProductStars[item.productId] ?: run {
+                    failRating(null)
+                    return@launch
+                }
+                item.productId to stars
+            }
+            if (products.isNotEmpty()) {
+                val result = orderRepository.rateProducts(orderId, products)
+                if (result.isFailure) {
+                    failRating(result.exceptionOrNull())
+                    return@launch
+                }
+            }
+            _uiState.value = _uiState.value.copy(rateSubmitting = false, rateError = null)
+            onDone()
         }
+    }
+
+    private fun failRating(error: Throwable?) {
+        _uiState.value = _uiState.value.copy(
+            rateSubmitting = false,
+            rateError = error?.toUserFacingMessage() ?: "No se pudo guardar la valoración",
+        )
+    }
+
+    private fun draftsComplete(tracking: OrderTracking, state: OrderTrackingUiState): Boolean {
+        if (tracking.canRateShop && state.draftShopStars !in 1..5) return false
+        if (tracking.canRateDelivery && state.draftDeliveryStars !in 1..5) return false
+        return tracking.items.none { it.canRate && state.draftProductStars[it.productId] !in 1..5 }
     }
 
     fun clearRateError() {
         _uiState.value = _uiState.value.copy(rateError = null)
     }
 }
+
+private fun Result<Unit>.isAlreadyRated(): Boolean =
+    exceptionOrNull()?.message?.contains("ya valoraste", ignoreCase = true) == true

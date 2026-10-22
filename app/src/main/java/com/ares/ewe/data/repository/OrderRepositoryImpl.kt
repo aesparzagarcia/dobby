@@ -137,10 +137,13 @@ class OrderRepositoryImpl @Inject constructor(
         postRating { api.rateShop(orderId, RateDeliveryRequest(stars)) }
 
     override suspend fun rateProduct(orderId: String, productId: String, stars: Int): Result<Unit> =
+        rateProducts(orderId, listOf(productId to stars))
+
+    override suspend fun rateProducts(orderId: String, ratings: List<Pair<String, Int>>): Result<Unit> =
         postRating {
             api.rateProducts(
                 orderId,
-                RateProductsRequest(listOf(RateProductEntryDto(productId, stars)))
+                RateProductsRequest(ratings.map { RateProductEntryDto(it.first, it.second) })
             )
         }
 

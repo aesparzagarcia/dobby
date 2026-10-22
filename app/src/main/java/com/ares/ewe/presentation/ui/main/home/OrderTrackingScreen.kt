@@ -493,11 +493,14 @@ private fun DeliveredOrderTrackingLayout(
                 tracking = tracking,
                 rateSubmitting = uiState.rateSubmitting,
                 rateError = uiState.rateError,
-                onSubmitDeliveryRating = { viewModel.submitDeliveryRating(it) },
-                onSubmitShopRating = { viewModel.submitShopRating(it) },
-                onSubmitProductRating = { productId, stars -> viewModel.submitProductRating(productId, stars) },
+                draftShopStars = uiState.draftShopStars,
+                draftDeliveryStars = uiState.draftDeliveryStars,
+                draftProductStars = uiState.draftProductStars,
+                onSelectDeliveryRating = { viewModel.selectDeliveryRating(it) },
+                onSelectShopRating = { viewModel.selectShopRating(it) },
+                onSelectProductRating = { productId, stars -> viewModel.selectProductRating(productId, stars) },
                 onClearRateError = { viewModel.clearRateError() },
-                onFinish = onFinish,
+                onFinish = { viewModel.finish(onFinish) },
                 fullScreen = false,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -635,13 +638,16 @@ private fun InProgressOrderTrackingLayout(
                         tracking = tracking,
                         rateSubmitting = uiState.rateSubmitting,
                         rateError = uiState.rateError,
-                        onSubmitDeliveryRating = { viewModel.submitDeliveryRating(it) },
-                        onSubmitShopRating = { viewModel.submitShopRating(it) },
-                        onSubmitProductRating = { productId, stars ->
-                            viewModel.submitProductRating(productId, stars)
+                        draftShopStars = uiState.draftShopStars,
+                        draftDeliveryStars = uiState.draftDeliveryStars,
+                        draftProductStars = uiState.draftProductStars,
+                        onSelectDeliveryRating = { viewModel.selectDeliveryRating(it) },
+                        onSelectShopRating = { viewModel.selectShopRating(it) },
+                        onSelectProductRating = { productId, stars ->
+                            viewModel.selectProductRating(productId, stars)
                         },
                         onClearRateError = { viewModel.clearRateError() },
-                        onFinish = onFinish,
+                        onFinish = { viewModel.finish(onFinish) },
                         fullScreen = false,
                         modifier = Modifier
                             .fillMaxWidth()

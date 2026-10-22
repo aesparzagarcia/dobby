@@ -133,9 +133,12 @@ fun OrderTrackingBottomSheetContent(
     tracking: OrderTracking,
     rateSubmitting: Boolean,
     rateError: String?,
-    onSubmitDeliveryRating: (Int) -> Unit,
-    onSubmitShopRating: (Int) -> Unit,
-    onSubmitProductRating: (String, Int) -> Unit,
+    draftShopStars: Int?,
+    draftDeliveryStars: Int?,
+    draftProductStars: Map<String, Int>,
+    onSelectDeliveryRating: (Int) -> Unit,
+    onSelectShopRating: (Int) -> Unit,
+    onSelectProductRating: (String, Int) -> Unit,
     onClearRateError: () -> Unit,
     onFinish: () -> Unit,
     fullScreen: Boolean = false,
@@ -214,35 +217,31 @@ fun OrderTrackingBottomSheetContent(
                 tracking = tracking,
                 rateSubmitting = rateSubmitting,
                 rateError = rateError,
-                onSubmitDeliveryRating = onSubmitDeliveryRating,
-                onSubmitShopRating = onSubmitShopRating,
-                onSubmitProductRating = onSubmitProductRating,
+                draftShopStars = draftShopStars,
+                draftDeliveryStars = draftDeliveryStars,
+                draftProductStars = draftProductStars,
+                onSelectDeliveryRating = onSelectDeliveryRating,
+                onSelectShopRating = onSelectShopRating,
+                onSelectProductRating = onSelectProductRating,
                 onClearRateError = onClearRateError,
-            )
-        } else if (tracking.canRateDelivery) {
-            Text(
-                text = "¿Cómo fue el reparto?",
-                style = MaterialTheme.typography.titleMedium,
-                color = OrderTrackingSheetPalette.Primary,
-            )
-            StarRatingBlock(
-                title = "Repartidor",
-                subtitle = tracking.deliveryMan?.name ?: "",
-                existingRating = null,
-                canRate = true,
-                rateSubmitting = rateSubmitting,
-                onSelect = onSubmitDeliveryRating,
             )
         }
 
-        if (shouldShowFinishButton(tracking)) {
+        if (tracking.isDelivered) {
+            val ready = !tracking.hasPendingRatings || ratingsDraftComplete(
+                tracking,
+                draftShopStars,
+                draftDeliveryStars,
+                draftProductStars,
+            )
             Button(
                 onClick = onFinish,
+                enabled = ready && !rateSubmitting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = OrderTrackingSheetDim.gapSm),
             ) {
-                Text("Finalizar")
+                Text(if (rateSubmitting) "Enviando…" else "Finalizar")
             }
         }
     }
@@ -627,9 +626,12 @@ private fun OrderTrackingDeliveredRatings(
     tracking: OrderTracking,
     rateSubmitting: Boolean,
     rateError: String?,
-    onSubmitDeliveryRating: (Int) -> Unit,
-    onSubmitShopRating: (Int) -> Unit,
-    onSubmitProductRating: (String, Int) -> Unit,
+    draftShopStars: Int?,
+    draftDeliveryStars: Int?,
+    draftProductStars: Map<String, Int>,
+    onSelectDeliveryRating: (Int) -> Unit,
+    onSelectShopRating: (Int) -> Unit,
+    onSelectProductRating: (String, Int) -> Unit,
     onClearRateError: () -> Unit,
 ) {
     Text(
@@ -644,8 +646,9 @@ private fun OrderTrackingDeliveredRatings(
             subtitle = tracking.shopName ?: if (tracking.isCarWash) "Lavado" else "Tienda",
             existingRating = tracking.shopRating,
             canRate = tracking.canRateShop,
+            selectedStars = draftShopStars,
             rateSubmitting = rateSubmitting,
-            onSelect = onSubmitShopRating,
+            onSelect = onSelectShopRating,
         )
     }
     if (tracking.deliveryMan != null && (tracking.canRateDelivery || tracking.deliveryRating != null)) {
@@ -654,8 +657,9 @@ private fun OrderTrackingDeliveredRatings(
             subtitle = tracking.deliveryMan.name,
             existingRating = tracking.deliveryRating,
             canRate = tracking.canRateDelivery,
+            selectedStars = draftDeliveryStars,
             rateSubmitting = rateSubmitting,
-            onSelect = onSubmitDeliveryRating,
+            onSelect = onSelectDeliveryRating,
         )
     }
     tracking.items.filter { it.canRate || it.rating != null }.forEach { item ->
@@ -664,8 +668,9 @@ private fun OrderTrackingDeliveredRatings(
             subtitle = "${item.productName} x${item.quantity}",
             existingRating = item.rating,
             canRate = item.canRate,
+            selectedStars = draftProductStars[item.productId],
             rateSubmitting = rateSubmitting,
-            onSelect = { onSubmitProductRating(item.productId, it) },
+            onSelect = { onSelectProductRating(item.productId, it) },
         )
     }
     if (rateSubmitting) {
@@ -681,12 +686,24 @@ private fun OrderTrackingDeliveredRatings(
     }
 }
 
+private fun ratingsDraftComplete(
+    tracking: OrderTracking,
+    draftShopStars: Int?,
+    draftDeliveryStars: Int?,
+    draftProductStars: Map<String, Int>,
+): Boolean {
+    if (tracking.canRateShop && draftShopStars !in 1..5) return false
+    if (tracking.canRateDelivery && draftDeliveryStars !in 1..5) return false
+    return tracking.items.none { it.canRate && draftProductStars[it.productId] !in 1..5 }
+}
+
 @Composable
 private fun StarRatingBlock(
     title: String,
     subtitle: String,
     existingRating: Int?,
     canRate: Boolean,
+    selectedStars: Int?,
     rateSubmitting: Boolean,
     onSelect: (Int) -> Unit,
 ) {
@@ -708,7 +725,7 @@ private fun StarRatingBlock(
             ) {
                 for (s in 1..5) {
                     FilterChip(
-                        selected = false,
+                        selected = selectedStars == s,
                         onClick = { if (!rateSubmitting) onSelect(s) },
                         enabled = !rateSubmitting,
                         label = { Text("$s ⭐") },
@@ -725,9 +742,6 @@ private fun StarRatingBlock(
         }
     }
 }
-
-private fun shouldShowFinishButton(tracking: OrderTracking): Boolean =
-    tracking.isDelivered && !tracking.hasPendingRatings
 
 @Composable
 private fun OrderTrackingDeliveryCodePendingCard() {

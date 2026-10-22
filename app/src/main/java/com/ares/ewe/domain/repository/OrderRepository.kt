@@ -12,6 +12,7 @@ interface OrderRepository {
     suspend fun rateDelivery(orderId: String, stars: Int): Result<Unit>
     suspend fun rateShop(orderId: String, stars: Int): Result<Unit>
     suspend fun rateProduct(orderId: String, productId: String, stars: Int): Result<Unit>
+    suspend fun rateProducts(orderId: String, ratings: List<Pair<String, Int>>): Result<Unit>
     suspend fun createOrder(addressId: String, items: List<CartItem>, deliveryFee: Double): Result<Unit>
     suspend fun createServicePaymentOrder(
         addressId: String,
