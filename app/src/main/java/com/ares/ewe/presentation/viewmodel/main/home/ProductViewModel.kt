@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ares.ewe.core.network.toUserFacingMessage
 import com.ares.ewe.core.util.normalizeImageUrlForStorage
+import com.ares.ewe.domain.cart.ComboCart
 import com.ares.ewe.domain.cart.CartCarWashSingleProductPolicy
 import com.ares.ewe.domain.cart.CartShopSwitchPolicy
 import com.ares.ewe.domain.cart.PendingCartAddGate
@@ -32,6 +33,7 @@ import javax.inject.Inject
 data class ProductUiState(
     val product: ProductDetail? = null,
     val selectedVariantId: String = "",
+    val selectedOptionIds: Set<String> = emptySet(),
     val quantity: Int = 1,
     val ratingCount: Int = 0,
     val isProductAvailable: Boolean = true,
@@ -73,6 +75,9 @@ data class ProductUiState(
 
     val total: Double
         get() = unitPriceEffective * quantity
+
+    val comboReady: Boolean
+        get() = ComboCart.selectionIsComplete(product?.optionGroups.orEmpty(), selectedOptionIds)
 }
 
 @HiltViewModel
@@ -181,6 +186,26 @@ class ProductViewModel @Inject constructor(
         }
     }
 
+    fun toggleComboOption(groupId: String, optionId: String) {
+        val groups = _uiState.value.product?.optionGroups.orEmpty()
+        val group = groups.find { it.id == groupId } ?: return
+        _uiState.update { state ->
+            val current = state.selectedOptionIds.filter { id ->
+                group.options.any { it.id == id }
+            }.toMutableSet()
+            if (optionId in current) {
+                current.remove(optionId)
+            } else if (group.maxSelect <= 1) {
+                current.clear()
+                current.add(optionId)
+            } else if (current.size < group.maxSelect) {
+                current.add(optionId)
+            }
+            val others = state.selectedOptionIds.filter { id -> group.options.none { it.id == id } }
+            state.copy(selectedOptionIds = others.toSet() + current)
+        }
+    }
+
     fun selectVariant(variant: ProductVariant) {
         _uiState.update { it.copy(selectedVariantId = variant.id) }
     }
@@ -241,8 +266,16 @@ class ProductViewModel @Inject constructor(
             }
             val imageUrl = product.imageUrls.firstOrNull()
             val state = _uiState.value
+            if (product.hasComboChoices && !state.comboReady) return@launch
             val unitPrice = state.unitPriceEffective
             val variant = state.selectedVariant
+            val comboChoices = if (product.hasComboChoices) {
+                ComboCart.choicesFor(product.optionGroups, state.selectedOptionIds)
+            } else {
+                emptyList()
+            }
+            val lineVariantId = if (comboChoices.isNotEmpty()) ComboCart.encode(comboChoices) else variant?.id
+            val lineVariantName = if (comboChoices.isNotEmpty()) ComboCart.summary(comboChoices) else variant?.name
             pendingCartAddGate.runOrRequestAddress {
                 cartRepository.addItem(
                     productId = product.id,
@@ -256,8 +289,8 @@ class ProductViewModel @Inject constructor(
                     pickupLatitude = pickupLatitude,
                     pickupLongitude = pickupLongitude,
                     shopId = shopId,
-                    variantId = variant?.id,
-                    variantName = variant?.name,
+                    variantId = lineVariantId,
+                    variantName = lineVariantName,
                 )
                 onAdded()
             }

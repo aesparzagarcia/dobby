@@ -2,7 +2,9 @@ package com.ares.ewe.data.repository
 
 import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.data.remote.api.DobbyApi
+import com.ares.ewe.domain.cart.ComboCart
 import com.ares.ewe.data.remote.model.CreateOrderItemRequest
+import com.ares.ewe.data.remote.model.OrderChoiceRequest
 import com.ares.ewe.data.remote.model.CreateOrderRequest
 import com.ares.ewe.data.remote.model.CreateServicePaymentItemRequest
 import com.ares.ewe.data.remote.model.RateDeliveryRequest
@@ -169,11 +171,19 @@ class OrderRepositoryImpl @Inject constructor(
             deliveryFee = deliveryFee,
             orderType = "SHOP",
             items = items.map { item ->
+                val combo = ComboCart.isComboLine(item.variantId)
                 CreateOrderItemRequest(
                     productId = item.productId,
                     quantity = item.quantity,
                     price = item.chargedUnitPrice,
-                    variantId = item.variantId.takeIf { it.isNotBlank() },
+                    variantId = if (combo) null else item.variantId.takeIf { it.isNotBlank() },
+                    choices = if (combo) {
+                        ComboCart.decode(item.variantId).map {
+                            OrderChoiceRequest(it.groupName, it.optionName)
+                        }
+                    } else {
+                        emptyList()
+                    },
                 )
             }
         )

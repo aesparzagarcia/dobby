@@ -9,8 +9,11 @@ import com.ares.ewe.domain.model.PlaceItem
 import com.ares.ewe.domain.model.ProductDetail
 import com.ares.ewe.domain.model.ServiceDetail
 import com.ares.ewe.domain.model.ShopHourWindow
+import com.ares.ewe.data.remote.model.ProductOptionGroupDto
 import com.ares.ewe.data.remote.model.ProductVariantDto
 import com.ares.ewe.data.remote.model.ShopProductDto
+import com.ares.ewe.domain.model.ProductOption
+import com.ares.ewe.domain.model.ProductOptionGroup
 import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.domain.model.ShopProduct
 import com.ares.ewe.domain.model.ShopProductsPage
@@ -19,6 +22,7 @@ import com.ares.ewe.domain.repository.ShopDeliveryLookup
 import com.ares.ewe.core.pricing.GeoDistance
 import com.ares.ewe.core.util.serviceCategoryLabelEs
 import com.ares.ewe.core.util.shopTypeLabelEs
+import com.ares.ewe.core.util.toFullImageUrl
 import javax.inject.Inject
 
 class PlacesRepositoryImpl @Inject constructor(
@@ -214,6 +218,7 @@ class PlacesRepositoryImpl @Inject constructor(
             shopRate = dto.shopRate,
             shopRatingCount = dto.shopRatingCount,
             variants = dto.variants.toProductVariants(),
+            optionGroups = dto.optionGroups.toOptionGroups(),
         )
     }
 
@@ -246,9 +251,31 @@ class PlacesRepositoryImpl @Inject constructor(
             shopId = shopId ?: fallbackShopId,
             category = category,
             variants = variants.toProductVariants(),
+            optionGroups = optionGroups.toOptionGroups(),
         )
     }
 }
+
+private fun List<ProductOptionGroupDto>?.toOptionGroups(): List<ProductOptionGroup> =
+    orEmpty().mapNotNull { group ->
+        val id = group.id?.trim().orEmpty()
+        val name = group.name.trim()
+        val options = group.options.mapNotNull { option ->
+            val optionId = option.id?.trim().orEmpty()
+            val optionName = option.name.trim()
+            if (optionId.isEmpty() || optionName.isEmpty()) null
+            else ProductOption(optionId, optionName, option.imageUrl?.toFullImageUrl())
+        }
+        if (id.isEmpty() || name.isEmpty() || options.isEmpty()) null
+        else ProductOptionGroup(
+            id,
+            name,
+            group.minSelect,
+            group.maxSelect,
+            group.imageUrl?.toFullImageUrl(),
+            options,
+        )
+    }
 
 private fun List<ProductVariantDto>?.toProductVariants(): List<ProductVariant> =
     orEmpty().mapNotNull { v ->

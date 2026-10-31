@@ -49,6 +49,21 @@ data class ProductVariant(
     val price: Double,
 )
 
+data class ProductOption(
+    val id: String,
+    val name: String,
+    val imageUrl: String? = null,
+)
+
+data class ProductOptionGroup(
+    val id: String,
+    val name: String,
+    val minSelect: Int,
+    val maxSelect: Int,
+    val imageUrl: String? = null,
+    val options: List<ProductOption>,
+)
+
 data class ShopProduct(
     val id: String,
     val name: String,
@@ -62,9 +77,13 @@ data class ShopProduct(
     val shopId: String? = null,
     val category: String? = null,
     val variants: List<ProductVariant> = emptyList(),
+    val optionGroups: List<ProductOptionGroup> = emptyList(),
 ) {
     val hasMultiplePresentations: Boolean
         get() = variants.size > 1
+
+    val hasComboChoices: Boolean
+        get() = optionGroups.isNotEmpty()
 
     val displayListPrice: Double
         get() = if (hasMultiplePresentations) variants.minOf { it.price } else price
@@ -102,9 +121,13 @@ data class ProductDetail(
     val shopRate: Float = 0f,
     val shopRatingCount: Int = 0,
     val variants: List<ProductVariant> = emptyList(),
+    val optionGroups: List<ProductOptionGroup> = emptyList(),
 ) {
     val hasMultiplePresentations: Boolean
         get() = variants.size > 1
+
+    val hasComboChoices: Boolean
+        get() = optionGroups.isNotEmpty()
 }
 
 data class ServiceDetail(

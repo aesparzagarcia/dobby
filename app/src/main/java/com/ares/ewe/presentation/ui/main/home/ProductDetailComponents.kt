@@ -28,6 +28,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Remove
@@ -45,7 +47,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ares.ewe.core.util.shopTypeLabelEs
 import com.ares.ewe.domain.model.ProductDetail
+import com.ares.ewe.domain.model.ProductOptionGroup
 import com.ares.ewe.domain.model.ProductVariant
 import com.ares.ewe.presentation.components.LoadingAsyncImage
 import com.ares.ewe.presentation.components.ProductImagePlaceholder
@@ -273,6 +279,145 @@ private fun ProductShopHeader(
     }
 }
 
+private fun comboChooseLabel(minSelect: Int, maxSelect: Int): String {
+    if (minSelect == maxSelect) {
+        return if (minSelect == 1) "Elige 1 opción" else "Elige $minSelect opciones"
+    }
+    return "Elige $minSelect a $maxSelect opciones"
+}
+
+@Composable
+private fun ProductComboPicker(
+    groups: List<ProductOptionGroup>,
+    selectedOptionIds: Set<String>,
+    onToggle: (String, String) -> Unit,
+) {
+    var expandedId by remember(groups.map { it.id }) {
+        mutableStateOf(groups.firstOrNull()?.id)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        groups.forEachIndexed { index, group ->
+            val expanded = expandedId == group.id
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color(0xFFE8E8ED), RoundedCornerShape(16.dp))
+                    .background(Color.White),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expandedId = if (expanded) null else group.id }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(contentAlignment = Alignment.BottomStart) {
+                        ComboThumb(url = group.imageUrl, size = 52.dp)
+                        Box(
+                            modifier = Modifier
+                                .offset(x = (-4).dp, y = 4.dp)
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF1C1C1E)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "${index + 1}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp),
+                    ) {
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = comboChooseLabel(group.minSelect, group.maxSelect),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MutedText,
+                        )
+                    }
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Cerrar" else "Abrir",
+                        tint = Color(0xFF8E8E93),
+                    )
+                }
+                if (expanded) {
+                    Column(
+                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        group.options.forEach { option ->
+                            val selected = option.id in selectedOptionIds
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .border(
+                                        1.dp,
+                                        if (selected) Color(0xFF1C1C1E) else Color(0xFFE8E8ED),
+                                        RoundedCornerShape(14.dp),
+                                    )
+                                    .clickable { onToggle(group.id, option.id) }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .border(1.5.dp, Color(0xFF1C1C1E), CircleShape)
+                                        .background(if (selected) Color(0xFF1C1C1E) else Color.White),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (selected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(Color.White),
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                ComboThumb(url = option.imageUrl, size = 44.dp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = option.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ComboThumb(url: String?, size: androidx.compose.ui.unit.Dp) {
+    LoadingAsyncImage(
+        model = url?.takeIf { it.isNotBlank() },
+        contentDescription = null,
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(12.dp)),
+        contentScale = ContentScale.Crop,
+    )
+}
+
 @Composable
 fun ProductDetailInfoCard(
     product: ProductDetail,
@@ -282,6 +427,8 @@ fun ProductDetailInfoCard(
     modifier: Modifier = Modifier,
     selectedVariantId: String = "",
     onSelectVariant: (ProductVariant) -> Unit = {},
+    selectedOptionIds: Set<String> = emptySet(),
+    onToggleOption: (String, String) -> Unit = { _, _ -> },
     shopName: String? = null,
     shopLogoUrl: String? = null,
     shopType: String? = null,
@@ -341,7 +488,19 @@ fun ProductDetailInfoCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            if (showVariants) {
+            if (product.hasComboChoices) {
+                ProductComboPicker(
+                    groups = product.optionGroups,
+                    selectedOptionIds = selectedOptionIds,
+                    onToggle = onToggleOption,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = formatProductMoney(unitPrice),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            } else if (showVariants) {
                 ProductVariantPicker(
                     variants = product.variants,
                     selectedId = selectedVariantId,
@@ -449,13 +608,14 @@ fun ProductDetailBottomBar(
     quantity: Int,
     lineTotal: Double,
     isProductAvailable: Boolean,
+    canAddCombo: Boolean = true,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit,
     onAddToCart: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val primary = MaterialTheme.colorScheme.primary
-    val canAdd = quantity > 0 && isProductAvailable
+    val canAdd = quantity > 0 && isProductAvailable && canAddCombo
 
     Surface(
         modifier = modifier

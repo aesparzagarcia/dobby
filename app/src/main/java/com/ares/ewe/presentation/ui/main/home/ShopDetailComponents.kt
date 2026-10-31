@@ -392,7 +392,7 @@ fun ShopDetailProductCard(
 ) {
     val validDiscount = product.discount.coerceIn(0, 100)
     val showPromotion = product.hasPromotion && validDiscount > 0
-    val showOptions = product.hasMultiplePresentations && !isCarWash
+    val showOptions = (product.hasMultiplePresentations || product.hasComboChoices) && !isCarWash
     val listPrice = product.displayListPrice
     val discountedPrice = if (showPromotion) {
         listPrice * (1 - validDiscount / 100.0)

@@ -57,6 +57,21 @@ data class PromotionProductDto(
     @SerializedName("shop_id") val shopId: String? = null,
 )
 
+data class ProductOptionDto(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("name") val name: String = "",
+    @SerializedName("imageUrl") val imageUrl: String? = null,
+)
+
+data class ProductOptionGroupDto(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("name") val name: String = "",
+    @SerializedName("minSelect") val minSelect: Int = 1,
+    @SerializedName("maxSelect") val maxSelect: Int = 1,
+    @SerializedName("imageUrl") val imageUrl: String? = null,
+    @SerializedName("options") val options: List<ProductOptionDto> = emptyList(),
+)
+
 data class ProductVariantDto(
     @SerializedName("id") val id: String? = null,
     @SerializedName("name") val name: String = "",
@@ -76,6 +91,7 @@ data class ShopProductDto(
     @SerializedName("shop_id") val shopId: String? = null,
     @SerializedName("category") val category: String? = null,
     @SerializedName("variants") val variants: List<ProductVariantDto>? = emptyList(),
+    @SerializedName("optionGroups") val optionGroups: List<ProductOptionGroupDto>? = emptyList(),
 )
 
 data class ShopInfoDto(
@@ -115,6 +131,7 @@ data class ProductDetailDto(
     @SerializedName("shop_rate") val shopRate: Float = 0f,
     @SerializedName("shop_rating_count") val shopRatingCount: Int = 0,
     @SerializedName("variants") val variants: List<ProductVariantDto>? = emptyList(),
+    @SerializedName("optionGroups") val optionGroups: List<ProductOptionGroupDto>? = emptyList(),
 )
 
 data class ServiceDetailDto(

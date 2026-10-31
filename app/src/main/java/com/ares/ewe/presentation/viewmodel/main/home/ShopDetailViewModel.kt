@@ -159,6 +159,7 @@ class ShopDetailViewModel @Inject constructor(
         quantity: Int = 1,
     ) {
         if (!_uiState.value.isShopAvailableForOrders) return
+        if (product.hasComboChoices) return
         val qty = quantity.coerceAtLeast(1)
         viewModelScope.launch {
             val shopId = product.shopId ?: openedShopId

@@ -4,22 +4,34 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
@@ -33,22 +45,36 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Help
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ares.ewe.BuildConfig
+import com.ares.ewe.core.DevServerStore
 import com.ares.ewe.core.theme.DobbyColors
 import com.ares.ewe.presentation.components.MainTabContentBottomInset
 import com.ares.ewe.presentation.viewmodel.main.profile.ProfileTabViewModel
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val PROFILE_SUPPORT_URL = "https://dobby-frontend-wwru.onrender.com/soporte"
 
@@ -64,6 +90,10 @@ fun ProfileTabScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scroll = rememberScrollState()
     val serverDialog = rememberDevServerDialogState()
+    var serverCheck by remember { mutableIntStateOf(0) }
+    LaunchedEffect(serverDialog.show, serverDialog.showRestartHint) {
+        if (!serverDialog.show) serverCheck++
+    }
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showDeleteFinalConfirm by remember { mutableStateOf(false) }
@@ -164,40 +194,29 @@ fun ProfileTabScreen(
             }
         }
 
-        Text(
-            text = "Sigue acumulando XP y desbloquea recompensas increíbles 🎉",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF6B7280),
-            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
-        )
+        if (!uiState.isGuest) {
+            Text(
+                text = "Sigue acumulando XP y desbloquea recompensas increíbles 🎉",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF6B7280),
+                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+            )
+        }
 
         when {
             uiState.isGuest -> {
-                Text(
-                    text = "Inicia sesión para ver tu perfil, historial de pedidos y recompensas.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B7280),
+                GuestProfileBody(
+                    serverCheck = serverCheck,
+                    onLogin = onRequireLogin,
+                    onSupport = openSupport,
+                    onServerConnection = if (BuildConfig.ENVIRONMENT == "dev") {
+                        { serverDialog.open() }
+                    } else {
+                        null
+                    },
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onRequireLogin,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DobbyColors.Primary,
-                        contentColor = Color.White,
-                    ),
-                ) {
-                    Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                ProfileMenuCard {
-                    ProfileMenuRow(
-                        title = "Ayuda y soporte",
-                        icon = Icons.Default.Help,
-                        onClick = openSupport,
-                        iconTint = Color(0xFF6B7280),
-                        iconBackground = Color(0xFFF2F2F7),
-                    )
+                if (BuildConfig.ENVIRONMENT == "dev") {
+                    DevServerConnectionDialogs(serverDialog)
                 }
             }
             uiState.isLoading -> {
@@ -378,6 +397,286 @@ fun ProfileTabScreen(
 
         // Scrollable tail inset — bottom padding on the modifier does not extend scroll range.
         Spacer(modifier = Modifier.height(MainTabContentBottomInset + 24.dp))
+    }
+}
+
+@Composable
+private fun GuestProfileBody(
+    serverCheck: Int,
+    onLogin: () -> Unit,
+    onSupport: () -> Unit,
+    onServerConnection: (() -> Unit)?,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        GuestAvatar()
+        Spacer(modifier = Modifier.height(18.dp))
+        Text(
+            text = "Inicia sesión para continuar",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1C1C1E),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Sigue acumulando XP y desbloquea\nrecompensas increíbles 🎉",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF8E8E93),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = onLogin,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1C1C1E),
+                contentColor = Color.White,
+            ),
+        ) {
+            Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.size(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        GuestBenefitCard(
+            title = "Acumula XP",
+            subtitle = "Gana puntos con cada pedido",
+            icon = Icons.Default.EmojiEvents,
+            iconTint = Color(0xFF7C6BF2),
+            iconBackground = Color(0xFFF1EEFF),
+            onClick = onLogin,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        GuestBenefitCard(
+            title = "Desbloquea recompensas",
+            subtitle = "Obtén descuentos y beneficios exclusivos",
+            icon = Icons.Default.CardGiftcard,
+            iconTint = Color(0xFFE25B73),
+            iconBackground = Color(0xFFFFF0F3),
+            onClick = onLogin,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        GuestBenefitCard(
+            title = "Tu historial de pedidos",
+            subtitle = "Consulta y reordena fácilmente",
+            icon = Icons.Default.Schedule,
+            iconTint = Color(0xFF3FA36A),
+            iconBackground = Color(0xFFEAF8EF),
+            onClick = onLogin,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        GuestBenefitCard(
+            title = "Ayuda y soporte",
+            subtitle = "Resuelve tus dudas",
+            icon = Icons.Default.HelpOutline,
+            iconTint = Color(0xFF8E8E93),
+            iconBackground = Color(0xFFF4F4F6),
+            onClick = onSupport,
+        )
+        Spacer(modifier = Modifier.height(22.dp))
+        GuestServerStatus(refreshKey = serverCheck, onClick = onServerConnection)
+    }
+}
+
+@Composable
+private fun GuestAvatar() {
+    Box(
+        modifier = Modifier.size(132.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            tint = Color(0xFFC9C4F5),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = 8.dp, y = 18.dp)
+                .size(16.dp),
+        )
+        Text(
+            text = "+",
+            color = Color(0xFFD5D2F2),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = (-6).dp, y = 28.dp),
+        )
+        Text(
+            text = "+",
+            color = Color(0xFFD5D2F2),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(y = 28.dp),
+        )
+        Box(
+            modifier = Modifier
+                .size(104.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFF3F4F8)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = Color(0xFFB7BCC7),
+                modifier = Modifier.size(64.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = (-14).dp, y = (-10).dp)
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(1.dp, Color(0xFFE6E6EB), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                tint = Color(0xFF8E8E93),
+                modifier = Modifier.size(16.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun GuestBenefitCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    iconTint: Color,
+    iconBackground: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .border(1.dp, Color(0xFFECECF1), RoundedCornerShape(18.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(iconBackground),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF1C1C1E),
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF8E8E93),
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = Color(0xFFC7C7CC),
+        )
+    }
+}
+
+@Composable
+private fun GuestServerStatus(refreshKey: Int, onClick: (() -> Unit)?) {
+    var online by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(refreshKey) {
+        online = null
+        online = pingServerHealth(DevServerStore.baseUrl())
+    }
+    val statusColor = when (online) {
+        true -> Color(0xFF34C759)
+        false -> Color(0xFFFF3B30)
+        null -> Color(0xFFAEAEB2)
+    }
+    val statusLabel = when (online) {
+        true -> "En línea"
+        false -> "No conectado"
+        null -> "Comprobando…"
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Conexión con servidor",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFFAEAEB2),
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(statusColor),
+            )
+            Spacer(modifier = Modifier.size(6.dp))
+            Text(
+                text = statusLabel,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = statusColor,
+            )
+        }
+    }
+}
+
+private suspend fun pingServerHealth(apiBaseUrl: String): Boolean = withContext(Dispatchers.IO) {
+    val origin = apiBaseUrl.removeSuffix("api/").trimEnd('/')
+    val url = "$origin/health"
+    try {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 4000
+            readTimeout = 4000
+            requestMethod = "GET"
+            instanceFollowRedirects = true
+        }
+        try {
+            connection.responseCode in 200..299
+        } finally {
+            connection.disconnect()
+        }
+    } catch (_: Exception) {
+        false
     }
 }
 

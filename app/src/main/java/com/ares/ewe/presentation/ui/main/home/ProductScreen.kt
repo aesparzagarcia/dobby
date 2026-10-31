@@ -116,6 +116,8 @@ fun ProductScreen(
                             isProductAvailable = uiState.isProductAvailable,
                             selectedVariantId = uiState.selectedVariantId,
                             onSelectVariant = viewModel::selectVariant,
+                            selectedOptionIds = uiState.selectedOptionIds,
+                            onToggleOption = viewModel::toggleComboOption,
                             shopName = uiState.shopName,
                             shopLogoUrl = uiState.shopLogoUrl,
                             shopType = uiState.shopType,
@@ -135,6 +137,7 @@ fun ProductScreen(
                         quantity = uiState.quantity,
                         lineTotal = uiState.total,
                         isProductAvailable = uiState.isProductAvailable,
+                        canAddCombo = uiState.comboReady,
                         onDecrement = { viewModel.decrementQuantity() },
                         onIncrement = { viewModel.incrementQuantity() },
                         onAddToCart = {

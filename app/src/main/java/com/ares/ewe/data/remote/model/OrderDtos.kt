@@ -27,11 +27,17 @@ data class OrderHistoryDto(
     @SerializedName("items") val items: List<ActiveOrderItemDto>? = null,
 )
 
+data class OrderChoiceRequest(
+    @SerializedName("groupName") val groupName: String,
+    @SerializedName("optionName") val optionName: String,
+)
+
 data class CreateOrderItemRequest(
     @SerializedName("productId") val productId: String,
     @SerializedName("quantity") val quantity: Int,
     @SerializedName("price") val price: Double,
     @SerializedName("variantId") val variantId: String? = null,
+    @SerializedName("choices") val choices: List<OrderChoiceRequest> = emptyList(),
 )
 
 data class CreateServicePaymentItemRequest(
