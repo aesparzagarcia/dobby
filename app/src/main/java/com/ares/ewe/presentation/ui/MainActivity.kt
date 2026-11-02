@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -42,6 +43,10 @@ class MainActivity : ComponentActivity() {
     private var pendingOrderTrackingId by mutableStateOf<String?>(null)
     private var pendingProductId by mutableStateOf<String?>(null)
     private var pendingProductShopId by mutableStateOf<String?>(null)
+    private var pendingProductNonce by mutableIntStateOf(0)
+    private var pendingShopId by mutableStateOf<String?>(null)
+    private var pendingShopName by mutableStateOf<String?>(null)
+    private var pendingShopNonce by mutableIntStateOf(0)
 
     /** True tras [onStop] (app en background u otra activity encima). */
     private var wasStopped = false
@@ -70,9 +75,17 @@ class MainActivity : ComponentActivity() {
                     onPendingOrderTrackingNavigated = { pendingOrderTrackingId = null },
                     pendingProductId = pendingProductId,
                     pendingProductShopId = pendingProductShopId,
+                    pendingProductNonce = pendingProductNonce,
                     onPendingProductNavigated = {
                         pendingProductId = null
                         pendingProductShopId = null
+                    },
+                    pendingShopId = pendingShopId,
+                    pendingShopName = pendingShopName,
+                    pendingShopNonce = pendingShopNonce,
+                    onPendingShopNavigated = {
+                        pendingShopId = null
+                        pendingShopName = null
                     },
                 )
             }
@@ -81,6 +94,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        consumeOrderIdFromIntent(intent)
         OrderStatusNotificationHelper.clearAllOrderNotifications(this)
     }
 
@@ -113,21 +127,52 @@ class MainActivity : ComponentActivity() {
             intent.getStringExtra(key)?.trim()?.takeIf { it.isNotEmpty() }
                 ?: extras?.getString(key)?.trim()?.takeIf { it.isNotEmpty() }
 
-        val pushType = extra("type")
+        val data = intent.data
+        if (data?.scheme == "dobby" && data.host == "push") {
+            val kind = data.pathSegments.getOrNull(0)
+            val id = data.pathSegments.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+            if (kind == "shop" && id != null) {
+                pendingShopId = id
+                pendingShopName = data.getQueryParameter("name")?.trim()?.takeIf { it.isNotEmpty() }
+                pendingShopNonce += 1
+                intent.data = null
+                clearPushExtras(intent, extras)
+                return
+            }
+            if (kind == "product" && id != null) {
+                pendingProductId = id
+                pendingProductShopId = data.getQueryParameter("shopId")?.trim()?.takeIf { it.isNotEmpty() }
+                pendingProductNonce += 1
+                intent.data = null
+                clearPushExtras(intent, extras)
+                return
+            }
+        }
+
+        val pushType = extra("type") ?: data?.getQueryParameter("type")
         val productId = extra(OrderStatusNotificationHelper.EXTRA_PRODUCT_ID) ?: extra("product_id")
         val orderId = extra(OrderStatusNotificationHelper.EXTRA_ORDER_ID) ?: extra("order_id")
+        val openScreen = extra("open_screen")
+
+        if (pushType == "new_restaurant" || (openScreen == "shop_detail" && productId == null)) {
+            val shopId = extra(OrderStatusNotificationHelper.EXTRA_SHOP_ID) ?: extra("shop_id")
+            if (shopId != null) {
+                pendingShopId = shopId
+                pendingShopName = extra(OrderStatusNotificationHelper.EXTRA_SHOP_NAME) ?: extra("shop_name")
+                pendingShopNonce += 1
+                clearPushExtras(intent, extras)
+            }
+            return
+        }
 
         if (
             productId != null &&
-            (pushType == "product_promotion" || orderId == null)
+            (pushType == "product_promotion" || pushType == "new_product" || orderId == null)
         ) {
             pendingProductId = productId
             pendingProductShopId = extra(OrderStatusNotificationHelper.EXTRA_SHOP_ID) ?: extra("shop_id")
-            intent.removeExtra(OrderStatusNotificationHelper.EXTRA_PRODUCT_ID)
-            intent.removeExtra(OrderStatusNotificationHelper.EXTRA_SHOP_ID)
-            extras?.remove("product_id")
-            extras?.remove("shop_id")
-            extras?.remove("type")
+            pendingProductNonce += 1
+            clearPushExtras(intent, extras)
             return
         }
 
@@ -136,6 +181,23 @@ class MainActivity : ComponentActivity() {
             pendingOrderTrackingId = orderId
             intent.removeExtra(OrderStatusNotificationHelper.EXTRA_ORDER_ID)
             extras?.remove("order_id")
+        }
+    }
+
+    private fun clearPushExtras(intent: Intent, extras: android.os.Bundle?) {
+        listOf(
+            OrderStatusNotificationHelper.EXTRA_SHOP_ID,
+            OrderStatusNotificationHelper.EXTRA_SHOP_NAME,
+            OrderStatusNotificationHelper.EXTRA_PRODUCT_ID,
+            OrderStatusNotificationHelper.EXTRA_PUSH_TYPE,
+            "shop_id",
+            "shop_name",
+            "product_id",
+            "type",
+            "open_screen",
+        ).forEach { key ->
+            intent.removeExtra(key)
+            extras?.remove(key)
         }
     }
 
@@ -166,7 +228,12 @@ fun DobbyApp(
     onPendingOrderTrackingNavigated: () -> Unit = {},
     pendingProductId: String? = null,
     pendingProductShopId: String? = null,
+    pendingProductNonce: Int = 0,
     onPendingProductNavigated: () -> Unit = {},
+    pendingShopId: String? = null,
+    pendingShopName: String? = null,
+    pendingShopNonce: Int = 0,
+    onPendingShopNavigated: () -> Unit = {},
 ) {
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -177,7 +244,12 @@ fun DobbyApp(
             onPendingOrderTrackingNavigated = onPendingOrderTrackingNavigated,
             pendingProductId = pendingProductId,
             pendingProductShopId = pendingProductShopId,
+            pendingProductNonce = pendingProductNonce,
             onPendingProductNavigated = onPendingProductNavigated,
+            pendingShopId = pendingShopId,
+            pendingShopName = pendingShopName,
+            pendingShopNonce = pendingShopNonce,
+            onPendingShopNavigated = onPendingShopNavigated,
         )
     }
 }

@@ -68,6 +68,31 @@ class DobbyFirebaseMessagingService : FirebaseMessagingService() {
                 OrderStatusNotificationHelper.show(this, title, body, orderId)
                 orderRealtimeBus.notifyOrderChanged(orderId)
             }
+            "new_restaurant" -> {
+                val shopId = message.data["shop_id"]?.trim().orEmpty()
+                if (shopId.isEmpty()) return
+                val shopName = message.data["shop_name"]
+                val title = message.notification?.title
+                    ?: message.data["title"]
+                    ?: "Nuevo restaurante"
+                val body = message.notification?.body
+                    ?: message.data["body"]
+                    ?: shopName?.takeIf { it.isNotBlank() }?.let { "$it ya está en Dobby." }
+                    ?: "Hay un restaurante nuevo en Dobby."
+                OrderStatusNotificationHelper.showNewRestaurant(this, title, body, shopId, shopName)
+            }
+            "new_product" -> {
+                val productId = message.data["product_id"]?.trim().orEmpty()
+                if (productId.isEmpty()) return
+                val shopId = message.data["shop_id"]?.trim()?.takeIf { it.isNotEmpty() }
+                val productName = message.data["product_name"]
+                val title = message.notification?.title ?: message.data["title"] ?: "Nuevo producto"
+                val body = message.notification?.body
+                    ?: message.data["body"]
+                    ?: productName?.takeIf { it.isNotBlank() }?.let { "«$it» ya está disponible." }
+                    ?: "Hay un producto nuevo."
+                OrderStatusNotificationHelper.showNewProduct(this, title, body, productId, shopId)
+            }
             "product_promotion" -> {
                 val productId = message.data["product_id"]?.trim().orEmpty()
                 if (productId.isEmpty()) return

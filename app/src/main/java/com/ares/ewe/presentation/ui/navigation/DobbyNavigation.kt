@@ -1,5 +1,6 @@
 package com.ares.ewe.presentation.ui.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -29,6 +32,7 @@ import com.ares.ewe.domain.model.FeaturedPlace
 import com.ares.ewe.push.OrderPushNavigation
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,7 +63,12 @@ fun DobbyNavigation(
     onPendingOrderTrackingNavigated: () -> Unit = {},
     pendingProductId: String? = null,
     pendingProductShopId: String? = null,
+    pendingProductNonce: Int = 0,
     onPendingProductNavigated: () -> Unit = {},
+    pendingShopId: String? = null,
+    pendingShopName: String? = null,
+    pendingShopNonce: Int = 0,
+    onPendingShopNavigated: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     TrackNavDestination(navController)
@@ -229,19 +238,65 @@ fun DobbyNavigation(
         onPendingOrderTrackingNavigated()
     }
 
-    LaunchedEffect(pendingProductId, pendingProductShopId) {
-        val productId = pendingProductId ?: return@LaunchedEffect
-        snapshotFlow { navController.currentBackStackEntry?.destination?.route }
-            .filter { route ->
-                route != null &&
-                    route != DobbyScreens.Splash &&
-                    route != DobbyScreens.Phone &&
-                    !route.startsWith("otp")
+    LaunchedEffect(pendingProductNonce) {
+        if (pendingProductNonce == 0) return@LaunchedEffect
+        val productId = pendingProductId?.trim()?.takeIf { it.isNotEmpty() } ?: return@LaunchedEffect
+        val shopId = pendingProductShopId?.trim()?.takeIf { it.isNotEmpty() }
+        repeat(40) {
+            navController.awaitResumedMainRoute()
+            val items = cartRepository.items.first()
+            if (CartShopSwitchPolicy.needsConfirmationIfShopKnown(items, shopId)) {
+                pendingProductNav = PendingProductNav(productId, null, null, shopId, true)
+                onPendingProductNavigated()
+                return@LaunchedEffect
             }
-            .first()
-        val shopId = pendingProductShopId?.takeIf { it.isNotEmpty() }
-        handleProductClick(productId, null, null, shopId)
-        onPendingProductNavigated()
+            if (navController.showsId(productId)) {
+                onPendingProductNavigated()
+                return@LaunchedEffect
+            }
+            navController.navigate(
+                DobbyScreens.productDetail(productId, null, null, shopId, true),
+            ) { launchSingleTop = true }
+            if (navController.showsId(productId)) {
+                onPendingProductNavigated()
+                return@LaunchedEffect
+            }
+            delay(100)
+        }
+    }
+
+    LaunchedEffect(pendingShopNonce) {
+        if (pendingShopNonce == 0) return@LaunchedEffect
+        val shopId = pendingShopId?.trim()?.takeIf { it.isNotEmpty() } ?: return@LaunchedEffect
+        val name = pendingShopName?.trim()?.takeIf { it.isNotEmpty() } ?: "Restaurante"
+        val place = FeaturedPlace(
+            id = shopId,
+            name = name,
+            imageUrl = null,
+            typeLabel = "Restaurante",
+            shopType = "RESTAURANT",
+        )
+        repeat(40) {
+            navController.awaitResumedMainRoute()
+            val items = cartRepository.items.first()
+            if (CartShopSwitchPolicy.needsConfirmation(items, shopId)) {
+                pendingShopPlace = place
+                onPendingShopNavigated()
+                return@LaunchedEffect
+            }
+            if (navController.showsId(shopId)) {
+                onPendingShopNavigated()
+                return@LaunchedEffect
+            }
+            navController.navigate(
+                DobbyScreens.shopDetail(place.id, place.name, place.latitude, place.longitude),
+            ) { launchSingleTop = true }
+            if (navController.showsId(shopId)) {
+                onPendingShopNavigated()
+                return@LaunchedEffect
+            }
+            delay(100)
+        }
     }
 
     NavHost(
@@ -571,3 +626,35 @@ private data class PendingProductNav(
     val shopId: String?,
     val shopAvailable: Boolean,
 )
+
+/**
+ * Splash replaces the back stack a moment after launch. Navigating before the visible
+ * screen is resumed is ignored, which left notification taps on Home.
+ */
+private fun NavController.showsId(id: String): Boolean {
+    val raw = currentBackStackEntry?.arguments?.getString("id") ?: return false
+    return Uri.decode(raw).trim() == id.trim()
+}
+
+private suspend fun NavController.awaitResumedMainRoute() {
+    var startedWaits = 0
+    while (true) {
+        val entry = currentBackStackEntry
+        val route = entry?.destination?.route
+        val ready = !route.isNullOrEmpty() &&
+            route != DobbyScreens.Splash &&
+            route != DobbyScreens.Phone &&
+            !route.startsWith("otp")
+        val state = entry?.lifecycle?.currentState
+        if (entry != null && ready && state != null && state.isAtLeast(Lifecycle.State.RESUMED)) {
+            return
+        }
+        if (entry != null && ready && state != null && state.isAtLeast(Lifecycle.State.STARTED)) {
+            startedWaits += 1
+            if (startedWaits >= 10) return
+        } else {
+            startedWaits = 0
+        }
+        delay(50)
+    }
+}

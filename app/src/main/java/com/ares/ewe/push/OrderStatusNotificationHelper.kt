@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -16,6 +17,8 @@ object OrderStatusNotificationHelper {
     const val EXTRA_ORDER_ID = "order_id"
     const val EXTRA_PRODUCT_ID = "product_id"
     const val EXTRA_SHOP_ID = "shop_id"
+    const val EXTRA_SHOP_NAME = "shop_name"
+    const val EXTRA_PUSH_TYPE = "type"
 
     private const val CHANNEL_ID = "dobby_order_status"
     private const val CHANNEL_NAME = "Estado de pedidos"
@@ -75,10 +78,14 @@ object OrderStatusNotificationHelper {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val launchIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val launchIntent = pushOpenIntent(
+            context,
+            productPushUri(productId, shopId, "product_promotion"),
+        ).apply {
+            putExtra(EXTRA_PUSH_TYPE, "product_promotion")
             putExtra(EXTRA_PRODUCT_ID, productId)
             shopId?.let { putExtra(EXTRA_SHOP_ID, it) }
+            putExtra("open_screen", "product_detail")
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -89,6 +96,81 @@ object OrderStatusNotificationHelper {
 
         val notification = baseBuilder(context, title, body, pendingIntent).build()
 
+        val tag = "$PROMO_TAG_PREFIX${productId.trim()}".take(64)
+        notificationManager.notify(tag, productId.hashCode(), notification)
+    }
+
+    fun showNewRestaurant(
+        context: Context,
+        title: String,
+        body: String,
+        shopId: String,
+        shopName: String?,
+    ) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val launchIntent = pushOpenIntent(context, shopPushUri(shopId, shopName)).apply {
+            putExtra(EXTRA_PUSH_TYPE, "new_restaurant")
+            putExtra(EXTRA_SHOP_ID, shopId)
+            shopName?.let { putExtra(EXTRA_SHOP_NAME, it) }
+            putExtra("open_screen", "shop_detail")
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            shopId.hashCode(),
+            launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = baseBuilder(context, title, body, pendingIntent).build()
+        val tag = "shop-${shopId.trim()}".take(64)
+        notificationManager.notify(tag, shopId.hashCode(), notification)
+    }
+
+    /** Unique view intent so the tap is delivered to the running activity with its extras. */
+    private fun pushOpenIntent(context: Context, data: Uri): Intent =
+        Intent(Intent.ACTION_VIEW, data, context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+    private fun shopPushUri(shopId: String, shopName: String?): Uri =
+        Uri.parse("dobby://push/shop/${Uri.encode(shopId)}").buildUpon().apply {
+            shopName?.trim()?.takeIf { it.isNotEmpty() }?.let { appendQueryParameter("name", it) }
+        }.build()
+
+    private fun productPushUri(productId: String, shopId: String?, pushType: String): Uri =
+        Uri.parse("dobby://push/product/${Uri.encode(productId)}").buildUpon().apply {
+            shopId?.trim()?.takeIf { it.isNotEmpty() }?.let { appendQueryParameter("shopId", it) }
+            appendQueryParameter("type", pushType)
+        }.build()
+
+    fun showNewProduct(
+        context: Context,
+        title: String,
+        body: String,
+        productId: String,
+        shopId: String?,
+    ) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val launchIntent = pushOpenIntent(
+            context,
+            productPushUri(productId, shopId, "new_product"),
+        ).apply {
+            putExtra(EXTRA_PUSH_TYPE, "new_product")
+            putExtra(EXTRA_PRODUCT_ID, productId)
+            shopId?.let { putExtra(EXTRA_SHOP_ID, it) }
+            putExtra("open_screen", "product_detail")
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            productId.hashCode(),
+            launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = baseBuilder(context, title, body, pendingIntent).build()
         val tag = "$PROMO_TAG_PREFIX${productId.trim()}".take(64)
         notificationManager.notify(tag, productId.hashCode(), notification)
     }

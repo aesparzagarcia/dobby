@@ -27,8 +27,8 @@ android {
         applicationId = "com.ares.ewe"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.1.4"
+        versionCode = 16
+        versionName = "1.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
